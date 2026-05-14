@@ -314,7 +314,7 @@ function defaultWindows(): WindowLayout[] {
       x: 318,
       y: 384,
       width: 470,
-      height: 380,
+      height: 320,
       zIndex: 8,
     },
     {
@@ -324,7 +324,7 @@ function defaultWindows(): WindowLayout[] {
       x: 808,
       y: 384,
       width: 600,
-      height: 380,
+      height: 320,
       zIndex: 9,
     },
     {
@@ -332,9 +332,9 @@ function defaultWindows(): WindowLayout[] {
       title: "UPS-LEIPS Band Diagram",
       kind: "band",
       x: 808,
-      y: 786,
+      y: 720,
       width: 600,
-      height: 380,
+      height: 300,
       zIndex: 10,
     },
   ];
