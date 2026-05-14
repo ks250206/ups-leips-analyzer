@@ -3,8 +3,10 @@ import {
   useMemo,
   useRef,
   useState,
+  type Dispatch,
   type PointerEvent as ReactPointerEvent,
   type RefObject,
+  type SetStateAction,
 } from "react";
 import uPlot from "uplot";
 import type { FitRange } from "../../domain/types";
@@ -344,7 +346,7 @@ function drawRangeBands(plot: uPlot, rangeBands: readonly PlotRangeBand[]): void
 function syncHandles(
   plot: uPlot,
   rangeBands: readonly PlotRangeBand[],
-  setHandles: (handles: CursorHandle[]) => void,
+  setHandles: Dispatch<SetStateAction<CursorHandle[]>>,
 ): void {
   const top = plot.bbox.top / devicePixelRatio;
   const left = plot.bbox.left / devicePixelRatio;
@@ -375,7 +377,33 @@ function syncHandles(
       },
     ];
   });
-  setHandles(nextHandles);
+  setHandles((current) => (cursorHandlesEqual(current, nextHandles) ? current : nextHandles));
+}
+
+function cursorHandlesEqual(
+  leftHandles: readonly CursorHandle[],
+  rightHandles: readonly CursorHandle[],
+): boolean {
+  if (leftHandles.length !== rightHandles.length) {
+    return false;
+  }
+  return leftHandles.every((leftHandle, index) => {
+    const rightHandle = rightHandles[index];
+    return (
+      rightHandle !== undefined &&
+      leftHandle.bandId === rightHandle.bandId &&
+      leftHandle.side === rightHandle.side &&
+      leftHandle.label === rightHandle.label &&
+      leftHandle.color === rightHandle.color &&
+      almostEqual(leftHandle.left, rightHandle.left) &&
+      almostEqual(leftHandle.top, rightHandle.top) &&
+      almostEqual(leftHandle.height, rightHandle.height)
+    );
+  });
+}
+
+function almostEqual(left: number, right: number): boolean {
+  return Math.abs(left - right) < 0.25;
 }
 
 function startHandleDrag(
