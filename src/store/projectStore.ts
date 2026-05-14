@@ -318,14 +318,24 @@ function defaultWindows(): WindowLayout[] {
       zIndex: 8,
     },
     {
-      id: "band",
-      title: "UPS-LEIPS Band Diagram",
-      kind: "band",
+      id: "leips-evac",
+      title: "LEIPS vs Energy from Evac.",
+      kind: "leips-evac",
       x: 808,
       y: 384,
       width: 600,
       height: 380,
       zIndex: 9,
+    },
+    {
+      id: "band",
+      title: "UPS-LEIPS Band Diagram",
+      kind: "band",
+      x: 808,
+      y: 786,
+      width: 600,
+      height: 380,
+      zIndex: 10,
     },
   ];
 }

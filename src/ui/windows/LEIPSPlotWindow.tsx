@@ -1,4 +1,5 @@
 import { useMemo } from "react";
+import type { FitTarget } from "../../domain/types";
 import { useProjectStore } from "../../store/projectStore";
 import { formatNumber } from "../format";
 import {
@@ -13,8 +14,8 @@ import { SpectrumPlot } from "./SpectrumPlot";
 
 export function LEIPSPlotWindow() {
   const project = useProjectStore((state) => state.project);
-  const activeFitTarget = useProjectStore((state) => state.activeFitTarget);
   const setFitRange = useProjectStore((state) => state.setFitRange);
+  const activeFitTarget = useProjectStore((state) => state.activeFitTarget);
   const leetDataset = project.datasets.find(
     (dataset) => dataset.id === project.analysis.selection.leetDatasetId,
   );
@@ -26,7 +27,7 @@ export function LEIPSPlotWindow() {
   );
   const leips = project.analysis.leips;
 
-  const biasSeries = useMemo<PlotSeries[]>(() => {
+  const series = useMemo<PlotSeries[]>(() => {
     const items: PlotSeries[] = [];
     if (leetDataset) {
       items.push(datasetSeries(leetDataset, "#16a34a"));
@@ -34,13 +35,67 @@ export function LEIPSPlotWindow() {
     if (leetDerDataset) {
       items.push(datasetSeries(leetDerDataset, "#2563eb"));
     }
+    if (leipsDataset) {
+      items.push(datasetSeries(leipsDataset, "#dc2626"));
+    }
     if (leips && leetDerDataset) {
       items.push(gaussianSeries("LEET(der) fit", leips.peakFit, leetDerDataset.points, "#0f172a"));
     }
     return items;
-  }, [leetDataset, leetDerDataset, leips]);
+  }, [leetDataset, leetDerDataset, leips, leipsDataset]);
 
-  const evacSeries = useMemo<PlotSeries[]>(() => {
+  const markers = useMemo<PlotMarker[]>(
+    () =>
+      leips
+        ? [
+            { x: leips.ePeak, label: `Epeak ${formatNumber(leips.ePeak, 2)} V`, color: "#2563eb" },
+            {
+              x: leips.vacuumLevel,
+              label: `Evac ${formatNumber(leips.vacuumLevel, 2)} eV`,
+              color: "#0f766e",
+            },
+          ]
+        : [],
+    [leips],
+  );
+
+  const rangeBands = useMemo<PlotRangeBand[]>(
+    () => [
+      {
+        id: "leet-der-peak",
+        ...project.analysis.fitRanges.leetDerPeak,
+        label: activeFitTarget === "leet-der-peak" ? "active peak" : "peak",
+        color: "#2563eb",
+        cursorLabels: ["A", "B"],
+      },
+    ],
+    [activeFitTarget, project.analysis.fitRanges.leetDerPeak],
+  );
+
+  return (
+    <SpectrumPlot
+      title="LEET / LEET(der) / LEIPS"
+      xLabel="Applied Bias Vbias / V"
+      yLabel="Intensity / a.u."
+      series={series}
+      markers={markers}
+      rangeBands={rangeBands}
+      onSelectRange={(range) => setFitRange("leet-der-peak", range)}
+      onRangeBandChange={(target, range) => setFitRange(target as FitTarget, range)}
+    />
+  );
+}
+
+export function LEIPSEvacPlotWindow() {
+  const project = useProjectStore((state) => state.project);
+  const activeFitTarget = useProjectStore((state) => state.activeFitTarget);
+  const setFitRange = useProjectStore((state) => state.setFitRange);
+  const leipsDataset = project.datasets.find(
+    (dataset) => dataset.id === project.analysis.selection.leipsDatasetId,
+  );
+  const leips = project.analysis.leips;
+
+  const series = useMemo<PlotSeries[]>(() => {
     if (!leips) {
       return [];
     }
@@ -61,49 +116,27 @@ export function LEIPSPlotWindow() {
     ];
   }, [leips, leipsDataset, project.analysis.fitRanges]);
 
-  const biasMarkers = useMemo<PlotMarker[]>(
-    () =>
-      leips
-        ? [
-            { x: leips.ePeak, label: `Epeak ${formatNumber(leips.ePeak, 2)} V`, color: "#2563eb" },
-            {
-              x: leips.vacuumLevel,
-              label: `Evac ${formatNumber(leips.vacuumLevel, 2)} eV`,
-              color: "#0f766e",
-            },
-          ]
-        : [],
-    [leips],
-  );
-
-  const evacMarkers = useMemo<PlotMarker[]>(
+  const markers = useMemo<PlotMarker[]>(
     () =>
       leips ? [{ x: leips.ea, label: `EA ${formatNumber(leips.ea, 2)} eV`, color: "#dc2626" }] : [],
     [leips],
   );
 
-  const biasBands = useMemo<PlotRangeBand[]>(
+  const rangeBands = useMemo<PlotRangeBand[]>(
     () => [
       {
-        ...project.analysis.fitRanges.leetDerPeak,
-        label: activeFitTarget === "leet-der-peak" ? "active peak" : "peak",
-        color: "#2563eb",
-      },
-    ],
-    [activeFitTarget, project.analysis.fitRanges.leetDerPeak],
-  );
-
-  const evacBands = useMemo<PlotRangeBand[]>(
-    () => [
-      {
+        id: "leips-edge",
         ...project.analysis.fitRanges.leipsEdge,
         label: activeFitTarget === "leips-edge" ? "active edge" : "edge",
         color: "#dc2626",
+        cursorLabels: ["A", "B"],
       },
       {
+        id: "leips-bg",
         ...project.analysis.fitRanges.leipsBackground,
         label: activeFitTarget === "leips-bg" ? "active BG" : "BG",
         color: "#15803d",
+        cursorLabels: ["C", "D"],
       },
     ],
     [
@@ -114,31 +147,21 @@ export function LEIPSPlotWindow() {
   );
 
   return (
-    <div className="grid h-full grid-rows-2 gap-px bg-slate-300">
-      <SpectrumPlot
-        title="LEET / LEET(der)"
-        xLabel="Applied Bias Vbias / V"
-        yLabel="Intensity / a.u."
-        series={biasSeries}
-        markers={biasMarkers}
-        rangeBands={biasBands}
-        onSelectRange={(range) => setFitRange("leet-der-peak", range)}
-      />
-      <SpectrumPlot
-        title="LEIPS vs Evac"
-        xLabel="Energy from Evac / eV"
-        yLabel="Intensity / a.u."
-        series={evacSeries}
-        markers={evacMarkers}
-        rangeBands={evacBands}
-        onSelectRange={(range) => {
-          if (activeFitTarget === "leips-bg" || activeFitTarget === "leips-edge") {
-            setFitRange(activeFitTarget, range);
-            return;
-          }
-          setFitRange("leips-edge", range);
-        }}
-      />
-    </div>
+    <SpectrumPlot
+      title="LEIPS vs Energy from Evac."
+      xLabel="Energy from Evac. / eV"
+      yLabel="Intensity / a.u."
+      series={series}
+      markers={markers}
+      rangeBands={rangeBands}
+      onSelectRange={(range) => {
+        if (activeFitTarget === "leips-bg" || activeFitTarget === "leips-edge") {
+          setFitRange(activeFitTarget, range);
+          return;
+        }
+        setFitRange("leips-edge", range);
+      }}
+      onRangeBandChange={(target, range) => setFitRange(target as FitTarget, range)}
+    />
   );
 }

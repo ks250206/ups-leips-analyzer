@@ -13,7 +13,7 @@ import { AnalysisControls } from "./windows/AnalysisControls";
 import { BandDiagramWindow } from "./windows/BandDiagramWindow";
 import { DataBrowser } from "./windows/DataBrowser";
 import { DataTable } from "./windows/DataTable";
-import { LEIPSPlotWindow } from "./windows/LEIPSPlotWindow";
+import { LEIPSEvacPlotWindow, LEIPSPlotWindow } from "./windows/LEIPSPlotWindow";
 import { UPSIPPlotWindow, UPSVBPlotWindow } from "./windows/UPSPlotWindow";
 import { WindowFrame } from "./windows/WindowFrame";
 
@@ -94,6 +94,8 @@ function renderWindow(window: WindowLayout) {
       return <UPSVBPlotWindow />;
     case "leips":
       return <LEIPSPlotWindow />;
+    case "leips-evac":
+      return <LEIPSEvacPlotWindow />;
     case "band":
       return <BandDiagramWindow />;
     case "controls":
@@ -111,6 +113,7 @@ function iconForWindow(kind: WindowLayout["kind"]) {
     case "ups-vb":
     case "ups-ip":
     case "leips":
+    case "leips-evac":
       return <LineChart size={14} />;
     case "band":
       return <BarChart3 size={14} />;

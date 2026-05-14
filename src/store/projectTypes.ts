@@ -3,7 +3,16 @@ import type { AnalysisState, SpectrumDataset } from "../domain/types";
 export interface WindowLayout {
   id: string;
   title: string;
-  kind: "browser" | "table" | "ups" | "ups-vb" | "ups-ip" | "leips" | "band" | "controls";
+  kind:
+    | "browser"
+    | "table"
+    | "ups"
+    | "ups-vb"
+    | "ups-ip"
+    | "leips"
+    | "leips-evac"
+    | "band"
+    | "controls";
   x: number;
   y: number;
   width: number;
