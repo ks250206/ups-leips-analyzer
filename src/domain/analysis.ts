@@ -14,25 +14,34 @@ export function calculateUPSResult(input: {
   ipDataset: SpectrumDataset;
   vbEdgeRange: FitRange;
   vbBackgroundRange: FitRange;
+  ipVbmEdgeRange: FitRange;
+  ipVbmBackgroundRange: FitRange;
   cutoffEdgeRange: FitRange;
   cutoffBackgroundRange: FitRange;
   photonEnergy?: number;
 }): UPSResult {
   const vbEdge = linearFit(input.vbDataset.points, input.vbEdgeRange);
   const vbBackground = linearFit(input.vbDataset.points, input.vbBackgroundRange);
+  const ipVbmEdge = linearFit(input.ipDataset.points, input.ipVbmEdgeRange);
+  const ipVbmBackground = linearFit(input.ipDataset.points, input.ipVbmBackgroundRange);
   const cutoffEdge = linearFit(input.ipDataset.points, input.cutoffEdgeRange);
   const cutoffBackground = linearFit(input.ipDataset.points, input.cutoffBackgroundRange);
-  const vbm = lineIntersection(vbEdge, vbBackground);
+  const vbEvbm = lineIntersection(vbEdge, vbBackground);
+  const ipEvbm = lineIntersection(ipVbmEdge, ipVbmBackground);
   const ecutoff = lineIntersection(cutoffEdge, cutoffBackground);
   const photonEnergy = input.photonEnergy ?? DEFAULT_PHOTON_ENERGY_EV;
 
   return {
-    vbm,
+    vbEvbm,
+    ipEvbm,
+    efMinusEvbm: Math.abs(vbEvbm),
     ecutoff,
-    ip: calculateIonizationPotential({ photonEnergy, ecutoff, vbm }),
+    ip: calculateIonizationPotential({ photonEnergy, ecutoff, vbm: ipEvbm }),
     photonEnergy,
     vbEdge,
     vbBackground,
+    ipVbmEdge,
+    ipVbmBackground,
     cutoffEdge,
     cutoffBackground,
   };

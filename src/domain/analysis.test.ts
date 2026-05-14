@@ -27,10 +27,14 @@ describe("UPS analysis", () => {
       ipDataset: datasets.find((dataset) => dataset.kind === "ups-ip")!,
       vbEdgeRange: DEFAULT_FIT_RANGES.upsVbEdge,
       vbBackgroundRange: DEFAULT_FIT_RANGES.upsVbBackground,
+      ipVbmEdgeRange: DEFAULT_FIT_RANGES.upsIpVbmEdge,
+      ipVbmBackgroundRange: DEFAULT_FIT_RANGES.upsIpVbmBackground,
       cutoffEdgeRange: DEFAULT_FIT_RANGES.upsIpEdge,
       cutoffBackgroundRange: DEFAULT_FIT_RANGES.upsIpBackground,
     });
-    expect(result.vbm).toBeCloseTo(0.56, 1);
+    expect(result.vbEvbm).toBeCloseTo(0.56, 1);
+    expect(result.efMinusEvbm).toBeCloseTo(0.56, 1);
+    expect(result.ipEvbm).toBeCloseTo(0.56, 1);
     expect(result.ecutoff).toBeCloseTo(11.86, 1);
     expect(result.ip).toBeGreaterThan(8);
   });

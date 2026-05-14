@@ -1,6 +1,6 @@
 import { create } from "zustand";
 import { calculateLEIPSResult, calculateUPSResult, createBandDiagram } from "../domain/analysis";
-import { createDemoDatasets, createInitialAnalysis } from "../domain/demoData";
+import { createDemoDatasets, createInitialAnalysis, DEFAULT_FIT_RANGES } from "../domain/demoData";
 import type { AnalysisState, FitRange, FitTarget, SpectrumDataset } from "../domain/types";
 import { importProjectJson, saveProject } from "./projectDb";
 import type { ProjectSnapshot, WindowLayout } from "./projectTypes";
@@ -119,7 +119,7 @@ export const useProjectStore = create<ProjectStore>((set, get) => ({
     await saveProject(get().project);
   },
   importProject: (json) => {
-    set({ project: recalculateProject(importProjectJson(json)) });
+    set({ project: recalculateProject(normalizeProject(importProjectJson(json))) });
   },
 }));
 
@@ -153,6 +153,8 @@ export function recalculateProject(project: ProjectSnapshot): ProjectSnapshot {
             ipDataset,
             vbEdgeRange: analysis.fitRanges.upsVbEdge,
             vbBackgroundRange: analysis.fitRanges.upsVbBackground,
+            ipVbmEdgeRange: analysis.fitRanges.upsIpVbmEdge,
+            ipVbmBackgroundRange: analysis.fitRanges.upsIpVbmBackground,
             cutoffEdgeRange: analysis.fitRanges.upsIpEdge,
             cutoffBackgroundRange: analysis.fitRanges.upsIpBackground,
             photonEnergy: analysis.photonEnergy,
@@ -169,10 +171,10 @@ export function recalculateProject(project: ProjectSnapshot): ProjectSnapshot {
             bandpassType: analysis.bandpassType,
           })
         : undefined;
-    const efMinusEvbm = Number.isFinite(analysis.efMinusEvbm)
-      ? analysis.efMinusEvbm
-      : ups
-        ? Math.abs(ups.vbm)
+    const efMinusEvbm = ups
+      ? ups.efMinusEvbm
+      : Number.isFinite(analysis.efMinusEvbm)
+        ? analysis.efMinusEvbm
         : 0;
     const band =
       ups && leips && vbDataset
@@ -203,6 +205,10 @@ export function fitRangeKey(target: FitTarget): keyof AnalysisState["fitRanges"]
       return "upsVbEdge";
     case "ups-vb-bg":
       return "upsVbBackground";
+    case "ups-ip-vbm-edge":
+      return "upsIpVbmEdge";
+    case "ups-ip-vbm-bg":
+      return "upsIpVbmBackground";
     case "ups-ip-edge":
       return "upsIpEdge";
     case "ups-ip-bg":
@@ -214,6 +220,19 @@ export function fitRangeKey(target: FitTarget): keyof AnalysisState["fitRanges"]
     case "leet-der-peak":
       return "leetDerPeak";
   }
+}
+
+function normalizeProject(project: ProjectSnapshot): ProjectSnapshot {
+  return {
+    ...project,
+    analysis: {
+      ...project.analysis,
+      fitRanges: {
+        ...DEFAULT_FIT_RANGES,
+        ...project.analysis.fitRanges,
+      },
+    },
+  };
 }
 
 function mergeDatasets(

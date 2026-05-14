@@ -7,6 +7,8 @@ import { fitRangeKey, useProjectStore } from "./projectStore";
 const TARGETS: FitTarget[] = [
   "ups-vb-edge",
   "ups-vb-bg",
+  "ups-ip-vbm-edge",
+  "ups-ip-vbm-bg",
   "ups-ip-edge",
   "ups-ip-bg",
   "leet-der-peak",
@@ -23,6 +25,8 @@ describe("project store", () => {
     expect(TARGETS.map((target) => fitRangeKey(target))).toEqual([
       "upsVbEdge",
       "upsVbBackground",
+      "upsIpVbmEdge",
+      "upsIpVbmBackground",
       "upsIpEdge",
       "upsIpBackground",
       "leetDerPeak",
@@ -52,7 +56,7 @@ describe("project store", () => {
     const next = useProjectStore.getState().project;
     expect(next.selectedDatasetId).toBe(leips.id);
     expect(next.analysis.bandpassType).toBe(2);
-    expect(next.analysis.efMinusEvbm).toBe(0.7);
+    expect(next.analysis.efMinusEvbm).toBe(next.analysis.ups?.efMinusEvbm);
     expect(next.windows.find((window) => window.id === "browser")?.x).toBe(44);
   });
 

@@ -100,7 +100,7 @@ export function AnalysisControls() {
           <Panel title="UPS spectra analysis">
             <ResultGrid
               rows={[
-                ["EVBM", formatNumber(analysis.ups?.vbm), "eV"],
+                ["EVBM", formatNumber(analysis.ups?.vbEvbm), "eV"],
                 ["Ecut-off", formatNumber(analysis.ups?.ecutoff), "eV"],
                 ["IP", formatNumber(analysis.ups?.ip), "eV"],
               ]}

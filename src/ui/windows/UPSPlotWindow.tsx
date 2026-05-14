@@ -43,7 +43,9 @@ export function UPSVBPlotWindow() {
 
   const markers = useMemo<PlotMarker[]>(
     () =>
-      ups ? [{ x: ups.vbm, label: `VBM ${formatNumber(ups.vbm, 2)} eV`, color: "#2563eb" }] : [],
+      ups
+        ? [{ x: ups.vbEvbm, label: `VBM ${formatNumber(ups.vbEvbm, 2)} eV`, color: "#2563eb" }]
+        : [],
     [ups],
   );
   const rangeBands = useMemo<PlotRangeBand[]>(

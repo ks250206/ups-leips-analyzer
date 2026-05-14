@@ -4,6 +4,8 @@ import type { AnalysisState, FitRanges, Point, SpectrumDataset } from "./types";
 export const DEFAULT_FIT_RANGES: FitRanges = {
   upsVbEdge: { min: 0.9, max: 2.6 },
   upsVbBackground: { min: -3.2, max: -1.0 },
+  upsIpVbmEdge: { min: 0.9, max: 2.6 },
+  upsIpVbmBackground: { min: -3.2, max: -1.0 },
   upsIpEdge: { min: 9.0, max: 11.4 },
   upsIpBackground: { min: 12.2, max: 15.2 },
   leetDerPeak: { min: -6.9, max: -5.7 },
@@ -51,6 +53,8 @@ export function createInitialAnalysis(datasets: readonly SpectrumDataset[]): Ana
     ipDataset,
     vbEdgeRange: DEFAULT_FIT_RANGES.upsVbEdge,
     vbBackgroundRange: DEFAULT_FIT_RANGES.upsVbBackground,
+    ipVbmEdgeRange: DEFAULT_FIT_RANGES.upsIpVbmEdge,
+    ipVbmBackgroundRange: DEFAULT_FIT_RANGES.upsIpVbmBackground,
     cutoffEdgeRange: DEFAULT_FIT_RANGES.upsIpEdge,
     cutoffBackgroundRange: DEFAULT_FIT_RANGES.upsIpBackground,
     photonEnergy: 21.22,
@@ -63,7 +67,7 @@ export function createInitialAnalysis(datasets: readonly SpectrumDataset[]): Ana
     backgroundRange: DEFAULT_FIT_RANGES.leipsBackground,
     bandpassType: 1,
   });
-  const efMinusEvbm = Math.abs(ups.vbm);
+  const efMinusEvbm = ups.efMinusEvbm;
   const band = createBandDiagram({
     vbDataset,
     leipsEvacPoints: leips.leipsEvacPoints,
@@ -105,10 +109,10 @@ function createUpsIpDataset(): SpectrumDataset {
     "demo-ups-ip",
     "Demo UPS IP",
     "ups-ip",
-    range(7, 16, 0.05).map((x) => {
-      const edge = 0.7 + 2.4 * (x - 11.86);
-      const bg = 0.7;
-      const y = x < 11.86 ? bg + ripple(x, 0.08) : edge + ripple(x, 0.16);
+    range(-4, 16, 0.05).map((x) => {
+      const vbmEdge = x > 0.56 && x < 4.6 ? 2.3 * (x - 0.56) : 0;
+      const cutoffEdge = x >= 11.86 ? 2.4 * (x - 11.86) : 0;
+      const y = 0.7 + vbmEdge + cutoffEdge + (x > 8 ? ripple(x, 0.16) : 0);
       return { x, y: Math.max(0, y) };
     }),
   );

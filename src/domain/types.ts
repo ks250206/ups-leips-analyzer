@@ -3,6 +3,8 @@ export type SpectrumKind = "ups-vb" | "ups-ip" | "leet" | "leet-der" | "leips" |
 export type FitTarget =
   | "ups-vb-edge"
   | "ups-vb-bg"
+  | "ups-ip-vbm-edge"
+  | "ups-ip-vbm-bg"
   | "ups-ip-edge"
   | "ups-ip-bg"
   | "leips-edge"
@@ -49,12 +51,16 @@ export interface GaussianFitResult {
 }
 
 export interface UPSResult {
-  vbm: number;
+  vbEvbm: number;
+  ipEvbm: number;
+  efMinusEvbm: number;
   ecutoff: number;
   ip: number;
   photonEnergy: number;
   vbEdge: LineFitResult;
   vbBackground: LineFitResult;
+  ipVbmEdge: LineFitResult;
+  ipVbmBackground: LineFitResult;
   cutoffEdge: LineFitResult;
   cutoffBackground: LineFitResult;
 }
@@ -84,6 +90,8 @@ export interface BandDiagramResult {
 export interface FitRanges {
   upsVbEdge: FitRange;
   upsVbBackground: FitRange;
+  upsIpVbmEdge: FitRange;
+  upsIpVbmBackground: FitRange;
   upsIpEdge: FitRange;
   upsIpBackground: FitRange;
   leetDerPeak: FitRange;
