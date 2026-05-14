@@ -170,6 +170,9 @@ export function SpectrumPlot({
       if (!currentScales) {
         return;
       }
+      if (event.ctrlKey || event.metaKey) {
+        return;
+      }
       event.preventDefault();
       event.stopPropagation();
       updateViewport((current) =>
@@ -819,9 +822,10 @@ function startPlotPan(
   event.stopPropagation();
   const svg = event.currentTarget;
   const start = eventPositionInPlot(event, geometry);
+  const startViewport = currentViewportForScales(scales);
   const move = (moveEvent: PointerEvent) => {
     const current = eventPositionInPlot(moveEvent, geometry, svg);
-    updateViewport((viewport) => nextViewportAfterPanDrag(viewport, scales, start, current));
+    updateViewport(nextViewportAfterPanDrag(startViewport, scales, start, current));
   };
   const cleanup = () => {
     window.removeEventListener("pointermove", move);
@@ -1117,6 +1121,14 @@ function nextViewportAfterPanDrag(
     x: { min: x.min + xDelta, max: x.max + xDelta },
     y: { min: y.min + yDelta, max: y.max + yDelta },
     y2: y2 ? { min: y2.min + y2Delta, max: y2.max + y2Delta } : undefined,
+  };
+}
+
+function currentViewportForScales(scales: PlotScales): PlotViewport {
+  return {
+    x: scales.xDomain,
+    y: scales.yDomain,
+    y2: scales.yRightDomain,
   };
 }
 

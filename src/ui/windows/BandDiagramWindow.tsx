@@ -11,6 +11,7 @@ export function BandDiagramWindow() {
   const [upsOffset, setUpsOffset] = useState(0);
   const [leipsScale, setLeipsScale] = useState(1);
   const [leipsOffset, setLeipsOffset] = useState(0);
+  const [viewport, setViewport] = useState<PlotViewport>({});
   const bandXDomain = useMemo(() => {
     const points = band ? [...band.upsPoints, ...band.leipsPoints] : [];
     if (points.length === 0) {
@@ -43,6 +44,20 @@ export function BandDiagramWindow() {
           })
         : [],
     [band, leipsOffset, leipsScale, upsOffset, upsScale],
+  );
+  const viewportRequestWithY = useMemo(
+    () =>
+      viewportRequest
+        ? {
+            id: viewportRequest.id,
+            viewport: {
+              ...viewportRequest.viewport,
+              y: scaledRange(viewport.y, upsScale, upsOffset),
+              y2: scaledRange(viewport.y2, leipsScale, leipsOffset),
+            },
+          }
+        : undefined,
+    [leipsOffset, leipsScale, upsOffset, upsScale, viewport.y, viewport.y2, viewportRequest],
   );
   const markers = useMemo<PlotMarker[]>(
     () =>
@@ -119,13 +134,23 @@ export function BandDiagramWindow() {
           series={series}
           markers={markers}
           xDirection="reverse"
-          viewportRequest={viewportRequest}
+          viewportRequest={viewportRequestWithY}
+          onViewportChange={setViewport}
           hideYTicks
           largeAxisLabels
         />
       </div>
     </div>
   );
+}
+
+function scaledRange(range: PlotViewport["y"], scale: number, offset: number): PlotViewport["y"] {
+  if (!range) {
+    return undefined;
+  }
+  const first = range.min * scale + offset;
+  const second = range.max * scale + offset;
+  return { min: Math.min(first, second), max: Math.max(first, second) };
 }
 
 function SmallNumber({
