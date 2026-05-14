@@ -1,5 +1,9 @@
 import { describe, expect, test } from "vite-plus/test";
-import { createSpectrumPlotOptions } from "./SpectrumPlot";
+import {
+  createSpectrumPlotOptions,
+  inferPlotDragZoomMode,
+  selectionRectForMode,
+} from "./SpectrumPlot";
 
 describe("SpectrumPlot options", () => {
   test("sets reversed x scale direction", () => {
@@ -95,5 +99,26 @@ describe("SpectrumPlot options", () => {
 
     expect(options.series?.[1]?.auto).toBe(true);
     expect(options.series?.[2]?.auto).toBe(false);
+  });
+
+  test("infers x, y and xy drag zoom modes from selection shape", () => {
+    expect(inferPlotDragZoomMode(7, 7)).toBeUndefined();
+    expect(inferPlotDragZoomMode(120, 4)).toBe("x");
+    expect(inferPlotDragZoomMode(5, 100)).toBe("y");
+    expect(inferPlotDragZoomMode(80, 80)).toBe("xy");
+  });
+
+  test("extends visual selection rectangles for axis-only zoom", () => {
+    const plotSize = { width: 640, height: 360 };
+
+    expect(selectionRectForMode({ left: 20, top: 100 }, { left: 180, top: 104 }, plotSize)).toEqual(
+      { left: 20, top: 0, width: 160, height: 360 },
+    );
+    expect(selectionRectForMode({ left: 120, top: 40 }, { left: 124, top: 180 }, plotSize)).toEqual(
+      { left: 0, top: 40, width: 640, height: 140 },
+    );
+    expect(selectionRectForMode({ left: 120, top: 40 }, { left: 220, top: 140 }, plotSize)).toEqual(
+      { left: 120, top: 40, width: 100, height: 100 },
+    );
   });
 });

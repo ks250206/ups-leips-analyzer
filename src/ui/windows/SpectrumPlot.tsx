@@ -51,6 +51,17 @@ interface CursorHandle {
   height: number;
 }
 
+interface PlotScaleRange {
+  min: number;
+  max: number;
+}
+
+interface PlotViewport {
+  x?: PlotScaleRange;
+  y?: PlotScaleRange;
+  y2?: PlotScaleRange;
+}
+
 const EMPTY_MARKERS: PlotMarker[] = [];
 const EMPTY_RANGE_BANDS: PlotRangeBand[] = [];
 
@@ -69,6 +80,7 @@ export function SpectrumPlot({
 }: SpectrumPlotProps) {
   const containerRef = useRef<HTMLDivElement>(null);
   const plotRef = useRef<uPlot | undefined>(undefined);
+  const viewportRef = useRef<PlotViewport>({});
   const [handles, setHandles] = useState<CursorHandle[]>([]);
   const data = useMemo(() => alignSeries(series), [series]);
   const hasData = data[0].length > 0;
@@ -76,6 +88,7 @@ export function SpectrumPlot({
   useEffect(() => {
     const container = containerRef.current;
     if (!container || !hasData) {
+      capturePlotViewport(plotRef.current, viewportRef);
       plotRef.current?.destroy();
       plotRef.current = undefined;
       clearHandles(setHandles);
@@ -105,13 +118,16 @@ export function SpectrumPlot({
       onSyncHandles: (plot) => syncHandles(plot, rangeBands, setHandles),
     });
 
+    capturePlotViewport(plotRef.current, viewportRef);
     plotRef.current?.destroy();
     plotRef.current = new uPlot(options, data as uPlot.AlignedData, container);
-    const detachPlotDrag = attachPlotDrag(plotRef.current, {
+    restorePlotViewport(plotRef.current, viewportRef.current);
+    const detachPlotDrag = attachPlotInteractions(plotRef.current, {
       onSelectRange,
       onAfterScale: () => {
         const plot = plotRef.current;
         if (plot) {
+          capturePlotViewport(plot, viewportRef);
           syncHandles(plot, rangeBands, setHandles);
         }
       },
@@ -121,6 +137,7 @@ export function SpectrumPlot({
     return () => {
       detachPlotDrag();
       resizeObserver.disconnect();
+      capturePlotViewport(plotRef.current, viewportRef);
       plotRef.current?.destroy();
       plotRef.current = undefined;
       clearHandles(setHandles);
@@ -195,7 +212,14 @@ export function SpectrumPlot({
         <button
           className="rounded border border-slate-300 bg-white/90 px-2 py-0.5 text-[10px] font-semibold text-slate-700 shadow-sm hover:bg-cyan-50"
           type="button"
-          onClick={() => resetXZoom(plotRef.current, data[0])}
+          onClick={() => {
+            viewportRef.current = {};
+            resetZoom(plotRef.current, data[0], series);
+            const plot = plotRef.current;
+            if (plot) {
+              syncHandles(plot, rangeBands, setHandles);
+            }
+          }}
         >
           Reset
         </button>
@@ -486,7 +510,7 @@ function normalizeRange(range: FitRange): FitRange {
   return { min: Math.min(range.min, range.max), max: Math.max(range.min, range.max) };
 }
 
-function attachPlotDrag(
+function attachPlotInteractions(
   plot: uPlot,
   input: {
     onSelectRange?: (range: FitRange) => void;
@@ -494,14 +518,15 @@ function attachPlotDrag(
   },
 ): () => void {
   const over = plot.over;
-  let start: { left: number; shiftKey: boolean } | undefined;
+  let start: { left: number; top: number; shiftKey: boolean } | undefined;
   let isDragging = false;
 
   const handleMouseDown = (event: MouseEvent) => {
     if (event.button !== 0) {
       return;
     }
-    start = { left: eventLeftInPlot(plot, event), shiftKey: event.shiftKey };
+    event.preventDefault();
+    start = { ...eventPositionInPlot(plot, event), shiftKey: event.shiftKey };
     isDragging = false;
     document.addEventListener("mousemove", handleMouseMove);
     document.addEventListener("mouseup", handleMouseUp, { once: true });
@@ -511,19 +536,16 @@ function attachPlotDrag(
     if (!start) {
       return;
     }
-    const current = eventLeftInPlot(plot, event);
-    const width = Math.abs(current - start.left);
-    if (width < 3) {
+    const current = eventPositionInPlot(plot, event);
+    const width = Math.abs(current.left - start.left);
+    const height = Math.abs(current.top - start.top);
+    if (width < 3 && height < 3) {
       return;
     }
     isDragging = true;
     event.preventDefault();
-    plot.setSelect({
-      left: Math.min(start.left, current),
-      top: 0,
-      width,
-      height: plot.bbox.height / devicePixelRatio,
-    });
+    const plotSize = plotSizeFromBbox(plot);
+    plot.setSelect(selectionRectForMode(start, clampPlotPosition(current, plotSize), plotSize));
   };
 
   const handleMouseUp = (event: MouseEvent) => {
@@ -534,41 +556,279 @@ function attachPlotDrag(
       plot.setSelect({ left: 0, top: 0, width: 0, height: 0 });
       return;
     }
-    const end = eventLeftInPlot(plot, event);
-    const from = plot.posToVal(Math.min(dragStart.left, end), "x");
-    const to = plot.posToVal(Math.max(dragStart.left, end), "x");
-    const range = normalizeRange({ min: from, max: to });
+    const end = eventPositionInPlot(plot, event);
     plot.setSelect({ left: 0, top: 0, width: 0, height: 0 });
     if (dragStart.shiftKey && input.onSelectRange) {
+      const from = plot.posToVal(Math.min(dragStart.left, end.left), "x");
+      const to = plot.posToVal(Math.max(dragStart.left, end.left), "x");
+      const range = normalizeRange({ min: from, max: to });
       input.onSelectRange(range);
       input.onAfterScale();
       return;
     }
-    plot.setScale("x", range);
+    applyDragZoom(plot, dragStart, end);
+    input.onAfterScale();
+  };
+
+  const handleWheel = (event: WheelEvent) => {
+    event.preventDefault();
+    if (event.metaKey || event.ctrlKey) {
+      zoomPlotAtWheel(plot, event);
+    } else {
+      panPlotByWheel(plot, event);
+    }
     input.onAfterScale();
   };
 
   over.addEventListener("mousedown", handleMouseDown);
+  over.addEventListener("wheel", handleWheel, { passive: false });
   return () => {
     over.removeEventListener("mousedown", handleMouseDown);
+    over.removeEventListener("wheel", handleWheel);
     document.removeEventListener("mousemove", handleMouseMove);
     document.removeEventListener("mouseup", handleMouseUp);
   };
 }
 
-function eventLeftInPlot(plot: uPlot, event: MouseEvent): number {
+function eventPositionInPlot(plot: uPlot, event: MouseEvent): { left: number; top: number } {
   const rect = plot.over.getBoundingClientRect();
-  const left = Math.min(Math.max(event.clientX - rect.left, 0), rect.width);
-  return left;
+  return { left: event.clientX - rect.left, top: event.clientY - rect.top };
 }
 
-function resetXZoom(plot: uPlot | undefined, xValues: readonly number[]): void {
+function clampPlotPosition(
+  position: { left: number; top: number },
+  plotSize: { width: number; height: number },
+): { left: number; top: number } {
+  return {
+    left: Math.min(Math.max(position.left, 0), plotSize.width),
+    top: Math.min(Math.max(position.top, 0), plotSize.height),
+  };
+}
+
+function plotSizeFromBbox(plot: uPlot): { width: number; height: number } {
+  return {
+    width: plot.bbox.width / devicePixelRatio,
+    height: plot.bbox.height / devicePixelRatio,
+  };
+}
+
+export function inferPlotDragZoomMode(width: number, height: number): "x" | "y" | "xy" | undefined {
+  const minDrag = 8;
+  const dominanceRatio = 2.5;
+  const absWidth = Math.abs(width);
+  const absHeight = Math.abs(height);
+  const hasWidth = absWidth >= minDrag;
+  const hasHeight = absHeight >= minDrag;
+  if (!hasWidth && !hasHeight) {
+    return undefined;
+  }
+  if (hasWidth && !hasHeight) {
+    return "x";
+  }
+  if (hasHeight && !hasWidth) {
+    return "y";
+  }
+  if (absWidth / Math.max(absHeight, 1) >= dominanceRatio) {
+    return "x";
+  }
+  if (absHeight / Math.max(absWidth, 1) >= dominanceRatio) {
+    return "y";
+  }
+  return "xy";
+}
+
+export function selectionRectForMode(
+  start: { left: number; top: number },
+  end: { left: number; top: number },
+  plotSize: { width: number; height: number },
+): { left: number; top: number; width: number; height: number } {
+  const width = Math.abs(end.left - start.left);
+  const height = Math.abs(end.top - start.top);
+  const mode = inferPlotDragZoomMode(width, height);
+  const horizontal = { left: Math.min(start.left, end.left), width };
+  const vertical = { top: Math.min(start.top, end.top), height };
+  if (mode === "x") {
+    return { ...horizontal, top: 0, height: plotSize.height };
+  }
+  if (mode === "y") {
+    return { left: 0, width: plotSize.width, ...vertical };
+  }
+  return { ...horizontal, ...vertical };
+}
+
+function applyDragZoom(
+  plot: uPlot,
+  start: { left: number; top: number },
+  end: { left: number; top: number },
+): void {
+  const width = Math.abs(end.left - start.left);
+  const height = Math.abs(end.top - start.top);
+  const mode = inferPlotDragZoomMode(width, height);
+  if (!mode) {
+    return;
+  }
+  const currentX = plotScaleRange(plot.scales.x);
+  const currentY = plotScaleRange(plot.scales.y);
+  const currentY2 = plotScaleRange(plot.scales.y2);
+  plot.batch(() => {
+    if (mode === "x" || mode === "xy") {
+      setScaleRange(plot, "x", plot.posToVal(start.left, "x"), plot.posToVal(end.left, "x"));
+    } else if (currentX) {
+      plot.setScale("x", currentX);
+    }
+    if (mode === "y" || mode === "xy") {
+      setScaleRange(plot, "y", plot.posToVal(start.top, "y"), plot.posToVal(end.top, "y"));
+      if (plot.scales.y2) {
+        setScaleRange(plot, "y2", plot.posToVal(start.top, "y2"), plot.posToVal(end.top, "y2"));
+      }
+    } else {
+      if (currentY) {
+        plot.setScale("y", currentY);
+      }
+      if (currentY2) {
+        plot.setScale("y2", currentY2);
+      }
+    }
+  });
+}
+
+function panPlotByWheel(plot: uPlot, event: WheelEvent): void {
+  if (event.shiftKey) {
+    const currentX = plotScaleRange(plot.scales.x);
+    if (!currentX) {
+      return;
+    }
+    const span = currentX.max - currentX.min;
+    const direction = plot.scales.x.dir === -1 ? -1 : 1;
+    const delta = (event.deltaY || event.deltaX) * span * 0.001 * direction;
+    plot.setScale("x", { min: currentX.min + delta, max: currentX.max + delta });
+    return;
+  }
+  panScaleByWheel(plot, "y", event.deltaY);
+  if (plot.scales.y2) {
+    panScaleByWheel(plot, "y2", event.deltaY);
+  }
+}
+
+function panScaleByWheel(plot: uPlot, scaleKey: "y" | "y2", deltaY: number): void {
+  const current = plotScaleRange(plot.scales[scaleKey]);
+  if (!current) {
+    return;
+  }
+  const span = current.max - current.min;
+  const delta = deltaY * span * 0.001;
+  plot.setScale(scaleKey, { min: current.min + delta, max: current.max + delta });
+}
+
+function zoomPlotAtWheel(plot: uPlot, event: WheelEvent): void {
+  const factor = Math.exp(event.deltaY * 0.001);
+  const position = eventPositionInPlot(plot, event);
+  zoomScaleAt(plot, "x", plot.posToVal(position.left, "x"), factor);
+  zoomScaleAt(plot, "y", plot.posToVal(position.top, "y"), factor);
+  if (plot.scales.y2) {
+    zoomScaleAt(plot, "y2", plot.posToVal(position.top, "y2"), factor);
+  }
+}
+
+function zoomScaleAt(
+  plot: uPlot,
+  scaleKey: "x" | "y" | "y2",
+  anchor: number,
+  factor: number,
+): void {
+  const current = plotScaleRange(plot.scales[scaleKey]);
+  if (!current || !Number.isFinite(anchor)) {
+    return;
+  }
+  plot.setScale(scaleKey, {
+    min: anchor - (anchor - current.min) * factor,
+    max: anchor + (current.max - anchor) * factor,
+  });
+}
+
+function setScaleRange(
+  plot: uPlot,
+  scaleKey: "x" | "y" | "y2",
+  first: number,
+  second: number,
+): void {
+  if (!Number.isFinite(first) || !Number.isFinite(second) || Math.abs(first - second) < 1e-12) {
+    return;
+  }
+  plot.setScale(scaleKey, { min: Math.min(first, second), max: Math.max(first, second) });
+}
+
+function plotScaleRange(
+  scale: Pick<uPlot.Scale, "min" | "max"> | undefined,
+): PlotScaleRange | undefined {
+  const min = Number(scale?.min);
+  const max = Number(scale?.max);
+  return Number.isFinite(min) && Number.isFinite(max) && min < max ? { min, max } : undefined;
+}
+
+function capturePlotViewport(
+  plot: uPlot | undefined,
+  viewportRef: { current: PlotViewport },
+): void {
+  if (!plot) {
+    return;
+  }
+  viewportRef.current = {
+    x: plotScaleRange(plot.scales.x),
+    y: plotScaleRange(plot.scales.y),
+    y2: plotScaleRange(plot.scales.y2),
+  };
+}
+
+function restorePlotViewport(plot: uPlot, viewport: PlotViewport): void {
+  plot.batch(() => {
+    if (viewport.x) {
+      plot.setScale("x", viewport.x);
+    }
+    if (viewport.y) {
+      plot.setScale("y", viewport.y);
+    }
+    if (viewport.y2 && plot.scales.y2) {
+      plot.setScale("y2", viewport.y2);
+    }
+  });
+}
+
+function resetZoom(
+  plot: uPlot | undefined,
+  xValues: readonly number[],
+  series: readonly PlotSeries[],
+): void {
   const min = xValues[0];
   const max = xValues[xValues.length - 1];
   if (!plot || min === undefined || max === undefined) {
     return;
   }
-  plot.setScale("x", { min, max });
+  const leftY = yExtent(series.filter((item) => item.yAxis !== "right"));
+  const rightY = yExtent(series.filter((item) => item.yAxis === "right"));
+  plot.batch(() => {
+    plot.setScale("x", { min, max });
+    if (leftY) {
+      plot.setScale("y", leftY);
+    }
+    if (rightY && plot.scales.y2) {
+      plot.setScale("y2", rightY);
+    }
+  });
+}
+
+function yExtent(series: readonly PlotSeries[]): PlotScaleRange | undefined {
+  const values = series
+    .filter((item) => item.affectsScale ?? true)
+    .flatMap((item) => item.points.map((point) => point.y))
+    .filter(Number.isFinite);
+  if (values.length === 0) {
+    return undefined;
+  }
+  const min = Math.min(...values);
+  const max = Math.max(...values);
+  const padding = Math.max((max - min) * 0.05, 1e-9);
+  return { min: min - padding, max: max + padding };
 }
 
 function exportPng(plot: uPlot | undefined, title: string): void {

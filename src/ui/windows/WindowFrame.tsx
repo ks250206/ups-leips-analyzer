@@ -8,16 +8,26 @@ interface WindowFrameProps {
   children: ReactNode;
   onFocus: () => void;
   onChange: (patch: Partial<WindowLayout>) => void;
+  scale?: number;
 }
 
-export function WindowFrame({ window, icon, children, onFocus, onChange }: WindowFrameProps) {
+export function WindowFrame({
+  window,
+  icon,
+  children,
+  onFocus,
+  onChange,
+  scale = 1,
+}: WindowFrameProps) {
   return (
     <Rnd
       bounds="parent"
+      className="workspace-window"
       minWidth={260}
       minHeight={220}
       position={{ x: window.x, y: window.y }}
       size={{ width: window.width, height: window.height }}
+      scale={scale}
       style={{ zIndex: window.zIndex }}
       dragHandleClassName="window-titlebar"
       onMouseEnter={onFocus}
