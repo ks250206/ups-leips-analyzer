@@ -31,6 +31,9 @@ export function Workspace() {
   );
   const handleWheel = (event: WheelEvent<HTMLDivElement>) => {
     const target = event.target as HTMLElement;
+    if (target.closest("[data-plot-host='true']")) {
+      return;
+    }
     if (!event.metaKey && !event.ctrlKey && target.closest(".workspace-window")) {
       return;
     }

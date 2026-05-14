@@ -16,6 +16,7 @@ export interface PlotSeries {
   dash?: number[];
   yAxis?: "left" | "right";
   affectsScale?: boolean;
+  fitRange?: FitRange;
 }
 
 export interface PlotMarker {
@@ -46,6 +47,7 @@ export function lineFitSeries(
     width: 1.5,
     dash: [6, 4],
     affectsScale: false,
+    fitRange: range,
     points: [
       { x: extent.min, y: evaluateLine(fit, extent.min) },
       { x: extent.max, y: evaluateLine(fit, extent.max) },

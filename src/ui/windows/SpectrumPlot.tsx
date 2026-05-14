@@ -97,6 +97,8 @@ export function SpectrumPlot({
 }: SpectrumPlotProps) {
   const containerRef = useRef<HTMLDivElement>(null);
   const svgRef = useRef<SVGSVGElement>(null);
+  const scalesRef = useRef<PlotScales | undefined>(undefined);
+  const xDirectionRef = useRef<"normal" | "reverse">(xDirection);
   const clipId = useId();
   const [size, setSize] = useState(DEFAULT_SIZE);
   const [viewport, setViewport] = useState<PlotViewport>({});
@@ -118,7 +120,7 @@ export function SpectrumPlot({
     const observer = new ResizeObserver(updateSize);
     observer.observe(container);
     return () => observer.disconnect();
-  }, []);
+  }, [hasData]);
 
   const scales = useMemo(
     () =>
@@ -133,6 +135,28 @@ export function SpectrumPlot({
         : undefined,
     [hasData, largeAxisLabels, series, size, viewport, xDirection],
   );
+  scalesRef.current = scales;
+  xDirectionRef.current = xDirection;
+
+  useEffect(() => {
+    const svg = svgRef.current;
+    if (!svg) {
+      return undefined;
+    }
+    const handleWheel = (event: WheelEvent) => {
+      const currentScales = scalesRef.current;
+      if (!currentScales) {
+        return;
+      }
+      event.preventDefault();
+      event.stopPropagation();
+      setViewport((current) =>
+        nextViewportAfterWheel(current, currentScales, event, xDirectionRef.current, svg),
+      );
+    };
+    svg.addEventListener("wheel", handleWheel, { passive: false });
+    return () => svg.removeEventListener("wheel", handleWheel);
+  }, [hasData]);
 
   if (!hasData || !scales) {
     return (
@@ -162,6 +186,7 @@ export function SpectrumPlot({
       ref={containerRef}
       aria-label={`${title} plot`}
       className="relative h-full w-full overflow-hidden bg-white"
+      data-plot-host="true"
       data-x-direction={xDirection}
       data-large-axis-labels={largeAxisLabels ? "true" : "false"}
       style={{ contain: "layout paint size" }}
@@ -191,10 +216,6 @@ export function SpectrumPlot({
             setViewport((current) => nextViewportAfterDrag(current, scales, start, end));
           })
         }
-        onWheel={(event) => {
-          event.preventDefault();
-          setViewport((current) => nextViewportAfterWheel(current, scales, event, xDirection));
-        }}
       >
         <rect fill="#ffffff" height={size.height} width={size.width} x={0} y={0} />
         <defs>
@@ -230,6 +251,7 @@ export function SpectrumPlot({
               key={item.name}
               clipId={clipId}
               geometry={geometry}
+              visibleXDomain={scales.xDomain}
               series={item}
               xScale={xScale}
               yScale={item.yAxis === "right" && yRightScale ? yRightScale : yScale}
@@ -265,23 +287,23 @@ export function SpectrumPlot({
           />
         ) : null}
       </svg>
-      <div className="absolute right-2 top-9 flex gap-1">
+      <div className="absolute right-2 top-2 flex gap-1">
         <button
-          className="rounded border border-slate-300 bg-white/90 px-2 py-0.5 text-[10px] font-semibold text-slate-700 shadow-sm hover:bg-cyan-50"
+          className="rounded border border-slate-300 bg-white/90 px-1.5 py-0.5 text-[9px] font-semibold text-slate-700 shadow-sm hover:bg-cyan-50"
           type="button"
           onClick={() => setViewport({})}
         >
           Reset
         </button>
         <button
-          className="rounded border border-slate-300 bg-white/90 px-2 py-0.5 text-[10px] font-semibold text-slate-700 shadow-sm hover:bg-cyan-50"
+          className="rounded border border-slate-300 bg-white/90 px-1.5 py-0.5 text-[9px] font-semibold text-slate-700 shadow-sm hover:bg-cyan-50"
           type="button"
           onClick={() => exportPng(svgRef.current, title)}
         >
           PNG
         </button>
         <button
-          className="rounded border border-slate-300 bg-white/90 px-2 py-0.5 text-[10px] font-semibold text-slate-700 shadow-sm hover:bg-cyan-50"
+          className="rounded border border-slate-300 bg-white/90 px-1.5 py-0.5 text-[9px] font-semibold text-slate-700 shadow-sm hover:bg-cyan-50"
           type="button"
           onClick={() => exportSvg(svgRef.current, title)}
         >
@@ -321,17 +343,16 @@ function PlotAxes({
         const x = scales.xScale(tick);
         return (
           <g key={`x-${tick}`}>
-            <line stroke="#e2e8f0" x1={x} x2={x} y1={geometry.top} y2={geometry.plotBottom} />
             <line
               stroke={axisColor}
               x1={x}
               x2={x}
-              y1={geometry.plotBottom}
-              y2={geometry.plotBottom + 5}
+              y1={geometry.plotBottom - 6}
+              y2={geometry.plotBottom}
             />
             <text
               fill={axisColor}
-              fontSize={11}
+              fontSize={12}
               textAnchor="middle"
               x={x}
               y={geometry.plotBottom + 20}
@@ -346,13 +367,12 @@ function PlotAxes({
             const y = scales.yScale(tick);
             return (
               <g key={`y-${tick}`}>
-                <line stroke="#edf2f7" x1={geometry.left} x2={geometry.plotRight} y1={y} y2={y} />
-                <line stroke={axisColor} x1={geometry.left - 5} x2={geometry.left} y1={y} y2={y} />
+                <line stroke={axisColor} x1={geometry.left} x2={geometry.left + 6} y1={y} y2={y} />
                 <text
                   fill={axisColor}
-                  fontSize={11}
+                  fontSize={12}
                   textAnchor="end"
-                  x={geometry.left - 8}
+                  x={geometry.left - 12}
                   y={y + 4}
                 >
                   <TickLabel value={tick} />
@@ -368,16 +388,16 @@ function PlotAxes({
               <g key={`y2-${tick}`}>
                 <line
                   stroke="#dc2626"
-                  x1={geometry.plotRight}
-                  x2={geometry.plotRight + 5}
+                  x1={geometry.plotRight - 6}
+                  x2={geometry.plotRight}
                   y1={y}
                   y2={y}
                 />
                 <text
                   fill="#dc2626"
-                  fontSize={11}
+                  fontSize={12}
                   textAnchor="start"
-                  x={geometry.plotRight + 8}
+                  x={geometry.plotRight + 12}
                   y={y + 4}
                 >
                   <TickLabel value={tick} />
@@ -437,13 +457,18 @@ function SeriesPath({
   series,
   xScale,
   yScale,
+  visibleXDomain,
 }: {
   clipId: string;
   geometry: PlotGeometry;
+  visibleXDomain: PlotScaleRange;
   series: PlotSeries;
   xScale: ScaleLinear<number, number>;
   yScale: ScaleLinear<number, number>;
 }) {
+  if (!shouldRenderSeriesInXDomain(series, visibleXDomain)) {
+    return null;
+  }
   const path = line<Point>()
     .defined((point) => Number.isFinite(point.x) && Number.isFinite(point.y))
     .x((point) => xScale(point.x))
@@ -605,13 +630,14 @@ function CursorHandles({
 export function createPlotGeometry(
   size: { width: number; height: number },
   largeAxisLabels = false,
+  hasRightAxis = false,
 ): PlotGeometry {
   const width = Math.max(MIN_PLOT_SIZE.width, Math.floor(size.width));
   const height = Math.max(MIN_PLOT_SIZE.height, Math.floor(size.height));
-  const top = largeAxisLabels ? 54 : 40;
-  const right = largeAxisLabels ? 74 : 58;
+  const top = largeAxisLabels ? 44 : 32;
+  const right = largeAxisLabels ? 78 : hasRightAxis ? 50 : 30;
   const bottom = largeAxisLabels ? 62 : 44;
-  const left = largeAxisLabels ? 74 : 64;
+  const left = largeAxisLabels ? 86 : 76;
   const plotWidth = Math.max(40, width - left - right);
   const plotHeight = Math.max(40, height - top - bottom);
   return {
@@ -629,7 +655,8 @@ export function createPlotGeometry(
 }
 
 export function createPlotScales(input: SpectrumPlotScaleInput): PlotScales {
-  const geometry = createPlotGeometry(input.size, input.largeAxisLabels ?? false);
+  const hasRightAxis = input.series.some((item) => item.yAxis === "right");
+  const geometry = createPlotGeometry(input.size, input.largeAxisLabels ?? false, hasRightAxis);
   const xDomain = input.viewport?.x ?? domainForX(input.series);
   const yDomain =
     input.viewport?.y ?? domainForY(input.series.filter((item) => item.yAxis !== "right"));
@@ -927,10 +954,21 @@ function nextViewportAfterDrag(
 function nextViewportAfterWheel(
   current: PlotViewport,
   scales: PlotScales,
-  event: ReactWheelEvent<SVGSVGElement>,
+  event: Pick<
+    WheelEvent | ReactWheelEvent<SVGSVGElement>,
+    | "clientX"
+    | "clientY"
+    | "currentTarget"
+    | "metaKey"
+    | "ctrlKey"
+    | "shiftKey"
+    | "deltaX"
+    | "deltaY"
+  >,
   xDirection: "normal" | "reverse",
+  svgElement?: SVGSVGElement,
 ): PlotViewport {
-  const position = eventPositionInPlot(event, scales.geometry);
+  const position = eventPositionInPlot(event, scales.geometry, svgElement);
   const x = current.x ?? scales.xDomain;
   const y = current.y ?? scales.yDomain;
   const y2 = current.y2 ?? scales.yRightDomain;
@@ -966,6 +1004,18 @@ export function zoomRangeAt(range: PlotScaleRange, anchor: number, factor: numbe
     min: anchor - (anchor - range.min) * factor,
     max: anchor + (range.max - anchor) * factor,
   };
+}
+
+export function shouldRenderSeriesInXDomain(
+  series: Pick<PlotSeries, "fitRange">,
+  visibleXDomain: PlotScaleRange,
+): boolean {
+  if (!series.fitRange) {
+    return true;
+  }
+  const min = Math.min(series.fitRange.min, series.fitRange.max);
+  const max = Math.max(series.fitRange.min, series.fitRange.max);
+  return max >= visibleXDomain.min && min <= visibleXDomain.max;
 }
 
 function normalizeRange(range: FitRange): FitRange {

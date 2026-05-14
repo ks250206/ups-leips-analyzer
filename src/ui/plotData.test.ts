@@ -15,6 +15,7 @@ describe("plot data helpers", () => {
     const series = lineFitSeries("fit", fit, fit.range, "#000000", { min: -1, max: 5 });
 
     expect(series.affectsScale).toBe(false);
+    expect(series.fitRange).toEqual({ min: 2, max: 3 });
     expect(series.points).toEqual([
       { x: -1, y: -1 },
       { x: 5, y: 11 },

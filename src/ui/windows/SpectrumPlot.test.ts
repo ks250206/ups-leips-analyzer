@@ -8,6 +8,7 @@ import {
   plotYToValue,
   rangeAfterCursorDrag,
   selectionRectForMode,
+  shouldRenderSeriesInXDomain,
   zoomRangeAt,
 } from "./SpectrumPlot";
 
@@ -37,23 +38,23 @@ describe("SpectrumPlot D3 scales", () => {
   test("keeps visible axis space on normal plots", () => {
     const geometry = createPlotGeometry({ width: 320, height: 240 });
 
-    expect(geometry.top).toBe(40);
-    expect(geometry.left).toBe(64);
-    expect(geometry.right).toBe(58);
+    expect(geometry.top).toBe(32);
+    expect(geometry.left).toBe(76);
+    expect(geometry.right).toBe(30);
     expect(geometry.bottom).toBe(44);
-    expect(geometry.plotWidth).toBe(198);
-    expect(geometry.plotHeight).toBe(156);
+    expect(geometry.plotWidth).toBe(214);
+    expect(geometry.plotHeight).toBe(164);
   });
 
   test("uses larger plot margins for band diagrams", () => {
-    const geometry = createPlotGeometry({ width: 520, height: 360 }, true);
+    const geometry = createPlotGeometry({ width: 520, height: 360 }, true, true);
 
-    expect(geometry.top).toBe(54);
-    expect(geometry.left).toBe(74);
-    expect(geometry.right).toBe(74);
+    expect(geometry.top).toBe(44);
+    expect(geometry.left).toBe(86);
+    expect(geometry.right).toBe(78);
     expect(geometry.bottom).toBe(62);
-    expect(geometry.plotWidth).toBe(372);
-    expect(geometry.plotHeight).toBe(244);
+    expect(geometry.plotWidth).toBe(356);
+    expect(geometry.plotHeight).toBe(254);
   });
 
   test("creates a right y scale for dual-axis plots", () => {
@@ -158,6 +159,19 @@ describe("SpectrumPlot D3 scales", () => {
   test("zooms a range around the pointer anchor", () => {
     expect(zoomRangeAt({ min: 0, max: 10 }, 2, 0.5)).toEqual({ min: 1, max: 6 });
     expect(zoomRangeAt({ min: 0, max: 10 }, 2, 2)).toEqual({ min: -2, max: 18 });
+  });
+
+  test("hides fit series when both fit cursors are outside the visible x domain", () => {
+    expect(shouldRenderSeriesInXDomain({ fitRange: { min: 1, max: 2 } }, { min: 3, max: 5 })).toBe(
+      false,
+    );
+    expect(shouldRenderSeriesInXDomain({ fitRange: { min: 6, max: 8 } }, { min: 3, max: 5 })).toBe(
+      false,
+    );
+    expect(shouldRenderSeriesInXDomain({ fitRange: { min: 2, max: 4 } }, { min: 3, max: 5 })).toBe(
+      true,
+    );
+    expect(shouldRenderSeriesInXDomain({}, { min: 3, max: 5 })).toBe(true);
   });
 
   test("formats large tick labels as mantissa and superscript exponent parts", () => {
