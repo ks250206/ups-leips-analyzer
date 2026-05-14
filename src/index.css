@@ -50,3 +50,13 @@ select {
   font-size: 12px;
   font-weight: 700;
 }
+
+.uplot .u-cursor-x,
+.uplot .u-cursor-y {
+  border: 0 !important;
+}
+
+.uplot .u-select {
+  border: 0 !important;
+  outline: 0 !important;
+}

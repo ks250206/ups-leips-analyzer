@@ -131,6 +131,15 @@ export function SpectrumPlot({
           syncHandles(plot, rangeBands, setHandles);
         }
       },
+      onResetZoom: () => {
+        viewportRef.current = {};
+        resetZoom(plotRef.current, data[0], series);
+        const plot = plotRef.current;
+        if (plot) {
+          capturePlotViewport(plot, viewportRef);
+          syncHandles(plot, rangeBands, setHandles);
+        }
+      },
     });
     resizeObserver.observe(container);
 
@@ -179,6 +188,14 @@ export function SpectrumPlot({
       data-x-direction={xDirection}
     >
       <div ref={containerRef} className="h-full w-full" />
+      <span className="pointer-events-none absolute left-1 top-1/2 z-10 -translate-y-1/2 -rotate-90 text-xs font-semibold text-slate-700">
+        {yLabel}
+      </span>
+      {yRightLabel ? (
+        <span className="pointer-events-none absolute right-1 top-1/2 z-10 -translate-y-1/2 rotate-90 text-xs font-semibold text-red-600">
+          {yRightLabel}
+        </span>
+      ) : null}
       {handles.map((handle) => (
         <button
           key={`${handle.bandId}-${handle.side}`}
@@ -537,6 +554,7 @@ function attachPlotInteractions(
   input: {
     onSelectRange?: (range: FitRange) => void;
     onAfterScale: () => void;
+    onResetZoom: () => void;
   },
 ): () => void {
   const over = plot.over;
@@ -602,10 +620,17 @@ function attachPlotInteractions(
     input.onAfterScale();
   };
 
+  const handleDoubleClick = (event: MouseEvent) => {
+    event.preventDefault();
+    input.onResetZoom();
+  };
+
   over.addEventListener("mousedown", handleMouseDown);
+  over.addEventListener("dblclick", handleDoubleClick);
   over.addEventListener("wheel", handleWheel, { passive: false });
   return () => {
     over.removeEventListener("mousedown", handleMouseDown);
+    over.removeEventListener("dblclick", handleDoubleClick);
     over.removeEventListener("wheel", handleWheel);
     document.removeEventListener("mousemove", handleMouseMove);
     document.removeEventListener("mouseup", handleMouseUp);
