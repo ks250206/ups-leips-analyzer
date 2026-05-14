@@ -108,7 +108,12 @@ export function SpectrumPlot({
     if (!container) {
       return undefined;
     }
-    const updateSize = () => setSize(sizeFor(container));
+    const updateSize = () => {
+      const nextSize = sizeFor(container);
+      setSize((current) =>
+        current.width === nextSize.width && current.height === nextSize.height ? current : nextSize,
+      );
+    };
     updateSize();
     const observer = new ResizeObserver(updateSize);
     observer.observe(container);
@@ -159,6 +164,7 @@ export function SpectrumPlot({
       className="relative h-full w-full overflow-hidden bg-white"
       data-x-direction={xDirection}
       data-large-axis-labels={largeAxisLabels ? "true" : "false"}
+      style={{ contain: "layout paint size" }}
     >
       <svg
         ref={svgRef}
@@ -249,7 +255,7 @@ export function SpectrumPlot({
         ))}
         {selection ? (
           <rect
-            fill={drag?.shiftKey ? "rgba(14, 165, 233, 0.14)" : "rgba(15, 23, 42, 0.12)"}
+            fill={drag?.shiftKey ? "rgba(14, 165, 233, 0.08)" : "rgba(15, 23, 42, 0.07)"}
             height={selection.height}
             pointerEvents="none"
             stroke={drag?.shiftKey ? "#0284c7" : "#475569"}
@@ -307,7 +313,7 @@ function PlotAxes({
   const yTicks = scales.yScale.ticks(5);
   const yRightTicks = scales.yRightScale?.ticks(5) ?? [];
   const axisColor = "#334155";
-  const labelSize = largeAxisLabels ? 28 : 13;
+  const labelSize = largeAxisLabels ? 24 : 13;
   const labelWeight = largeAxisLabels ? 800 : 700;
   return (
     <g>
@@ -330,7 +336,7 @@ function PlotAxes({
               x={x}
               y={geometry.plotBottom + 20}
             >
-              {formatTick(tick)}
+              <TickLabel value={tick} />
             </text>
           </g>
         );
@@ -349,7 +355,7 @@ function PlotAxes({
                   x={geometry.left - 8}
                   y={y + 4}
                 >
-                  {formatTick(tick)}
+                  <TickLabel value={tick} />
                 </text>
               </g>
             );
@@ -374,7 +380,7 @@ function PlotAxes({
                   x={geometry.plotRight + 8}
                   y={y + 4}
                 >
-                  {formatTick(tick)}
+                  <TickLabel value={tick} />
                 </text>
               </g>
             );
@@ -391,7 +397,7 @@ function PlotAxes({
       />
       <text
         fill={axisColor}
-        fontSize={largeAxisLabels ? 28 : 12}
+        fontSize={largeAxisLabels ? 22 : 12}
         fontWeight={labelWeight}
         textAnchor="middle"
         x={geometry.left + geometry.plotWidth / 2}
@@ -404,8 +410,8 @@ function PlotAxes({
         fontSize={labelSize}
         fontWeight={labelWeight}
         textAnchor="middle"
-        transform={`rotate(-90 ${largeAxisLabels ? 34 : 22} ${geometry.top + geometry.plotHeight / 2})`}
-        x={largeAxisLabels ? 34 : 22}
+        transform={`rotate(-90 ${largeAxisLabels ? 28 : 22} ${geometry.top + geometry.plotHeight / 2})`}
+        x={largeAxisLabels ? 28 : 22}
         y={geometry.top + geometry.plotHeight / 2}
       >
         {yLabel}
@@ -416,8 +422,8 @@ function PlotAxes({
           fontSize={labelSize}
           fontWeight={labelWeight}
           textAnchor="middle"
-          transform={`rotate(90 ${geometry.width - (largeAxisLabels ? 34 : 22)} ${geometry.top + geometry.plotHeight / 2})`}
-          x={geometry.width - (largeAxisLabels ? 34 : 22)}
+          transform={`rotate(90 ${geometry.width - (largeAxisLabels ? 28 : 22)} ${geometry.top + geometry.plotHeight / 2})`}
+          x={geometry.width - (largeAxisLabels ? 28 : 22)}
           y={geometry.top + geometry.plotHeight / 2}
         >
           {yRightLabel}
@@ -474,7 +480,7 @@ function RangeBand({
   return (
     <g>
       <rect
-        fill={withAlpha(band.color, 0.11)}
+        fill={withAlpha(band.color, 0.055)}
         height={geometry.plotHeight}
         width={width}
         x={left}
@@ -511,6 +517,22 @@ function MarkerLine({
         {marker.label}
       </text>
     </g>
+  );
+}
+
+function TickLabel({ value }: { value: number }) {
+  const formatted = formatTickParts(value);
+  if (!formatted.exponent) {
+    return <>{formatted.mantissa}</>;
+  }
+  return (
+    <>
+      {formatted.mantissa}
+      <tspan>×10</tspan>
+      <tspan baselineShift="super" fontSize="8">
+        {formatted.exponent}
+      </tspan>
+    </>
   );
 }
 
@@ -586,10 +608,10 @@ export function createPlotGeometry(
 ): PlotGeometry {
   const width = Math.max(MIN_PLOT_SIZE.width, Math.floor(size.width));
   const height = Math.max(MIN_PLOT_SIZE.height, Math.floor(size.height));
-  const top = largeAxisLabels ? 68 : 40;
-  const right = largeAxisLabels ? 92 : 58;
-  const bottom = largeAxisLabels ? 70 : 44;
-  const left = largeAxisLabels ? 92 : 64;
+  const top = largeAxisLabels ? 54 : 40;
+  const right = largeAxisLabels ? 74 : 58;
+  const bottom = largeAxisLabels ? 62 : 44;
+  const left = largeAxisLabels ? 74 : 64;
   const plotWidth = Math.max(40, width - left - right);
   const plotHeight = Math.max(40, height - top - bottom);
   return {
@@ -797,7 +819,7 @@ function clampPlotPosition(
 
 export function inferPlotDragZoomMode(width: number, height: number): "x" | "y" | "xy" | undefined {
   const minDrag = 8;
-  const dominanceRatio = 2.5;
+  const dominanceRatio = 6;
   const absWidth = Math.abs(width);
   const absHeight = Math.abs(height);
   const hasWidth = absWidth >= minDrag;
@@ -960,15 +982,23 @@ function withAlpha(color: string, alpha: number): string {
   return `rgba(${r}, ${g}, ${b}, ${alpha})`;
 }
 
-function formatTick(value: number): string {
+export function formatTickParts(value: number): { mantissa: string; exponent?: number } {
   const abs = Math.abs(value);
+  if (abs >= 1000) {
+    const exponent = Math.floor(Math.log10(abs));
+    const mantissa = value / 10 ** exponent;
+    return {
+      mantissa: mantissa.toPrecision(2),
+      exponent,
+    };
+  }
   if (abs >= 100 || abs === 0) {
-    return value.toFixed(0);
+    return { mantissa: value.toFixed(0) };
   }
   if (abs >= 10) {
-    return value.toFixed(1).replace(/\.0$/, "");
+    return { mantissa: value.toFixed(1).replace(/\.0$/, "") };
   }
-  return value.toFixed(2).replace(/0+$/, "").replace(/\.$/, "");
+  return { mantissa: value.toFixed(2).replace(/0+$/, "").replace(/\.$/, "") };
 }
 
 function exportSvg(svg: SVGSVGElement | null, title: string): void {

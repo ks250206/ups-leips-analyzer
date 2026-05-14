@@ -2,6 +2,7 @@ import { describe, expect, test } from "vite-plus/test";
 import {
   createPlotGeometry,
   createPlotScales,
+  formatTickParts,
   inferPlotDragZoomMode,
   plotXToValue,
   plotYToValue,
@@ -47,12 +48,12 @@ describe("SpectrumPlot D3 scales", () => {
   test("uses larger plot margins for band diagrams", () => {
     const geometry = createPlotGeometry({ width: 520, height: 360 }, true);
 
-    expect(geometry.top).toBe(68);
-    expect(geometry.left).toBe(92);
-    expect(geometry.right).toBe(92);
-    expect(geometry.bottom).toBe(70);
-    expect(geometry.plotWidth).toBe(336);
-    expect(geometry.plotHeight).toBe(222);
+    expect(geometry.top).toBe(54);
+    expect(geometry.left).toBe(74);
+    expect(geometry.right).toBe(74);
+    expect(geometry.bottom).toBe(62);
+    expect(geometry.plotWidth).toBe(372);
+    expect(geometry.plotHeight).toBe(244);
   });
 
   test("creates a right y scale for dual-axis plots", () => {
@@ -129,6 +130,8 @@ describe("SpectrumPlot D3 scales", () => {
     expect(inferPlotDragZoomMode(120, 4)).toBe("x");
     expect(inferPlotDragZoomMode(5, 100)).toBe("y");
     expect(inferPlotDragZoomMode(80, 80)).toBe("xy");
+    expect(inferPlotDragZoomMode(300, 80)).toBe("xy");
+    expect(inferPlotDragZoomMode(480, 70)).toBe("x");
   });
 
   test("extends visual selection rectangles for axis-only zoom", () => {
@@ -155,5 +158,11 @@ describe("SpectrumPlot D3 scales", () => {
   test("zooms a range around the pointer anchor", () => {
     expect(zoomRangeAt({ min: 0, max: 10 }, 2, 0.5)).toEqual({ min: 1, max: 6 });
     expect(zoomRangeAt({ min: 0, max: 10 }, 2, 2)).toEqual({ min: -2, max: 18 });
+  });
+
+  test("formats large tick labels as mantissa and superscript exponent parts", () => {
+    expect(formatTickParts(2_000_000)).toEqual({ mantissa: "2.0", exponent: 6 });
+    expect(formatTickParts(-12_000)).toEqual({ mantissa: "-1.2", exponent: 4 });
+    expect(formatTickParts(120)).toEqual({ mantissa: "120" });
   });
 });
