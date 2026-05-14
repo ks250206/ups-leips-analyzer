@@ -1,5 +1,7 @@
 import { useMemo } from "react";
-import type { FitTarget } from "../../domain/types";
+import { convertBiasToVacuumEnergy } from "../../domain/analysis";
+import { bandpassEnergy } from "../../domain/constants";
+import type { FitTarget, Point, SpectrumDataset } from "../../domain/types";
 import { useProjectStore } from "../../store/projectStore";
 import { formatNumber } from "../format";
 import {
@@ -96,36 +98,61 @@ export function LEIPSEvacPlotWindow() {
   const leipsDataset = project.datasets.find(
     (dataset) => dataset.id === project.analysis.selection.leipsDatasetId,
   );
+  const leetDerDataset = project.datasets.find(
+    (dataset) => dataset.id === project.analysis.selection.leetDerDatasetId,
+  );
   const leips = project.analysis.leips;
+  const leipsEvacPoints = useMemo(
+    () =>
+      leips?.leipsEvacPoints ??
+      estimateLeipsEvacPoints(
+        leetDerDataset,
+        leipsDataset,
+        project.analysis.fitRanges.leetDerPeak,
+        project.analysis.bandpassType,
+      ),
+    [
+      leetDerDataset,
+      leips,
+      leipsDataset,
+      project.analysis.bandpassType,
+      project.analysis.fitRanges.leetDerPeak,
+    ],
+  );
 
   const series = useMemo<PlotSeries[]>(() => {
-    if (!leips) {
+    if (leipsEvacPoints.length === 0) {
       return [];
     }
-    const extent = xExtent(leips.leipsEvacPoints);
-    return [
+    const extent = xExtent(leipsEvacPoints);
+    const items: PlotSeries[] = [
       {
         name: leipsDataset ? `${leipsDataset.name} vs Evac` : "LEIPS vs Evac",
         color: "#dc2626",
-        points: leips.leipsEvacPoints,
+        points: leipsEvacPoints,
         width: 2,
       },
-      lineFitSeries(
-        "LEIPS edge",
-        leips.leipsEdge,
-        project.analysis.fitRanges.leipsEdge,
-        "#b91c1c",
-        extent,
-      ),
-      lineFitSeries(
-        "LEIPS BG",
-        leips.leipsBackground,
-        project.analysis.fitRanges.leipsBackground,
-        "#15803d",
-        extent,
-      ),
     ];
-  }, [leips, leipsDataset, project.analysis.fitRanges]);
+    if (leips) {
+      items.push(
+        lineFitSeries(
+          "LEIPS edge",
+          leips.leipsEdge,
+          project.analysis.fitRanges.leipsEdge,
+          "#b91c1c",
+          extent,
+        ),
+        lineFitSeries(
+          "LEIPS BG",
+          leips.leipsBackground,
+          project.analysis.fitRanges.leipsBackground,
+          "#15803d",
+          extent,
+        ),
+      );
+    }
+    return items;
+  }, [leips, leipsDataset, leipsEvacPoints, project.analysis.fitRanges]);
 
   const markers = useMemo<PlotMarker[]>(
     () =>
@@ -176,4 +203,27 @@ export function LEIPSEvacPlotWindow() {
       onRangeBandChange={(target, range) => setFitRange(target as FitTarget, range)}
     />
   );
+}
+
+function estimateLeipsEvacPoints(
+  leetDerDataset: SpectrumDataset | undefined,
+  leipsDataset: SpectrumDataset | undefined,
+  peakRange: { min: number; max: number },
+  bandpassType: number,
+): Point[] {
+  if (!leetDerDataset || !leipsDataset) {
+    return [];
+  }
+  const selected = leetDerDataset.points.filter(
+    (point) => point.x >= peakRange.min && point.x <= peakRange.max,
+  );
+  const peakCandidates = selected.length > 0 ? selected : leetDerDataset.points;
+  const peakPoint = peakCandidates.reduce<Point | undefined>(
+    (currentMax, point) => (!currentMax || point.y > currentMax.y ? point : currentMax),
+    undefined,
+  );
+  if (!peakPoint) {
+    return [];
+  }
+  return convertBiasToVacuumEnergy(leipsDataset.points, peakPoint.x + bandpassEnergy(bandpassType));
 }

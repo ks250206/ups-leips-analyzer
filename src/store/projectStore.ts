@@ -1,7 +1,13 @@
 import { create } from "zustand";
-import { calculateLEIPSResult, calculateUPSResult, createBandDiagram } from "../domain/analysis";
+import {
+  calculateLEIPSResult,
+  calculateUPSResult,
+  convertBiasToVacuumEnergy,
+  createBandDiagram,
+} from "../domain/analysis";
+import { bandpassEnergy } from "../domain/constants";
 import { createDemoDatasets, createInitialAnalysis, DEFAULT_FIT_RANGES } from "../domain/demoData";
-import type { AnalysisState, FitRange, FitTarget, SpectrumDataset } from "../domain/types";
+import type { AnalysisState, FitRange, FitTarget, Point, SpectrumDataset } from "../domain/types";
 import { importProjectJson, saveProject } from "./projectDb";
 import type { ProjectSnapshot, WindowLayout } from "./projectTypes";
 
@@ -39,6 +45,7 @@ export const useProjectStore = create<ProjectStore>((set, get) => ({
         selection,
         state.project.analysis.fitRanges,
         datasets,
+        state.project.analysis.bandpassType,
       );
       const project = touchProject({
         ...state.project,
@@ -54,11 +61,20 @@ export const useProjectStore = create<ProjectStore>((set, get) => ({
   },
   assignDataset: (slot, datasetId) => {
     set((state) => {
+      const selection = { ...state.project.analysis.selection, [slot]: datasetId };
+      const fitRanges = autoFitRanges(
+        state.project.datasets,
+        selection,
+        state.project.analysis.fitRanges,
+        [],
+        state.project.analysis.bandpassType,
+      );
       const project = touchProject({
         ...state.project,
         analysis: {
           ...state.project.analysis,
-          selection: { ...state.project.analysis.selection, [slot]: datasetId },
+          fitRanges,
+          selection,
         },
       });
       return { project: recalculateProject(project) };
@@ -77,9 +93,16 @@ export const useProjectStore = create<ProjectStore>((set, get) => ({
   },
   setBandpassType: (type) => {
     set((state) => {
+      const fitRanges = autoFitRanges(
+        state.project.datasets,
+        state.project.analysis.selection,
+        state.project.analysis.fitRanges,
+        [],
+        type,
+      );
       const project = touchProject({
         ...state.project,
-        analysis: { ...state.project.analysis, bandpassType: type },
+        analysis: { ...state.project.analysis, bandpassType: type, fitRanges },
       });
       return { project: recalculateProject(project) };
     });
@@ -327,12 +350,29 @@ function autoFitRanges(
   selection: AnalysisState["selection"],
   current: AnalysisState["fitRanges"],
   preferred: readonly SpectrumDataset[],
+  bandpassType: number,
 ): AnalysisState["fitRanges"] {
   const leetDerDataset =
     preferred.find((dataset) => dataset.kind === "leet-der") ??
     findDataset(datasets, selection.leetDerDatasetId);
-  const leetDerPeak = leetDerDataset ? peakCenteredRange(leetDerDataset, 1) : current.leetDerPeak;
-  return { ...current, leetDerPeak };
+  const leipsDataset =
+    preferred.find((dataset) => dataset.kind === "leips") ??
+    findDataset(datasets, selection.leipsDatasetId);
+  const shouldInitializePeak = preferred.some((dataset) => dataset.kind === "leet-der");
+  const leetDerPeak =
+    leetDerDataset && shouldInitializePeak
+      ? peakCenteredRange(leetDerDataset, 1)
+      : current.leetDerPeak;
+  const leipsEvacPoints =
+    leetDerDataset && leipsDataset
+      ? estimateLeipsEvacPoints(leetDerDataset, leipsDataset, leetDerPeak, bandpassType)
+      : [];
+  return {
+    ...current,
+    leetDerPeak,
+    leipsEdge: rangeWithFallback(leipsEvacPoints, current.leipsEdge, 0.45, 0.68),
+    leipsBackground: rangeWithFallback(leipsEvacPoints, current.leipsBackground, 0.78, 0.96),
+  };
 }
 
 function peakCenteredRange(dataset: SpectrumDataset, width: number): FitRange {
@@ -351,6 +391,52 @@ function peakCenteredRange(dataset: SpectrumDataset, width: number): FitRange {
   }
   const min = Math.min(Math.max(maxPoint.x - halfWidth, minX), maxX - width);
   return { min, max: min + width };
+}
+
+function estimateLeipsEvacPoints(
+  leetDerDataset: SpectrumDataset,
+  leipsDataset: SpectrumDataset,
+  peakRange: FitRange,
+  bandpassType: number,
+): Point[] {
+  const selected = leetDerDataset.points.filter(
+    (point) => point.x >= peakRange.min && point.x <= peakRange.max,
+  );
+  const peakCandidates = selected.length > 0 ? selected : leetDerDataset.points;
+  if (peakCandidates.length === 0) {
+    return [];
+  }
+  const peakPoint = peakCandidates.reduce((currentMax, point) =>
+    point.y > currentMax.y ? point : currentMax,
+  );
+  return convertBiasToVacuumEnergy(leipsDataset.points, peakPoint.x + bandpassEnergy(bandpassType));
+}
+
+function rangeWithFallback(
+  points: readonly Point[],
+  current: FitRange,
+  startFraction: number,
+  endFraction: number,
+): FitRange {
+  if (countPointsInRange(points, current) >= 2) {
+    return current;
+  }
+  const sortedX = points
+    .map((point) => point.x)
+    .filter(Number.isFinite)
+    .sort((left, right) => left - right);
+  if (sortedX.length < 2) {
+    return current;
+  }
+  const startIndex = Math.min(Math.floor((sortedX.length - 1) * startFraction), sortedX.length - 2);
+  const endIndex = Math.max(Math.ceil((sortedX.length - 1) * endFraction), startIndex + 1);
+  return { min: sortedX[startIndex] ?? current.min, max: sortedX[endIndex] ?? current.max };
+}
+
+function countPointsInRange(points: readonly Point[], range: FitRange): number {
+  const min = Math.min(range.min, range.max);
+  const max = Math.max(range.min, range.max);
+  return points.filter((point) => point.x >= min && point.x <= max).length;
 }
 
 function findDataset(

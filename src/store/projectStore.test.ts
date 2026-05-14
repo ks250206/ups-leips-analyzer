@@ -151,6 +151,33 @@ describe("project store", () => {
     expect(range.max).toBeCloseTo(-2.76, 1);
   });
 
+  test("initializes LEIPS edge and background cursors inside the Evac-transformed data", () => {
+    const incoming = createDemoDatasets().map((dataset) =>
+      dataset.kind === "leips"
+        ? {
+            ...dataset,
+            id: "loaded-narrow-leips",
+            points: dataset.points.map((point, index) => {
+              const energyFromEvac = (index / (dataset.points.length - 1)) * 2;
+              return {
+                x: -1.5 - energyFromEvac,
+                y: 0.2 + Math.max(0, energyFromEvac - 1.2) ** 2 + point.y * 0.001,
+              };
+            }),
+          }
+        : { ...dataset, id: `loaded-${dataset.id}` },
+    );
+
+    useProjectStore.getState().addDatasets(incoming);
+
+    const analysis = useProjectStore.getState().project.analysis;
+    expect(analysis.error ?? "").not.toContain(
+      "LEIPS: Linear fit requires at least two points in the selected range.",
+    );
+    expect(analysis.leips?.leipsEdge.pointsUsed).toBeGreaterThanOrEqual(2);
+    expect(analysis.leips?.leipsBackground.pointsUsed).toBeGreaterThanOrEqual(2);
+  });
+
   test("auto-selects datasets when imported project has no assignments", () => {
     const project = {
       ...useProjectStore.getState().project,
