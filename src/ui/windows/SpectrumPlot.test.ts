@@ -3,6 +3,8 @@ import {
   createPlotGeometry,
   createPlotScales,
   inferPlotDragZoomMode,
+  plotXToValue,
+  plotYToValue,
   rangeAfterCursorDrag,
   selectionRectForMode,
   zoomRangeAt,
@@ -80,6 +82,46 @@ describe("SpectrumPlot D3 scales", () => {
 
     expect(scales.xDomain.max).toBeLessThan(100);
     expect(scales.yDomain.max).toBeLessThan(999);
+  });
+
+  test("converts plot-relative drag coordinates through absolute SVG scales", () => {
+    const normal = createPlotScales({
+      size: { width: 320, height: 240 },
+      series: [
+        {
+          name: "raw",
+          color: "#000000",
+          points: [
+            { x: 0, y: 0 },
+            { x: 10, y: 10 },
+          ],
+        },
+      ],
+      xDirection: "normal",
+      viewport: { x: { min: 0, max: 10 }, y: { min: 0, max: 10 } },
+    });
+    const reverse = createPlotScales({
+      size: { width: 320, height: 240 },
+      series: [
+        {
+          name: "raw",
+          color: "#000000",
+          points: [
+            { x: 0, y: 0 },
+            { x: 10, y: 10 },
+          ],
+        },
+      ],
+      xDirection: "reverse",
+      viewport: { x: { min: 0, max: 10 }, y: { min: 0, max: 10 } },
+    });
+
+    expect(plotXToValue(normal, 0)).toBeCloseTo(0);
+    expect(plotXToValue(normal, normal.geometry.plotWidth)).toBeCloseTo(10);
+    expect(plotXToValue(reverse, 0)).toBeCloseTo(10);
+    expect(plotXToValue(reverse, reverse.geometry.plotWidth)).toBeCloseTo(0);
+    expect(plotYToValue(normal, 0)).toBeCloseTo(10);
+    expect(plotYToValue(normal, normal.geometry.plotHeight)).toBeCloseTo(0);
   });
 
   test("infers x, y and xy drag zoom modes from selection shape", () => {

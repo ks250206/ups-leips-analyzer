@@ -49,18 +49,18 @@ export interface PlotGeometry {
   plotBottom: number;
 }
 
-interface PlotScaleRange {
+export interface PlotScaleRange {
   min: number;
   max: number;
 }
 
-interface PlotViewport {
+export interface PlotViewport {
   x?: PlotScaleRange;
   y?: PlotScaleRange;
   y2?: PlotScaleRange;
 }
 
-interface PlotScales {
+export interface PlotScales {
   geometry: PlotGeometry;
   xScale: ScaleLinear<number, number>;
   yScale: ScaleLinear<number, number>;
@@ -156,13 +156,13 @@ export function SpectrumPlot({
     <div
       ref={containerRef}
       aria-label={`${title} plot`}
-      className="relative h-full w-full bg-white"
+      className="relative h-full w-full overflow-hidden bg-white"
       data-x-direction={xDirection}
       data-large-axis-labels={largeAxisLabels ? "true" : "false"}
     >
       <svg
         ref={svgRef}
-        className="block h-full w-full touch-none select-none"
+        className="absolute inset-0 h-full w-full touch-none select-none"
         height={size.height}
         role="img"
         viewBox={`0 0 ${size.width} ${size.height}`}
@@ -175,7 +175,10 @@ export function SpectrumPlot({
           startPlotDrag(event, geometry, setDrag, (start, end, shiftKey) => {
             if (shiftKey && onSelectRange) {
               onSelectRange(
-                normalizeRange({ min: xScale.invert(start.left), max: xScale.invert(end.left) }),
+                normalizeRange({
+                  min: plotXToValue(scales, start.left),
+                  max: plotXToValue(scales, end.left),
+                }),
               );
               return;
             }
@@ -735,7 +738,7 @@ function startHandleDrag(
   }
   const move = (moveEvent: PointerEvent) => {
     const position = eventPositionInPlot(moveEvent, geometry, svg);
-    const nextX = xScale.invert(position.left);
+    const nextX = xScale.invert(geometry.left + position.left);
     const nextRange = rangeAfterCursorDrag(band, side, nextX);
     onRangeBandChange(band.id ?? "", nextRange);
   };
@@ -846,6 +849,24 @@ export function rangeAfterCursorDrag(
     : normalizeRange({ min: band.min, max: value });
 }
 
+export function plotXToValue(
+  scales: Pick<PlotScales, "geometry" | "xScale">,
+  left: number,
+): number {
+  return scales.xScale.invert(scales.geometry.left + left);
+}
+
+export function plotYToValue(scales: Pick<PlotScales, "geometry" | "yScale">, top: number): number {
+  return scales.yScale.invert(scales.geometry.top + top);
+}
+
+export function plotY2ToValue(
+  scales: Pick<PlotScales, "geometry" | "yRightScale">,
+  top: number,
+): number | undefined {
+  return scales.yRightScale?.invert(scales.geometry.top + top);
+}
+
 function nextViewportAfterDrag(
   current: PlotViewport,
   scales: PlotScales,
@@ -860,22 +881,22 @@ function nextViewportAfterDrag(
     x:
       mode === "x" || mode === "xy"
         ? normalizeRange({
-            min: scales.xScale.invert(start.left),
-            max: scales.xScale.invert(end.left),
+            min: plotXToValue(scales, start.left),
+            max: plotXToValue(scales, end.left),
           })
         : current.x,
     y:
       mode === "y" || mode === "xy"
         ? normalizeRange({
-            min: scales.yScale.invert(start.top),
-            max: scales.yScale.invert(end.top),
+            min: plotYToValue(scales, start.top),
+            max: plotYToValue(scales, end.top),
           })
         : current.y,
     y2:
       scales.yRightScale && (mode === "y" || mode === "xy")
         ? normalizeRange({
-            min: scales.yRightScale.invert(start.top),
-            max: scales.yRightScale.invert(end.top),
+            min: plotY2ToValue(scales, start.top) ?? current.y2?.min ?? 0,
+            max: plotY2ToValue(scales, end.top) ?? current.y2?.max ?? 1,
           })
         : current.y2,
   };
@@ -893,13 +914,11 @@ function nextViewportAfterWheel(
   const y2 = current.y2 ?? scales.yRightDomain;
   if (event.metaKey || event.ctrlKey) {
     const factor = Math.exp(event.deltaY * 0.001);
+    const y2Anchor = plotY2ToValue(scales, position.top);
     return {
-      x: zoomRangeAt(x, scales.xScale.invert(position.left), factor),
-      y: zoomRangeAt(y, scales.yScale.invert(position.top), factor),
-      y2:
-        y2 && scales.yRightScale
-          ? zoomRangeAt(y2, scales.yRightScale.invert(position.top), factor)
-          : y2,
+      x: zoomRangeAt(x, plotXToValue(scales, position.left), factor),
+      y: zoomRangeAt(y, plotYToValue(scales, position.top), factor),
+      y2: y2 && y2Anchor !== undefined ? zoomRangeAt(y2, y2Anchor, factor) : y2,
     };
   }
   if (event.shiftKey) {
