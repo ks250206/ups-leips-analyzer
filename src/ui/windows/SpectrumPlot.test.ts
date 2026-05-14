@@ -5,6 +5,7 @@ import {
   inferPlotDragZoomMode,
   rangeAfterCursorDrag,
   selectionRectForMode,
+  zoomRangeAt,
 } from "./SpectrumPlot";
 
 describe("SpectrumPlot D3 scales", () => {
@@ -107,5 +108,10 @@ describe("SpectrumPlot D3 scales", () => {
 
     expect(rangeAfterCursorDrag(band, "min", 6)).toEqual({ min: 5, max: 6 });
     expect(rangeAfterCursorDrag(band, "max", 1)).toEqual({ min: 1, max: 2 });
+  });
+
+  test("zooms a range around the pointer anchor", () => {
+    expect(zoomRangeAt({ min: 0, max: 10 }, 2, 0.5)).toEqual({ min: 1, max: 6 });
+    expect(zoomRangeAt({ min: 0, max: 10 }, 2, 2)).toEqual({ min: -2, max: 18 });
   });
 });

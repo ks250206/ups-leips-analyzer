@@ -917,7 +917,7 @@ function nextViewportAfterWheel(
   };
 }
 
-function zoomRangeAt(range: PlotScaleRange, anchor: number, factor: number): PlotScaleRange {
+export function zoomRangeAt(range: PlotScaleRange, anchor: number, factor: number): PlotScaleRange {
   if (!Number.isFinite(anchor)) {
     return range;
   }

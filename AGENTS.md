@@ -37,7 +37,7 @@ pnpm binary:build
 - `src/io` はCSVなど外部データ形式の変換を担う。
 - `src/store` はZustandとDexieによるProject状態と永続化を担う。
 - `src/ui` はマルチウィンドウ、表、plot、解析操作を担う。
-- plotはuPlot、表はTanStack Table + TanStack Virtualを使う。
+- plotはD3.jsベースのSVG描画、表はTanStack Table + TanStack Virtualを使う。
 - Reactコンポーネントは巨大なboolean prop APIを避け、表示単位ごとに分割する。
 
 ## TDD / 品質ゲート
