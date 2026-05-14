@@ -5,10 +5,12 @@ import { fitRangeKey, useProjectStore } from "../../store/projectStore";
 import { formatNumber, formatRange } from "../format";
 
 const FIT_TARGETS: Array<{ target: FitTarget; label: string }> = [
-  { target: "ups-vb-edge", label: "VBM edge" },
-  { target: "ups-vb-bg", label: "BG(VBM)" },
-  { target: "ups-ip-edge", label: "Cut-off edge" },
-  { target: "ups-ip-bg", label: "BG(Cut-off)" },
+  { target: "ups-vb-edge", label: "VB set edge" },
+  { target: "ups-vb-bg", label: "BG(VB set)" },
+  { target: "ups-ip-vbm-edge", label: "IP EVBM edge" },
+  { target: "ups-ip-vbm-bg", label: "BG(IP EVBM)" },
+  { target: "ups-ip-edge", label: "Ecut-off edge" },
+  { target: "ups-ip-bg", label: "BG(Ecut-off)" },
   { target: "leet-der-peak", label: "LEET(der) peak" },
   { target: "leips-edge", label: "CBM edge" },
   { target: "leips-bg", label: "BG(LEIPS)" },
@@ -98,9 +100,17 @@ export function AnalysisControls() {
 
         {tab === "ups" ? (
           <Panel title="UPS spectra analysis">
+            <h3 className="mb-1 font-bold text-slate-700">VB set</h3>
             <ResultGrid
               rows={[
                 ["EVBM", formatNumber(analysis.ups?.vbEvbm), "eV"],
+                ["EF-EVBM", formatNumber(analysis.ups?.efMinusEvbm), "eV"],
+              ]}
+            />
+            <h3 className="mb-1 mt-3 font-bold text-slate-700">IP set</h3>
+            <ResultGrid
+              rows={[
+                ["EVBM", formatNumber(analysis.ups?.ipEvbm), "eV"],
                 ["Ecut-off", formatNumber(analysis.ups?.ecutoff), "eV"],
                 ["IP", formatNumber(analysis.ups?.ip), "eV"],
               ]}

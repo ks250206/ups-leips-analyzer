@@ -80,6 +80,7 @@ export function LEIPSPlotWindow() {
       series={series}
       markers={markers}
       rangeBands={rangeBands}
+      xDirection="reverse"
       onSelectRange={(range) => setFitRange("leet-der-peak", range)}
       onRangeBandChange={(target, range) => setFitRange(target as FitTarget, range)}
     />
@@ -154,6 +155,7 @@ export function LEIPSEvacPlotWindow() {
       series={series}
       markers={markers}
       rangeBands={rangeBands}
+      xDirection="reverse"
       onSelectRange={(range) => {
         if (activeFitTarget === "leips-bg" || activeFitTarget === "leips-edge") {
           setFitRange(activeFitTarget, range);

@@ -48,6 +48,7 @@ export function BandDiagramWindow() {
           yLabel="Intensity / a.u."
           series={series}
           markers={markers}
+          xDirection="normal"
         />
       </div>
     </div>

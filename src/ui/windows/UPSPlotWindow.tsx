@@ -100,6 +100,22 @@ export function UPSIPPlotWindow() {
     if (ups) {
       items.push(
         lineFitSeries(
+          "IP VBM edge",
+          ups.ipVbmEdge,
+          project.analysis.fitRanges.upsIpVbmEdge,
+          "#7c3aed",
+        ),
+      );
+      items.push(
+        lineFitSeries(
+          "IP VBM BG",
+          ups.ipVbmBackground,
+          project.analysis.fitRanges.upsIpVbmBackground,
+          "#0f766e",
+        ),
+      );
+      items.push(
+        lineFitSeries(
           "Cut-off edge",
           ups.cutoffEdge,
           project.analysis.fitRanges.upsIpEdge,
@@ -123,6 +139,11 @@ export function UPSIPPlotWindow() {
       ups
         ? [
             {
+              x: ups.ipEvbm,
+              label: `IP EVBM ${formatNumber(ups.ipEvbm, 2)} eV`,
+              color: "#7c3aed",
+            },
+            {
               x: ups.ecutoff,
               label: `Cut-off ${formatNumber(ups.ecutoff, 2)} eV`,
               color: "#dc2626",
@@ -134,18 +155,32 @@ export function UPSIPPlotWindow() {
   const rangeBands = useMemo<PlotRangeBand[]>(
     () => [
       {
+        id: "ups-ip-vbm-edge",
+        ...project.analysis.fitRanges.upsIpVbmEdge,
+        label: activeFitTarget === "ups-ip-vbm-edge" ? "active IP VBM edge" : "IP VBM edge",
+        color: "#7c3aed",
+        cursorLabels: ["A", "B"],
+      },
+      {
+        id: "ups-ip-vbm-bg",
+        ...project.analysis.fitRanges.upsIpVbmBackground,
+        label: activeFitTarget === "ups-ip-vbm-bg" ? "active IP VBM BG" : "IP VBM BG",
+        color: "#0f766e",
+        cursorLabels: ["C", "D"],
+      },
+      {
         id: "ups-ip-edge",
         ...project.analysis.fitRanges.upsIpEdge,
         label: activeFitTarget === "ups-ip-edge" ? "active cut-off edge" : "cut-off edge",
         color: "#dc2626",
-        cursorLabels: ["A", "B"],
+        cursorLabels: ["E", "F"],
       },
       {
         id: "ups-ip-bg",
         ...project.analysis.fitRanges.upsIpBackground,
         label: activeFitTarget === "ups-ip-bg" ? "active cut-off BG" : "cut-off BG",
         color: "#15803d",
-        cursorLabels: ["C", "D"],
+        cursorLabels: ["G", "H"],
       },
     ],
     [activeFitTarget, project.analysis.fitRanges],
@@ -171,5 +206,10 @@ function vbTarget(active: FitTarget): FitTarget {
 }
 
 function ipTarget(active: FitTarget): FitTarget {
-  return active === "ups-ip-edge" || active === "ups-ip-bg" ? active : "ups-ip-edge";
+  return active === "ups-ip-vbm-edge" ||
+    active === "ups-ip-vbm-bg" ||
+    active === "ups-ip-edge" ||
+    active === "ups-ip-bg"
+    ? active
+    : "ups-ip-vbm-edge";
 }
