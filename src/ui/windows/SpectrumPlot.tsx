@@ -246,7 +246,6 @@ export function createSpectrumPlotOptions(input: SpectrumPlotOptionsInput): uPlo
   const hasRightAxis = input.series.some((item) => item.yAxis === "right");
   return {
     ...input.size,
-    title: input.title,
     cursor: {
       drag: {
         setScale: false,

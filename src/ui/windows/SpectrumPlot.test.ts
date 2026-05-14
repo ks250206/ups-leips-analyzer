@@ -39,6 +39,21 @@ describe("SpectrumPlot options", () => {
     expect(options.scales?.x?.dir).toBe(1);
   });
 
+  test("omits the inner uPlot title because the window title is authoritative", () => {
+    const options = createSpectrumPlotOptions({
+      size: { width: 320, height: 240 },
+      title: "window title only",
+      xLabel: "x",
+      yLabel: "y",
+      series: [{ name: "s", color: "#000000", points: [{ x: 1, y: 1 }] }],
+      markers: [],
+      rangeBands: [],
+      xDirection: "normal",
+    });
+
+    expect(options.title).toBeUndefined();
+  });
+
   test("can hide y-axis tick values for dual-axis band diagrams", () => {
     const options = createSpectrumPlotOptions({
       size: { width: 320, height: 240 },
