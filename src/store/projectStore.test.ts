@@ -32,6 +32,18 @@ describe("project store", () => {
     expect(useProjectStore.getState().project.analysis.ups).toBeDefined();
   });
 
+  test("does not run analysis or set errors for an empty project", () => {
+    useProjectStore.setState({ project: useProjectStore.getInitialState().project });
+
+    useProjectStore.getState().recalculate();
+    const analysis = useProjectStore.getState().project.analysis;
+
+    expect(analysis.error).toBeUndefined();
+    expect(analysis.ups).toBeUndefined();
+    expect(analysis.leips).toBeUndefined();
+    expect(analysis.band).toBeUndefined();
+  });
+
   test("maps every fit target to a fit range key", () => {
     expect(TARGETS.map((target) => fitRangeKey(target))).toEqual([
       "upsVbEdge",

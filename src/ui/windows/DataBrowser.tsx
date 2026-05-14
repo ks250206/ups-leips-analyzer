@@ -54,19 +54,23 @@ export function DataBrowser() {
   return (
     <div className="flex h-full flex-col bg-slate-100 text-xs">
       <div className="grid grid-cols-2 gap-2 border-b border-slate-300 p-2">
-        <label className="relative flex cursor-pointer items-center justify-center gap-1 rounded border border-slate-300 bg-white px-2 py-1 hover:bg-cyan-50">
+        <input
+          id="dataset-csv-input"
+          className="sr-only"
+          type="file"
+          accept=".csv,text/csv"
+          multiple
+          onChange={(event) => {
+            void handleFiles(event.currentTarget.files);
+            event.currentTarget.value = "";
+          }}
+        />
+        <label
+          className="flex cursor-pointer items-center justify-center gap-1 rounded border border-slate-300 bg-white px-2 py-1 hover:bg-cyan-50"
+          htmlFor="dataset-csv-input"
+        >
           <FileUp size={14} />
           CSV
-          <input
-            className="absolute inset-0 cursor-pointer opacity-0"
-            type="file"
-            accept=".csv,text/csv"
-            multiple
-            onChange={(event) => {
-              void handleFiles(event.currentTarget.files);
-              event.currentTarget.value = "";
-            }}
-          />
         </label>
         <button
           className="flex items-center justify-center gap-1 rounded border border-slate-300 bg-white px-2 py-1 hover:bg-cyan-50"
@@ -84,18 +88,22 @@ export function DataBrowser() {
           <Download size={14} />
           JSON
         </button>
-        <label className="relative flex cursor-pointer items-center justify-center gap-1 rounded border border-slate-300 bg-white px-2 py-1 hover:bg-cyan-50">
+        <input
+          id="project-json-input"
+          className="sr-only"
+          type="file"
+          accept=".json,application/json"
+          onChange={(event) => {
+            void handleProjectFile(event.currentTarget.files);
+            event.currentTarget.value = "";
+          }}
+        />
+        <label
+          className="flex cursor-pointer items-center justify-center gap-1 rounded border border-slate-300 bg-white px-2 py-1 hover:bg-cyan-50"
+          htmlFor="project-json-input"
+        >
           <Upload size={14} />
           Import
-          <input
-            className="absolute inset-0 cursor-pointer opacity-0"
-            type="file"
-            accept=".json,application/json"
-            onChange={(event) => {
-              void handleProjectFile(event.currentTarget.files);
-              event.currentTarget.value = "";
-            }}
-          />
         </label>
       </div>
       {error ? (

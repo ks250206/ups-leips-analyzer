@@ -17,5 +17,6 @@ describe("App", () => {
     );
     expect(screen.getByRole("button", { name: "Band" })).toBeTruthy();
     expect(screen.getByText("0 datasets")).toBeTruthy();
+    expect(screen.getAllByText("No data").length).toBeGreaterThan(0);
   });
 });

@@ -103,6 +103,10 @@ export const useProjectStore = create<ProjectStore>((set, get) => ({
   focusWindow: (id) => {
     set((state) => {
       const nextZ = Math.max(...state.project.windows.map((window) => window.zIndex)) + 1;
+      const target = state.project.windows.find((window) => window.id === id);
+      if (!target || target.zIndex === nextZ - 1) {
+        return state;
+      }
       return {
         project: touchProject({
           ...state.project,

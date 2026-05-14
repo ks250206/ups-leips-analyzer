@@ -51,6 +51,9 @@ interface CursorHandle {
   height: number;
 }
 
+const EMPTY_MARKERS: PlotMarker[] = [];
+const EMPTY_RANGE_BANDS: PlotRangeBand[] = [];
+
 export function SpectrumPlot({
   title,
   xLabel,
@@ -58,8 +61,8 @@ export function SpectrumPlot({
   yRightLabel,
   hideYTicks = false,
   series,
-  markers = [],
-  rangeBands = [],
+  markers = EMPTY_MARKERS,
+  rangeBands = EMPTY_RANGE_BANDS,
   xDirection = "normal",
   onSelectRange,
   onRangeBandChange,
@@ -68,10 +71,14 @@ export function SpectrumPlot({
   const plotRef = useRef<uPlot | undefined>(undefined);
   const [handles, setHandles] = useState<CursorHandle[]>([]);
   const data = useMemo(() => alignSeries(series), [series]);
+  const hasData = data[0].length > 0;
 
   useEffect(() => {
     const container = containerRef.current;
-    if (!container || series.length === 0) {
+    if (!container || !hasData) {
+      plotRef.current?.destroy();
+      plotRef.current = undefined;
+      clearHandles(setHandles);
       return undefined;
     }
 
@@ -79,6 +86,7 @@ export function SpectrumPlot({
       const plot = plotRef.current;
       if (plot) {
         plot.setSize(sizeFor(container));
+        syncHandles(plot, rangeBands, setHandles);
       }
     });
 
@@ -99,13 +107,23 @@ export function SpectrumPlot({
 
     plotRef.current?.destroy();
     plotRef.current = new uPlot(options, data as uPlot.AlignedData, container);
+    const detachPlotDrag = attachPlotDrag(plotRef.current, {
+      onSelectRange,
+      onAfterScale: () => {
+        const plot = plotRef.current;
+        if (plot) {
+          syncHandles(plot, rangeBands, setHandles);
+        }
+      },
+    });
     resizeObserver.observe(container);
 
     return () => {
+      detachPlotDrag();
       resizeObserver.disconnect();
       plotRef.current?.destroy();
       plotRef.current = undefined;
-      setHandles([]);
+      clearHandles(setHandles);
     };
   }, [
     data,
@@ -119,7 +137,23 @@ export function SpectrumPlot({
     yLabel,
     yRightLabel,
     hideYTicks,
+    hasData,
   ]);
+
+  if (!hasData) {
+    return (
+      <div
+        aria-label={`${title} plot`}
+        className="flex h-full w-full items-center justify-center bg-white text-sm text-slate-500"
+        data-x-direction={xDirection}
+      >
+        <div className="rounded border border-dashed border-slate-300 bg-slate-50 px-4 py-3 text-center">
+          <div className="font-semibold text-slate-700">No data</div>
+          <div className="mt-1 text-xs">Load CSV or Demo data to render this plot.</div>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div
@@ -191,10 +225,9 @@ export function createSpectrumPlotOptions(input: SpectrumPlotOptionsInput): uPlo
     title: input.title,
     cursor: {
       drag: {
-        setScale: true,
-        x: true,
+        setScale: false,
+        x: false,
         y: false,
-        dist: 10,
       },
     },
     legend: { show: true },
@@ -234,16 +267,6 @@ export function createSpectrumPlotOptions(input: SpectrumPlotOptionsInput): uPlo
       })),
     ],
     hooks: {
-      setSelect: [
-        (plot) => {
-          if (!input.onSelectRange || plot.select.width <= 0 || !plot.cursor.event?.shiftKey) {
-            return;
-          }
-          const start = plot.posToVal(plot.select.left, "x");
-          const end = plot.posToVal(plot.select.left + plot.select.width, "x");
-          input.onSelectRange({ min: Math.min(start, end), max: Math.max(start, end) });
-        },
-      ],
       drawClear: [
         (plot) => {
           drawRangeBands(plot, input.rangeBands);
@@ -252,7 +275,13 @@ export function createSpectrumPlotOptions(input: SpectrumPlotOptionsInput): uPlo
       draw: [
         (plot) => {
           drawMarkers(plot, input.markers);
-          input.onSyncHandles?.(plot);
+        },
+      ],
+      setScale: [
+        (plot, scaleKey) => {
+          if (scaleKey === "x") {
+            input.onSyncHandles?.(plot);
+          }
         },
       ],
       ready: [
@@ -380,6 +409,10 @@ function syncHandles(
   setHandles((current) => (cursorHandlesEqual(current, nextHandles) ? current : nextHandles));
 }
 
+function clearHandles(setHandles: Dispatch<SetStateAction<CursorHandle[]>>): void {
+  setHandles((current) => (current.length === 0 ? current : []));
+}
+
 function cursorHandlesEqual(
   leftHandles: readonly CursorHandle[],
   rightHandles: readonly CursorHandle[],
@@ -451,6 +484,82 @@ function clientXToPlotValue(plot: uPlot, container: HTMLElement, clientX: number
 
 function normalizeRange(range: FitRange): FitRange {
   return { min: Math.min(range.min, range.max), max: Math.max(range.min, range.max) };
+}
+
+function attachPlotDrag(
+  plot: uPlot,
+  input: {
+    onSelectRange?: (range: FitRange) => void;
+    onAfterScale: () => void;
+  },
+): () => void {
+  const over = plot.over;
+  let start: { left: number; shiftKey: boolean } | undefined;
+  let isDragging = false;
+
+  const handleMouseDown = (event: MouseEvent) => {
+    if (event.button !== 0) {
+      return;
+    }
+    start = { left: eventLeftInPlot(plot, event), shiftKey: event.shiftKey };
+    isDragging = false;
+    document.addEventListener("mousemove", handleMouseMove);
+    document.addEventListener("mouseup", handleMouseUp, { once: true });
+  };
+
+  const handleMouseMove = (event: MouseEvent) => {
+    if (!start) {
+      return;
+    }
+    const current = eventLeftInPlot(plot, event);
+    const width = Math.abs(current - start.left);
+    if (width < 3) {
+      return;
+    }
+    isDragging = true;
+    event.preventDefault();
+    plot.setSelect({
+      left: Math.min(start.left, current),
+      top: 0,
+      width,
+      height: plot.bbox.height / devicePixelRatio,
+    });
+  };
+
+  const handleMouseUp = (event: MouseEvent) => {
+    document.removeEventListener("mousemove", handleMouseMove);
+    const dragStart = start;
+    start = undefined;
+    if (!dragStart || !isDragging) {
+      plot.setSelect({ left: 0, top: 0, width: 0, height: 0 });
+      return;
+    }
+    const end = eventLeftInPlot(plot, event);
+    const from = plot.posToVal(Math.min(dragStart.left, end), "x");
+    const to = plot.posToVal(Math.max(dragStart.left, end), "x");
+    const range = normalizeRange({ min: from, max: to });
+    plot.setSelect({ left: 0, top: 0, width: 0, height: 0 });
+    if (dragStart.shiftKey && input.onSelectRange) {
+      input.onSelectRange(range);
+      input.onAfterScale();
+      return;
+    }
+    plot.setScale("x", range);
+    input.onAfterScale();
+  };
+
+  over.addEventListener("mousedown", handleMouseDown);
+  return () => {
+    over.removeEventListener("mousedown", handleMouseDown);
+    document.removeEventListener("mousemove", handleMouseMove);
+    document.removeEventListener("mouseup", handleMouseUp);
+  };
+}
+
+function eventLeftInPlot(plot: uPlot, event: MouseEvent): number {
+  const rect = plot.over.getBoundingClientRect();
+  const left = Math.min(Math.max(event.clientX - rect.left, 0), rect.width);
+  return left;
 }
 
 function resetXZoom(plot: uPlot | undefined, xValues: readonly number[]): void {

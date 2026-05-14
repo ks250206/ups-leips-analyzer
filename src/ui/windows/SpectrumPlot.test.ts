@@ -15,8 +15,8 @@ describe("SpectrumPlot options", () => {
     });
 
     expect(options.scales?.x?.dir).toBe(-1);
-    expect(options.cursor?.drag?.setScale).toBe(true);
-    expect(options.cursor?.drag?.x).toBe(true);
+    expect(options.cursor?.drag?.setScale).toBe(false);
+    expect(options.cursor?.drag?.x).toBe(false);
     expect(options.cursor?.drag?.y).toBe(false);
   });
 
