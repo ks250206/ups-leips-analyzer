@@ -7,6 +7,7 @@ describe("App", () => {
     render(<App />);
     expect(screen.getByText("UPS-LEIPS Analyzer")).toBeTruthy();
     expect(screen.getByText("UPS spectra analysis")).toBeTruthy();
-    expect(await screen.findByText("UPS-LEIPS graph")).toBeTruthy();
+    expect(await screen.findAllByText("UPS-LEIPS Band Diagram")).toHaveLength(2);
+    expect(screen.getByRole("button", { name: "Band" })).toBeTruthy();
   });
 });

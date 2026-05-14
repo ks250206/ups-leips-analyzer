@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useRef } from "react";
 import uPlot from "uplot";
 import type { FitRange } from "../../domain/types";
-import { alignSeries, type PlotMarker, type PlotSeries } from "../plotData";
+import { alignSeries, type PlotMarker, type PlotRangeBand, type PlotSeries } from "../plotData";
 
 interface SpectrumPlotProps {
   title: string;
@@ -9,6 +9,7 @@ interface SpectrumPlotProps {
   yLabel: string;
   series: PlotSeries[];
   markers?: PlotMarker[];
+  rangeBands?: PlotRangeBand[];
   onSelectRange?: (range: FitRange) => void;
 }
 
@@ -18,6 +19,7 @@ export function SpectrumPlot({
   yLabel,
   series,
   markers = [],
+  rangeBands = [],
   onSelectRange,
 }: SpectrumPlotProps) {
   const containerRef = useRef<HTMLDivElement>(null);
@@ -73,6 +75,11 @@ export function SpectrumPlot({
             onSelectRange({ min: Math.min(start, end), max: Math.max(start, end) });
           },
         ],
+        drawClear: [
+          (plot) => {
+            drawRangeBands(plot, rangeBands);
+          },
+        ],
         draw: [
           (plot) => {
             drawMarkers(plot, markers);
@@ -90,12 +97,12 @@ export function SpectrumPlot({
       plotRef.current?.destroy();
       plotRef.current = undefined;
     };
-  }, [data, markers, onSelectRange, series, title, xLabel, yLabel]);
+  }, [data, markers, onSelectRange, rangeBands, series, title, xLabel, yLabel]);
 
   return (
     <div className="relative h-full w-full bg-white">
       <div ref={containerRef} className="h-full w-full" />
-      <div className="absolute right-2 top-2 flex gap-1">
+      <div className="absolute right-2 top-9 flex gap-1">
         <button
           className="rounded border border-slate-300 bg-white/90 px-2 py-0.5 text-[10px] font-semibold text-slate-700 shadow-sm hover:bg-cyan-50"
           type="button"
@@ -149,12 +156,49 @@ function drawMarkers(plot: uPlot, markers: readonly PlotMarker[]): void {
   ctx.restore();
 }
 
+function drawRangeBands(plot: uPlot, rangeBands: readonly PlotRangeBand[]): void {
+  if (rangeBands.length === 0) {
+    return;
+  }
+  const ctx = plot.ctx;
+  const top = plot.bbox.top / devicePixelRatio;
+  const left = plot.bbox.left / devicePixelRatio;
+  const height = plot.bbox.height / devicePixelRatio;
+  ctx.save();
+  ctx.font = "11px Inter, sans-serif";
+  ctx.textBaseline = "top";
+  for (const band of rangeBands) {
+    const x0 = left + plot.valToPos(Math.min(band.min, band.max), "x");
+    const x1 = left + plot.valToPos(Math.max(band.min, band.max), "x");
+    const width = x1 - x0;
+    ctx.fillStyle = withAlpha(band.color, 0.11);
+    ctx.fillRect(x0, top, width, height);
+    ctx.strokeStyle = withAlpha(band.color, 0.65);
+    ctx.setLineDash([3, 3]);
+    ctx.strokeRect(x0, top, width, height);
+    ctx.setLineDash([]);
+    ctx.fillStyle = band.color;
+    ctx.fillText(band.label, x0 + 4, top + height - 18);
+  }
+  ctx.restore();
+}
+
 function exportPng(plot: uPlot | undefined, title: string): void {
   const canvas = plot?.ctx.canvas;
   if (!canvas) {
     return;
   }
   download(`${safeName(title)}.png`, canvas.toDataURL("image/png"));
+}
+
+function withAlpha(color: string, alpha: number): string {
+  if (!color.startsWith("#") || color.length !== 7) {
+    return color;
+  }
+  const r = Number.parseInt(color.slice(1, 3), 16);
+  const g = Number.parseInt(color.slice(3, 5), 16);
+  const b = Number.parseInt(color.slice(5, 7), 16);
+  return `rgba(${r}, ${g}, ${b}, ${alpha})`;
 }
 
 function exportSvg(input: {

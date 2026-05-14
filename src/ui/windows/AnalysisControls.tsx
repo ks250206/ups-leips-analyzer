@@ -1,5 +1,5 @@
 import { BANDPASS_OPTIONS } from "../../domain/constants";
-import type { ReactNode } from "react";
+import { useState, type ReactNode } from "react";
 import type { AnalysisSelection, FitRange, FitTarget, SpectrumDataset } from "../../domain/types";
 import { fitRangeKey, useProjectStore } from "../../store/projectStore";
 import { formatNumber, formatRange } from "../format";
@@ -40,117 +40,152 @@ export function AnalysisControls() {
   const setEfMinusEvbm = useProjectStore((state) => state.setEfMinusEvbm);
   const recalculate = useProjectStore((state) => state.recalculate);
   const analysis = project.analysis;
+  const [tab, setTab] = useState<"data" | "ups" | "leips" | "band" | "fit">("ups");
 
   return (
-    <div className="flex h-full flex-col overflow-auto bg-slate-100 text-xs">
+    <div className="flex h-full flex-col bg-slate-100 text-xs">
       {analysis.error ? (
         <div className="border-b border-red-200 bg-red-50 p-2 font-semibold text-red-700">
           {analysis.error}
         </div>
       ) : null}
-      <Panel title="Datasets">
-        <div className="grid gap-2">
-          {DATASET_SLOTS.map((item) => (
-            <label key={item.slot} className="grid grid-cols-[82px_1fr] items-center gap-2">
-              <span className="font-semibold text-slate-600">{item.label}</span>
+      <div className="grid grid-cols-5 gap-1 border-b border-slate-300 bg-slate-200 p-2">
+        {[
+          ["data", "Data"],
+          ["ups", "UPS"],
+          ["leips", "LEIPS"],
+          ["band", "Band"],
+          ["fit", "Fit"],
+        ].map(([id, label]) => (
+          <button
+            key={id}
+            className={
+              tab === id
+                ? "rounded border border-cyan-600 bg-cyan-100 px-2 py-1 font-semibold text-cyan-950"
+                : "rounded border border-slate-300 bg-white px-2 py-1 hover:bg-cyan-50"
+            }
+            type="button"
+            onClick={() => setTab(id as typeof tab)}
+          >
+            {label}
+          </button>
+        ))}
+      </div>
+      <div className="min-h-0 flex-1 overflow-auto">
+        {tab === "data" ? (
+          <Panel title="Datasets">
+            <div className="grid gap-2">
+              {DATASET_SLOTS.map((item) => (
+                <label key={item.slot} className="grid grid-cols-[82px_1fr] items-center gap-2">
+                  <span className="font-semibold text-slate-600">{item.label}</span>
+                  <select
+                    className="min-w-0 rounded border border-slate-300 bg-white px-2 py-1"
+                    value={analysis.selection[item.slot] ?? ""}
+                    onChange={(event) => assignDataset(item.slot, event.currentTarget.value)}
+                  >
+                    <option value="">-</option>
+                    {project.datasets.filter(item.filter).map((dataset) => (
+                      <option key={dataset.id} value={dataset.id}>
+                        {dataset.name}
+                      </option>
+                    ))}
+                  </select>
+                </label>
+              ))}
+            </div>
+          </Panel>
+        ) : null}
+
+        {tab === "ups" ? (
+          <Panel title="UPS spectra analysis">
+            <ResultGrid
+              rows={[
+                ["EVBM", formatNumber(analysis.ups?.vbm), "eV"],
+                ["Ecut-off", formatNumber(analysis.ups?.ecutoff), "eV"],
+                ["IP", formatNumber(analysis.ups?.ip), "eV"],
+              ]}
+            />
+          </Panel>
+        ) : null}
+
+        {tab === "leips" ? (
+          <Panel title="LEIPS spectra analysis">
+            <label className="mb-2 grid grid-cols-[110px_1fr] items-center gap-2">
+              <span className="font-semibold text-slate-600">Bandpass</span>
               <select
-                className="min-w-0 rounded border border-slate-300 bg-white px-2 py-1"
-                value={analysis.selection[item.slot] ?? ""}
-                onChange={(event) => assignDataset(item.slot, event.currentTarget.value)}
+                className="rounded border border-slate-300 bg-white px-2 py-1"
+                value={analysis.bandpassType}
+                onChange={(event) => setBandpassType(Number(event.currentTarget.value))}
               >
-                <option value="">-</option>
-                {project.datasets.filter(item.filter).map((dataset) => (
-                  <option key={dataset.id} value={dataset.id}>
-                    {dataset.name}
+                {BANDPASS_OPTIONS.map((option) => (
+                  <option key={option.type} value={option.type}>
+                    {option.label}
                   </option>
                 ))}
               </select>
             </label>
-          ))}
-        </div>
-      </Panel>
-
-      <Panel title="UPS spectra analysis">
-        <ResultGrid
-          rows={[
-            ["EVBM", formatNumber(analysis.ups?.vbm), "eV"],
-            ["Ecut-off", formatNumber(analysis.ups?.ecutoff), "eV"],
-            ["IP", formatNumber(analysis.ups?.ip), "eV"],
-          ]}
-        />
-      </Panel>
-
-      <Panel title="LEIPS spectra analysis">
-        <label className="mb-2 grid grid-cols-[110px_1fr] items-center gap-2">
-          <span className="font-semibold text-slate-600">Bandpass</span>
-          <select
-            className="rounded border border-slate-300 bg-white px-2 py-1"
-            value={analysis.bandpassType}
-            onChange={(event) => setBandpassType(Number(event.currentTarget.value))}
-          >
-            {BANDPASS_OPTIONS.map((option) => (
-              <option key={option.type} value={option.type}>
-                {option.label}
-              </option>
-            ))}
-          </select>
-        </label>
-        <ResultGrid
-          rows={[
-            ["Epeak", formatNumber(analysis.leips?.ePeak), "V"],
-            ["Evac", formatNumber(analysis.leips?.vacuumLevel), "eV"],
-            ["EA", formatNumber(analysis.leips?.ea), "eV"],
-          ]}
-        />
-      </Panel>
-
-      <Panel title="UPS-LEIPS graph">
-        <label className="mb-2 grid grid-cols-[110px_1fr] items-center gap-2">
-          <span className="font-semibold text-slate-600">EF-EVBM</span>
-          <input
-            className="rounded border border-slate-300 bg-white px-2 py-1"
-            inputMode="decimal"
-            value={analysis.efMinusEvbm}
-            onChange={(event) => setEfMinusEvbm(Number(event.currentTarget.value))}
-          />
-        </label>
-        <ResultGrid
-          rows={[
-            ["IP", formatNumber(analysis.band?.ip), "eV"],
-            ["EA", formatNumber(analysis.band?.ea), "eV"],
-            ["Eg", formatNumber(analysis.band?.eg), "eV"],
-          ]}
-        />
-      </Panel>
-
-      <Panel title="Cursor / fitting ranges">
-        <div className="grid grid-cols-2 gap-1">
-          {FIT_TARGETS.map((item) => (
-            <button
-              key={item.target}
-              className={
-                item.target === activeFitTarget
-                  ? "rounded border border-cyan-600 bg-cyan-100 px-2 py-1 font-semibold text-cyan-900"
-                  : "rounded border border-slate-300 bg-white px-2 py-1 hover:bg-cyan-50"
-              }
-              type="button"
-              onClick={() => setActiveFitTarget(item.target)}
-            >
-              {item.label}
-            </button>
-          ))}
-        </div>
-        <div className="mt-2 grid gap-1">
-          {FIT_TARGETS.map((item) => (
-            <RangeEditor
-              key={item.target}
-              label={item.label}
-              range={analysis.fitRanges[fitRangeKey(item.target)]}
-              onChange={(range) => setFitRange(item.target, range)}
+            <ResultGrid
+              rows={[
+                ["Epeak", formatNumber(analysis.leips?.ePeak), "V"],
+                ["Evac", formatNumber(analysis.leips?.vacuumLevel), "eV"],
+                ["EA", formatNumber(analysis.leips?.ea), "eV"],
+              ]}
             />
-          ))}
-        </div>
-      </Panel>
+          </Panel>
+        ) : null}
+
+        {tab === "band" ? (
+          <Panel title="UPS-LEIPS graph">
+            <label className="mb-2 grid grid-cols-[110px_1fr] items-center gap-2">
+              <span className="font-semibold text-slate-600">EF-EVBM</span>
+              <input
+                className="rounded border border-slate-300 bg-white px-2 py-1"
+                inputMode="decimal"
+                value={analysis.efMinusEvbm}
+                onChange={(event) => setEfMinusEvbm(Number(event.currentTarget.value))}
+              />
+            </label>
+            <ResultGrid
+              rows={[
+                ["IP", formatNumber(analysis.band?.ip), "eV"],
+                ["EA", formatNumber(analysis.band?.ea), "eV"],
+                ["Eg", formatNumber(analysis.band?.eg), "eV"],
+              ]}
+            />
+          </Panel>
+        ) : null}
+
+        {tab === "fit" ? (
+          <Panel title="Cursor / fitting ranges">
+            <div className="grid grid-cols-2 gap-1">
+              {FIT_TARGETS.map((item) => (
+                <button
+                  key={item.target}
+                  className={
+                    item.target === activeFitTarget
+                      ? "rounded border border-cyan-600 bg-cyan-100 px-2 py-1 font-semibold text-cyan-900"
+                      : "rounded border border-slate-300 bg-white px-2 py-1 hover:bg-cyan-50"
+                  }
+                  type="button"
+                  onClick={() => setActiveFitTarget(item.target)}
+                >
+                  {item.label}
+                </button>
+              ))}
+            </div>
+            <div className="mt-2 grid gap-1">
+              {FIT_TARGETS.map((item) => (
+                <RangeEditor
+                  key={item.target}
+                  label={item.label}
+                  range={analysis.fitRanges[fitRangeKey(item.target)]}
+                  onChange={(range) => setFitRange(item.target, range)}
+                />
+              ))}
+            </div>
+          </Panel>
+        ) : null}
+      </div>
 
       <div className="sticky bottom-0 border-t border-slate-300 bg-slate-100 p-2">
         <button

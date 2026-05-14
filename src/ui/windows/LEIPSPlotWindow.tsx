@@ -6,6 +6,7 @@ import {
   gaussianSeries,
   lineFitSeries,
   type PlotMarker,
+  type PlotRangeBand,
   type PlotSeries,
 } from "../plotData";
 import { SpectrumPlot } from "./SpectrumPlot";
@@ -25,7 +26,7 @@ export function LEIPSPlotWindow() {
   );
   const leips = project.analysis.leips;
 
-  const series = useMemo<PlotSeries[]>(() => {
+  const biasSeries = useMemo<PlotSeries[]>(() => {
     const items: PlotSeries[] = [];
     if (leetDataset) {
       items.push(datasetSeries(leetDataset, "#16a34a"));
@@ -33,32 +34,34 @@ export function LEIPSPlotWindow() {
     if (leetDerDataset) {
       items.push(datasetSeries(leetDerDataset, "#2563eb"));
     }
-    if (leipsDataset) {
-      items.push(datasetSeries(leipsDataset, "#dc2626"));
-    }
     if (leips && leetDerDataset) {
       items.push(gaussianSeries("LEET(der) fit", leips.peakFit, leetDerDataset.points, "#0f172a"));
-      items.push(
-        lineFitSeries(
-          "LEIPS edge",
-          leips.leipsEdge,
-          project.analysis.fitRanges.leipsEdge,
-          "#b91c1c",
-        ),
-      );
-      items.push(
-        lineFitSeries(
-          "LEIPS BG",
-          leips.leipsBackground,
-          project.analysis.fitRanges.leipsBackground,
-          "#15803d",
-        ),
-      );
     }
     return items;
-  }, [leetDataset, leetDerDataset, leips, leipsDataset, project.analysis.fitRanges]);
+  }, [leetDataset, leetDerDataset, leips]);
 
-  const markers = useMemo<PlotMarker[]>(
+  const evacSeries = useMemo<PlotSeries[]>(() => {
+    if (!leips) {
+      return [];
+    }
+    return [
+      {
+        name: leipsDataset ? `${leipsDataset.name} vs Evac` : "LEIPS vs Evac",
+        color: "#dc2626",
+        points: leips.leipsEvacPoints,
+        width: 2,
+      },
+      lineFitSeries("LEIPS edge", leips.leipsEdge, project.analysis.fitRanges.leipsEdge, "#b91c1c"),
+      lineFitSeries(
+        "LEIPS BG",
+        leips.leipsBackground,
+        project.analysis.fitRanges.leipsBackground,
+        "#15803d",
+      ),
+    ];
+  }, [leips, leipsDataset, project.analysis.fitRanges]);
+
+  const biasMarkers = useMemo<PlotMarker[]>(
     () =>
       leips
         ? [
@@ -68,20 +71,74 @@ export function LEIPSPlotWindow() {
               label: `Evac ${formatNumber(leips.vacuumLevel, 2)} eV`,
               color: "#0f766e",
             },
-            { x: leips.ea, label: `EA ${formatNumber(leips.ea, 2)} eV`, color: "#dc2626" },
           ]
         : [],
     [leips],
   );
 
+  const evacMarkers = useMemo<PlotMarker[]>(
+    () =>
+      leips ? [{ x: leips.ea, label: `EA ${formatNumber(leips.ea, 2)} eV`, color: "#dc2626" }] : [],
+    [leips],
+  );
+
+  const biasBands = useMemo<PlotRangeBand[]>(
+    () => [
+      {
+        ...project.analysis.fitRanges.leetDerPeak,
+        label: activeFitTarget === "leet-der-peak" ? "active peak" : "peak",
+        color: "#2563eb",
+      },
+    ],
+    [activeFitTarget, project.analysis.fitRanges.leetDerPeak],
+  );
+
+  const evacBands = useMemo<PlotRangeBand[]>(
+    () => [
+      {
+        ...project.analysis.fitRanges.leipsEdge,
+        label: activeFitTarget === "leips-edge" ? "active edge" : "edge",
+        color: "#dc2626",
+      },
+      {
+        ...project.analysis.fitRanges.leipsBackground,
+        label: activeFitTarget === "leips-bg" ? "active BG" : "BG",
+        color: "#15803d",
+      },
+    ],
+    [
+      activeFitTarget,
+      project.analysis.fitRanges.leipsBackground,
+      project.analysis.fitRanges.leipsEdge,
+    ],
+  );
+
   return (
-    <SpectrumPlot
-      title="LEET / LEET(der) / LEIPS"
-      xLabel="Applied Bias Vbias / V"
-      yLabel="Intensity / a.u."
-      series={series}
-      markers={markers}
-      onSelectRange={(range) => setFitRange(activeFitTarget, range)}
-    />
+    <div className="grid h-full grid-rows-2 gap-px bg-slate-300">
+      <SpectrumPlot
+        title="LEET / LEET(der)"
+        xLabel="Applied Bias Vbias / V"
+        yLabel="Intensity / a.u."
+        series={biasSeries}
+        markers={biasMarkers}
+        rangeBands={biasBands}
+        onSelectRange={(range) => setFitRange("leet-der-peak", range)}
+      />
+      <SpectrumPlot
+        title="LEIPS vs Evac"
+        xLabel="Energy from Evac / eV"
+        yLabel="Intensity / a.u."
+        series={evacSeries}
+        markers={evacMarkers}
+        rangeBands={evacBands}
+        onSelectRange={(range) => {
+          if (activeFitTarget === "leips-bg" || activeFitTarget === "leips-edge") {
+            setFitRange(activeFitTarget, range);
+            return;
+          }
+          setFitRange("leips-edge", range);
+        }}
+      />
+    </div>
   );
 }

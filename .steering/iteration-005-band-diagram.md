@@ -8,9 +8,10 @@ UPS VBと真空準位基準LEIPSからUPS-LEIPSバンド図を作る。
 
 - Band Diagram window。
 - `Energy relative to Ef/eV` 軸でUPS/LEIPSを表示。
-- IP、EA、Eg、vacuum level、CBM markerを描画。
+- VBM、CBM、vacuum level markerとIP/EA/Eg summaryを描画。
 - `Eg = IP - EA`。
 - 各plot windowにPNG/SVG exportを追加。
+- fit範囲をplot上の半透明range bandとして表示。
 
 ## TODO
 

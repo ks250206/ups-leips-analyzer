@@ -10,6 +10,7 @@
 - SPA fallback付きローカルHTTPサーバー。
 - READMEを短い入口に整理。
 - plot PNG/SVG exportを実装。
+- 右操作パネルをData/UPS/LEIPS/Band/Fitのタブに分け、初期表示の詰まりを改善。
 - `vp check`、`vp test`、`vp test --coverage`、`vp build`、`pnpm binary:build` を実行。
 - `curl -I /` と `/assets/index-*.js` でバイナリ配信を確認。
 

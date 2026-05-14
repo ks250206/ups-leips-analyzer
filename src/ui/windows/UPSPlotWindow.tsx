@@ -1,7 +1,13 @@
 import { useMemo } from "react";
 import { useProjectStore } from "../../store/projectStore";
 import { formatNumber } from "../format";
-import { datasetSeries, lineFitSeries, type PlotMarker, type PlotSeries } from "../plotData";
+import {
+  datasetSeries,
+  lineFitSeries,
+  type PlotMarker,
+  type PlotRangeBand,
+  type PlotSeries,
+} from "../plotData";
 import { SpectrumPlot } from "./SpectrumPlot";
 
 export function UPSPlotWindow() {
@@ -70,6 +76,31 @@ export function UPSPlotWindow() {
         : [],
     [ups],
   );
+  const rangeBands = useMemo<PlotRangeBand[]>(
+    () => [
+      {
+        ...project.analysis.fitRanges.upsVbEdge,
+        label: activeFitTarget === "ups-vb-edge" ? "active VBM edge" : "VBM edge",
+        color: "#2563eb",
+      },
+      {
+        ...project.analysis.fitRanges.upsVbBackground,
+        label: activeFitTarget === "ups-vb-bg" ? "active VBM BG" : "VBM BG",
+        color: "#0f766e",
+      },
+      {
+        ...project.analysis.fitRanges.upsIpEdge,
+        label: activeFitTarget === "ups-ip-edge" ? "active cut-off edge" : "cut-off edge",
+        color: "#dc2626",
+      },
+      {
+        ...project.analysis.fitRanges.upsIpBackground,
+        label: activeFitTarget === "ups-ip-bg" ? "active cut-off BG" : "cut-off BG",
+        color: "#15803d",
+      },
+    ],
+    [activeFitTarget, project.analysis.fitRanges],
+  );
 
   return (
     <SpectrumPlot
@@ -78,6 +109,7 @@ export function UPSPlotWindow() {
       yLabel="Intensity / a.u."
       series={series}
       markers={markers}
+      rangeBands={rangeBands}
       onSelectRange={(range) => setFitRange(activeFitTarget, range)}
     />
   );

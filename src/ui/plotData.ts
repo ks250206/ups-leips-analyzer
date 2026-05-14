@@ -21,6 +21,13 @@ export interface PlotMarker {
   color: string;
 }
 
+export interface PlotRangeBand {
+  min: number;
+  max: number;
+  label: string;
+  color: string;
+}
+
 export function lineFitSeries(
   name: string,
   fit: LineFitResult,
