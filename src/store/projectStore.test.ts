@@ -66,6 +66,17 @@ describe("project store", () => {
     expect(useProjectStore.getState().project.analysis.error).toBeDefined();
   });
 
+  test("keeps UPS results when LEIPS fitting range is invalid", () => {
+    useProjectStore.getState().setFitRange("leips-bg", { min: 100, max: 101 });
+
+    const analysis = useProjectStore.getState().project.analysis;
+
+    expect(analysis.ups).toBeDefined();
+    expect(analysis.leips).toBeUndefined();
+    expect(analysis.band).toBeUndefined();
+    expect(analysis.error).toContain("LEIPS:");
+  });
+
   test("updates dataset selection, bandpass, Ef offset and windows", () => {
     const state = useProjectStore.getState();
     const leips = state.project.datasets.find((dataset) => dataset.kind === "leips")!;

@@ -167,11 +167,12 @@ export function recalculateProject(project: ProjectSnapshot): ProjectSnapshot {
   const ipDataset = findDataset(project.datasets, analysis.selection.upsIpDatasetId);
   const leetDerDataset = findDataset(project.datasets, analysis.selection.leetDerDatasetId);
   const leipsDataset = findDataset(project.datasets, analysis.selection.leipsDatasetId);
+  const errors: string[] = [];
 
-  try {
-    const ups =
-      vbDataset && ipDataset
-        ? calculateUPSResult({
+  const ups =
+    vbDataset && ipDataset
+      ? safeCalculate("UPS", errors, () =>
+          calculateUPSResult({
             vbDataset,
             ipDataset,
             vbEdgeRange: analysis.fitRanges.upsVbEdge,
@@ -181,44 +182,59 @@ export function recalculateProject(project: ProjectSnapshot): ProjectSnapshot {
             cutoffEdgeRange: analysis.fitRanges.upsIpEdge,
             cutoffBackgroundRange: analysis.fitRanges.upsIpBackground,
             photonEnergy: analysis.photonEnergy,
-          })
-        : undefined;
-    const leips =
-      leetDerDataset && leipsDataset
-        ? calculateLEIPSResult({
+          }),
+        )
+      : undefined;
+  const leips =
+    leetDerDataset && leipsDataset
+      ? safeCalculate("LEIPS", errors, () =>
+          calculateLEIPSResult({
             leetDerDataset,
             leipsDataset,
             peakRange: analysis.fitRanges.leetDerPeak,
             edgeRange: analysis.fitRanges.leipsEdge,
             backgroundRange: analysis.fitRanges.leipsBackground,
             bandpassType: analysis.bandpassType,
-          })
-        : undefined;
-    const efMinusEvbm = ups
-      ? ups.efMinusEvbm
-      : Number.isFinite(analysis.efMinusEvbm)
-        ? analysis.efMinusEvbm
-        : 0;
-    const band =
-      ups && leips && vbDataset
-        ? createBandDiagram({
+          }),
+        )
+      : undefined;
+  const efMinusEvbm = ups
+    ? ups.efMinusEvbm
+    : Number.isFinite(analysis.efMinusEvbm)
+      ? analysis.efMinusEvbm
+      : 0;
+  const band =
+    ups && leips && vbDataset
+      ? safeCalculate("Band", errors, () =>
+          createBandDiagram({
             vbDataset,
             leipsEvacPoints: leips.leipsEvacPoints,
             efMinusEvbm,
             ip: ups.ip,
             ea: leips.ea,
-          })
-        : undefined;
+          }),
+        )
+      : undefined;
 
-    return {
-      ...project,
-      analysis: { ...analysis, efMinusEvbm, ups, leips, band, error: undefined },
-    };
+  return {
+    ...project,
+    analysis: {
+      ...analysis,
+      efMinusEvbm,
+      ups,
+      leips,
+      band,
+      error: errors.length > 0 ? errors.join("\n") : undefined,
+    },
+  };
+}
+
+function safeCalculate<T>(label: string, errors: string[], calculate: () => T): T | undefined {
+  try {
+    return calculate();
   } catch (error) {
-    return {
-      ...project,
-      analysis: { ...analysis, error: error instanceof Error ? error.message : String(error) },
-    };
+    errors.push(`${label}: ${error instanceof Error ? error.message : String(error)}`);
+    return undefined;
   }
 }
 

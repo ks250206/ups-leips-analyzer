@@ -20,6 +20,7 @@ export function WindowFrame({ window, icon, children, onFocus, onChange }: Windo
       size={{ width: window.width, height: window.height }}
       style={{ zIndex: window.zIndex }}
       dragHandleClassName="window-titlebar"
+      onMouseEnter={onFocus}
       onMouseDown={onFocus}
       onDragStop={(_event, data) => onChange({ x: data.x, y: data.y })}
       onResizeStop={(_event, _direction, ref, _delta, position) =>
