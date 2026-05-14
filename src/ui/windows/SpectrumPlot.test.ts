@@ -1,166 +1,83 @@
 import { describe, expect, test } from "vite-plus/test";
 import {
-  createSpectrumPlotOptions,
+  createPlotGeometry,
+  createPlotScales,
   inferPlotDragZoomMode,
   selectionRectForMode,
 } from "./SpectrumPlot";
 
-describe("SpectrumPlot options", () => {
-  test("sets reversed x scale direction", () => {
-    const options = createSpectrumPlotOptions({
+describe("SpectrumPlot D3 scales", () => {
+  test("sets reversed x scale range", () => {
+    const scales = createPlotScales({
       size: { width: 320, height: 240 },
-      title: "reverse",
-      xLabel: "x",
-      yLabel: "y",
       series: [{ name: "s", color: "#000000", points: [{ x: 1, y: 1 }] }],
-      markers: [],
-      rangeBands: [],
       xDirection: "reverse",
     });
 
-    expect(options.scales?.x?.dir).toBe(-1);
-    expect(options.cursor?.drag?.setScale).toBe(false);
-    expect(options.cursor?.drag?.x).toBe(false);
-    expect(options.cursor?.drag?.y).toBe(false);
-    expect(options.cursor?.show).toBe(false);
+    expect(scales.xScale.range()[0]).toBe(scales.geometry.plotRight);
+    expect(scales.xScale.range()[1]).toBe(scales.geometry.left);
   });
 
-  test("sets normal x scale direction", () => {
-    const options = createSpectrumPlotOptions({
+  test("sets normal x scale range", () => {
+    const scales = createPlotScales({
       size: { width: 320, height: 240 },
-      title: "normal",
-      xLabel: "x",
-      yLabel: "y",
       series: [{ name: "s", color: "#000000", points: [{ x: 1, y: 1 }] }],
-      markers: [],
-      rangeBands: [],
       xDirection: "normal",
     });
 
-    expect(options.scales?.x?.dir).toBe(1);
-  });
-
-  test("omits the inner uPlot title because the window title is authoritative", () => {
-    const options = createSpectrumPlotOptions({
-      size: { width: 320, height: 240 },
-      title: "window title only",
-      xLabel: "x",
-      yLabel: "y",
-      series: [{ name: "s", color: "#000000", points: [{ x: 1, y: 1 }] }],
-      markers: [],
-      rangeBands: [],
-      xDirection: "normal",
-    });
-
-    expect(options.title).toBeUndefined();
-  });
-
-  test("can hide y-axis tick values for dual-axis band diagrams", () => {
-    const options = createSpectrumPlotOptions({
-      size: { width: 320, height: 240 },
-      title: "dual",
-      xLabel: "x",
-      yLabel: "UPS",
-      yRightLabel: "LEIPS",
-      hideYTicks: true,
-      series: [
-        { name: "UPS", color: "#2563eb", points: [{ x: 1, y: 1 }], yAxis: "left" },
-        { name: "LEIPS", color: "#dc2626", points: [{ x: 1, y: 1 }], yAxis: "right" },
-      ],
-      markers: [],
-      rangeBands: [],
-      xDirection: "reverse",
-    });
-
-    expect(options.axes?.[1]?.label).toBe("");
-    const leftValues = options.axes?.[1]?.values as
-      | ((
-          self: never,
-          splits: number[],
-          axisIdx: number,
-          foundSpace: number,
-          foundIncr: number,
-        ) => unknown[])
-      | undefined;
-    const rightValues = options.axes?.[2]?.values as
-      | ((
-          self: never,
-          splits: number[],
-          axisIdx: number,
-          foundSpace: number,
-          foundIncr: number,
-        ) => unknown[])
-      | undefined;
-
-    expect(leftValues?.({} as never, [], 1, 10, 0)).toEqual([]);
-    expect(options.axes?.[2]?.label).toBe("");
-    expect(rightValues?.({} as never, [], 2, 10, 0)).toEqual([]);
-    expect(options.series?.[2]?.scale).toBe("y2");
+    expect(scales.xScale.range()[0]).toBe(scales.geometry.left);
+    expect(scales.xScale.range()[1]).toBe(scales.geometry.plotRight);
   });
 
   test("keeps visible axis space on normal plots", () => {
-    const options = createSpectrumPlotOptions({
-      size: { width: 320, height: 240 },
-      title: "axes",
-      xLabel: "x",
-      yLabel: "Intensity",
-      series: [{ name: "s", color: "#000000", points: [{ x: 1, y: 1 }] }],
-      markers: [],
-      rangeBands: [],
-      xDirection: "normal",
-    });
+    const geometry = createPlotGeometry({ width: 320, height: 240 });
 
-    expect(options.padding).toEqual([52, 10, 8, 10]);
-    expect(options.axes?.[0]?.size).toBe(52);
-    expect(options.axes?.[1]?.label).toBe("");
-    expect(options.axes?.[1]?.size).toBe(102);
-    expect(options.axes?.[1]?.labelSize).toBe(0);
-    expect(options.axes?.[1]?.values).toBeUndefined();
+    expect(geometry.top).toBe(40);
+    expect(geometry.left).toBe(64);
+    expect(geometry.right).toBe(58);
+    expect(geometry.bottom).toBe(44);
+    expect(geometry.plotWidth).toBe(198);
+    expect(geometry.plotHeight).toBe(156);
   });
 
-  test("uses larger plot padding and labels for band diagrams", () => {
-    const options = createSpectrumPlotOptions({
-      size: { width: 520, height: 360 },
-      title: "band",
-      xLabel: "Energy relative to Ef/eV",
-      yLabel: "UPS",
-      yRightLabel: "LEIPS",
-      largeAxisLabels: true,
-      hideYTicks: true,
+  test("uses larger plot margins for band diagrams", () => {
+    const geometry = createPlotGeometry({ width: 520, height: 360 }, true);
+
+    expect(geometry.top).toBe(68);
+    expect(geometry.left).toBe(92);
+    expect(geometry.right).toBe(92);
+    expect(geometry.bottom).toBe(70);
+    expect(geometry.plotWidth).toBe(336);
+    expect(geometry.plotHeight).toBe(222);
+  });
+
+  test("creates a right y scale for dual-axis plots", () => {
+    const scales = createPlotScales({
+      size: { width: 320, height: 240 },
       series: [
         { name: "UPS", color: "#2563eb", points: [{ x: 1, y: 1 }], yAxis: "left" },
-        { name: "LEIPS", color: "#dc2626", points: [{ x: 1, y: 1 }], yAxis: "right" },
+        { name: "LEIPS", color: "#dc2626", points: [{ x: 1, y: 10 }], yAxis: "right" },
       ],
-      markers: [],
-      rangeBands: [],
       xDirection: "reverse",
     });
 
-    expect(options.padding).toEqual([76, 10, 8, 10]);
-    expect(options.axes?.[0]?.labelSize).toBe(36);
-    expect(options.axes?.[1]?.label).toBe("");
-    expect(options.axes?.[1]?.labelSize).toBe(0);
-    expect(options.axes?.[2]?.label).toBe("");
-    expect(options.axes?.[2]?.labelSize).toBe(0);
+    expect(scales.yRightScale).toBeDefined();
+    expect(scales.yRightDomain?.min).toBeLessThan(10);
+    expect(scales.yRightDomain?.max).toBeGreaterThan(10);
   });
 
-  test("excludes fit series from automatic y-axis scaling", () => {
-    const options = createSpectrumPlotOptions({
+  test("excludes fit series from automatic x and y scaling", () => {
+    const scales = createPlotScales({
       size: { width: 320, height: 240 },
-      title: "scale",
-      xLabel: "x",
-      yLabel: "y",
       series: [
         { name: "raw", color: "#000000", points: [{ x: 1, y: 1 }] },
-        { name: "fit", color: "#dc2626", points: [{ x: 1, y: 999 }], affectsScale: false },
+        { name: "fit", color: "#dc2626", points: [{ x: 100, y: 999 }], affectsScale: false },
       ],
-      markers: [],
-      rangeBands: [],
       xDirection: "normal",
     });
 
-    expect(options.series?.[1]?.auto).toBe(true);
-    expect(options.series?.[2]?.auto).toBe(false);
+    expect(scales.xDomain.max).toBeLessThan(100);
+    expect(scales.yDomain.max).toBeLessThan(999);
   });
 
   test("infers x, y and xy drag zoom modes from selection shape", () => {
