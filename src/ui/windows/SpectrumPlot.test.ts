@@ -202,6 +202,28 @@ describe("SpectrumPlot D3 scales", () => {
     expect((xZoom.x?.max ?? 0) - (xZoom.x?.min ?? 0)).toBeLessThan(10);
     expect(xZoom.y).toEqual(base.y);
 
+    const xZoomFromHorizontalWheel = nextViewportAfterWheel(
+      base,
+      scales,
+      { ...eventBase, shiftKey: true, deltaX: -100, deltaY: 0 },
+      "normal",
+    );
+    expect(
+      (xZoomFromHorizontalWheel.x?.max ?? 0) - (xZoomFromHorizontalWheel.x?.min ?? 0),
+    ).toBeLessThan(10);
+    expect(xZoomFromHorizontalWheel.y).toEqual(base.y);
+
+    const xZoomFromShiftTranslatedWheel = nextViewportAfterWheel(
+      base,
+      scales,
+      { ...eventBase, deltaX: -100, deltaY: 0 },
+      "normal",
+    );
+    expect(
+      (xZoomFromShiftTranslatedWheel.x?.max ?? 0) - (xZoomFromShiftTranslatedWheel.x?.min ?? 0),
+    ).toBeLessThan(10);
+    expect(xZoomFromShiftTranslatedWheel.y).toEqual(base.y);
+
     const yPan = nextViewportAfterWheel(base, scales, { ...eventBase, altKey: true }, "normal");
     expect((yPan.y?.max ?? 0) - (yPan.y?.min ?? 0)).toBe(10);
     expect(yPan.y?.min).not.toBe(0);

@@ -1073,7 +1073,8 @@ export function nextViewportAfterWheel(
   const x = current.x ?? scales.xDomain;
   const y = current.y ?? scales.yDomain;
   const y2 = current.y2 ?? scales.yRightDomain;
-  if (event.altKey && event.shiftKey) {
+  const horizontalWheel = isHorizontalWheel(event);
+  if (event.altKey && (event.shiftKey || horizontalWheel)) {
     const deltaSource = event.deltaY || event.deltaX;
     const direction = xDirection === "reverse" ? -1 : 1;
     const delta = deltaSource * (x.max - x.min) * 0.001 * direction;
@@ -1088,19 +1089,27 @@ export function nextViewportAfterWheel(
       y2: y2 ? { min: y2.min + nextY2Delta, max: y2.max + nextY2Delta } : undefined,
     };
   }
-  const factor = Math.exp(event.deltaY * 0.001);
-  if (event.shiftKey) {
+  if (event.shiftKey || horizontalWheel) {
+    const xWheelDelta = event.deltaY || event.deltaX;
+    const factor = Math.exp(xWheelDelta * 0.001);
     return {
       ...current,
       x: zoomRangeAt(x, plotXToValue(scales, position.left), factor),
     };
   }
+  const factor = Math.exp(event.deltaY * 0.001);
   const y2Anchor = plotY2ToValue(scales, position.top);
   return {
     ...current,
     y: zoomRangeAt(y, plotYToValue(scales, position.top), factor),
     y2: y2 && y2Anchor !== undefined ? zoomRangeAt(y2, y2Anchor, factor) : y2,
   };
+}
+
+function isHorizontalWheel(
+  event: Pick<WheelEvent | ReactWheelEvent<SVGSVGElement>, "deltaX" | "deltaY">,
+) {
+  return Math.abs(event.deltaX) > Math.abs(event.deltaY) * 1.2;
 }
 
 function nextViewportAfterPanDrag(
