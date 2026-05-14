@@ -22,6 +22,7 @@ describe("SpectrumPlot options", () => {
     expect(options.cursor?.drag?.setScale).toBe(false);
     expect(options.cursor?.drag?.x).toBe(false);
     expect(options.cursor?.drag?.y).toBe(false);
+    expect(options.cursor?.show).toBe(false);
   });
 
   test("sets normal x scale direction", () => {
@@ -111,7 +112,8 @@ describe("SpectrumPlot options", () => {
 
     expect(options.axes?.[0]?.size).toBe(48);
     expect(options.axes?.[1]?.label).toBe("Intensity");
-    expect(options.axes?.[1]?.size).toBe(64);
+    expect(options.axes?.[1]?.size).toBe(78);
+    expect(options.axes?.[1]?.labelSize).toBe(20);
     expect(options.axes?.[1]?.values).toBeUndefined();
   });
 

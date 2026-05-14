@@ -247,6 +247,7 @@ export function createSpectrumPlotOptions(input: SpectrumPlotOptionsInput): uPlo
   return {
     ...input.size,
     cursor: {
+      show: false,
       drag: {
         setScale: false,
         x: false,
@@ -263,6 +264,8 @@ export function createSpectrumPlotOptions(input: SpectrumPlotOptionsInput): uPlo
         label: input.xLabel,
         stroke: "#334155",
         size: 48,
+        labelSize: 20,
+        labelGap: 6,
         grid: { stroke: "#e2e8f0", width: 1 },
       },
       createYAxis({
@@ -334,7 +337,9 @@ function createYAxis(input: {
     side: input.side,
     label: input.label,
     stroke: input.stroke,
-    size: input.side === 1 ? 58 : 64,
+    size: input.side === 1 ? 66 : 78,
+    labelSize: 20,
+    labelGap: 8,
     grid: input.hideTicks ? { show: false } : { stroke: "#edf2f7", width: 1 },
     ticks: input.hideTicks ? { show: false } : undefined,
     values: input.hideTicks ? () => [] : undefined,
@@ -406,9 +411,7 @@ function drawRangeBands(plot: uPlot, rangeBands: readonly PlotRangeBand[]): void
     ctx.fillStyle = withAlpha(band.color, 0.11);
     ctx.fillRect(x0, top, width, height);
     ctx.strokeStyle = withAlpha(band.color, 0.65);
-    ctx.setLineDash([3, 3]);
     ctx.strokeRect(x0, top, width, height);
-    ctx.setLineDash([]);
     ctx.fillStyle = band.color;
     ctx.fillText(band.label, x0 + 4, top + height - 18);
   }
