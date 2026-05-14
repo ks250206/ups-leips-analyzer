@@ -15,6 +15,7 @@ interface SpectrumPlotProps {
   xLabel: string;
   yLabel: string;
   yRightLabel?: string;
+  hideYTicks?: boolean;
   series: PlotSeries[];
   markers?: PlotMarker[];
   rangeBands?: PlotRangeBand[];
@@ -29,6 +30,7 @@ export interface SpectrumPlotOptionsInput {
   xLabel: string;
   yLabel: string;
   yRightLabel?: string;
+  hideYTicks?: boolean;
   series: PlotSeries[];
   markers: PlotMarker[];
   rangeBands: PlotRangeBand[];
@@ -52,6 +54,7 @@ export function SpectrumPlot({
   xLabel,
   yLabel,
   yRightLabel,
+  hideYTicks = false,
   series,
   markers = [],
   rangeBands = [],
@@ -83,6 +86,7 @@ export function SpectrumPlot({
       xLabel,
       yLabel,
       yRightLabel,
+      hideYTicks,
       series,
       markers,
       rangeBands,
@@ -112,6 +116,7 @@ export function SpectrumPlot({
     xLabel,
     yLabel,
     yRightLabel,
+    hideYTicks,
   ]);
 
   return (
@@ -189,16 +194,20 @@ export function createSpectrumPlotOptions(input: SpectrumPlotOptionsInput): uPlo
     },
     axes: [
       { label: input.xLabel, stroke: "#334155", grid: { stroke: "#e2e8f0", width: 1 } },
-      { label: input.yLabel, stroke: "#334155", grid: { stroke: "#edf2f7", width: 1 } },
+      createYAxis({
+        label: input.yLabel,
+        stroke: "#334155",
+        hideTicks: input.hideYTicks ?? false,
+      }),
       ...(hasRightAxis
         ? [
-            {
+            createYAxis({
               scale: "y2",
               side: 1,
               label: input.yRightLabel ?? "Right axis",
               stroke: "#dc2626",
-              grid: { show: false },
-            } satisfies uPlot.Axis,
+              hideTicks: input.hideYTicks ?? false,
+            }),
           ]
         : []),
     ],
@@ -241,6 +250,24 @@ export function createSpectrumPlotOptions(input: SpectrumPlotOptionsInput): uPlo
         },
       ],
     },
+  };
+}
+
+function createYAxis(input: {
+  label: string;
+  stroke: string;
+  hideTicks: boolean;
+  scale?: string;
+  side?: 1;
+}): uPlot.Axis {
+  return {
+    scale: input.scale,
+    side: input.side,
+    label: input.label,
+    stroke: input.stroke,
+    grid: input.hideTicks ? { show: false } : { stroke: "#edf2f7", width: 1 },
+    ticks: input.hideTicks ? { show: false } : undefined,
+    values: input.hideTicks ? () => [] : undefined,
   };
 }
 

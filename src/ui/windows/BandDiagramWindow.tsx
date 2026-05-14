@@ -45,10 +45,12 @@ export function BandDiagramWindow() {
         <SpectrumPlot
           title="UPS-LEIPS Band Diagram"
           xLabel="Energy relative to Ef/eV"
-          yLabel="Intensity / a.u."
+          yLabel="UPS"
+          yRightLabel="LEIPS"
           series={series}
           markers={markers}
           xDirection="reverse"
+          hideYTicks
         />
       </div>
     </div>

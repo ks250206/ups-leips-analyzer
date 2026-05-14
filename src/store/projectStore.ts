@@ -32,7 +32,7 @@ export const useProjectStore = create<ProjectStore>((set, get) => ({
   addDatasets: (datasets) => {
     set((state) => {
       const merged = mergeDatasets(state.project.datasets, datasets);
-      const selection = autoSelectDatasets(merged, state.project.analysis.selection);
+      const selection = autoSelectDatasets(merged, state.project.analysis.selection, datasets);
       const project = touchProject({
         ...state.project,
         datasets: merged,
@@ -249,18 +249,28 @@ function mergeDatasets(
 function autoSelectDatasets(
   datasets: readonly SpectrumDataset[],
   current: AnalysisState["selection"],
+  preferred: readonly SpectrumDataset[] = [],
 ): AnalysisState["selection"] {
   return {
-    upsVbDatasetId:
-      current.upsVbDatasetId ?? datasets.find((dataset) => dataset.kind === "ups-vb")?.id,
-    upsIpDatasetId:
-      current.upsIpDatasetId ?? datasets.find((dataset) => dataset.kind === "ups-ip")?.id,
-    leetDatasetId: current.leetDatasetId ?? datasets.find((dataset) => dataset.kind === "leet")?.id,
-    leetDerDatasetId:
-      current.leetDerDatasetId ?? datasets.find((dataset) => dataset.kind === "leet-der")?.id,
-    leipsDatasetId:
-      current.leipsDatasetId ?? datasets.find((dataset) => dataset.kind === "leips")?.id,
+    upsVbDatasetId: pickDatasetId("ups-vb", datasets, current.upsVbDatasetId, preferred),
+    upsIpDatasetId: pickDatasetId("ups-ip", datasets, current.upsIpDatasetId, preferred),
+    leetDatasetId: pickDatasetId("leet", datasets, current.leetDatasetId, preferred),
+    leetDerDatasetId: pickDatasetId("leet-der", datasets, current.leetDerDatasetId, preferred),
+    leipsDatasetId: pickDatasetId("leips", datasets, current.leipsDatasetId, preferred),
   };
+}
+
+function pickDatasetId(
+  kind: SpectrumDataset["kind"],
+  datasets: readonly SpectrumDataset[],
+  currentId: string | undefined,
+  preferred: readonly SpectrumDataset[],
+): string | undefined {
+  return (
+    preferred.find((dataset) => dataset.kind === kind)?.id ??
+    currentId ??
+    datasets.find((dataset) => dataset.kind === kind)?.id
+  );
 }
 
 function findDataset(

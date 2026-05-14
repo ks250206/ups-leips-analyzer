@@ -1,6 +1,6 @@
 import { describe, expect, test } from "vite-plus/test";
 import type { LineFitResult } from "../domain/types";
-import { lineFitSeries, xExtent } from "./plotData";
+import { bandSeries, lineFitSeries, xExtent } from "./plotData";
 
 describe("plot data helpers", () => {
   test("extends a line fit to the requested plot extent", () => {
@@ -28,5 +28,21 @@ describe("plot data helpers", () => {
         { x: 7, y: 3 },
       ]),
     ).toEqual({ min: -2, max: 7 });
+  });
+
+  test("assigns band diagram LEIPS data to the right y-axis", () => {
+    const series = bandSeries({
+      efMinusEvbm: 0.5,
+      ip: 5,
+      ea: 3,
+      eg: 2,
+      vacuumRelativeToEf: -4.5,
+      cbmRelativeToEf: -1.5,
+      upsPoints: [{ x: 0, y: 1 }],
+      leipsPoints: [{ x: 1, y: 2 }],
+    });
+
+    expect(series[0]?.yAxis).toBe("left");
+    expect(series[1]?.yAxis).toBe("right");
   });
 });

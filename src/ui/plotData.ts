@@ -85,8 +85,8 @@ export function datasetSeries(
 
 export function bandSeries(band: BandDiagramResult): PlotSeries[] {
   return [
-    { name: "UPS", color: "#2563eb", points: band.upsPoints, width: 2 },
-    { name: "LEIPS", color: "#dc2626", points: band.leipsPoints, width: 2 },
+    { name: "UPS", color: "#2563eb", points: band.upsPoints, width: 2, yAxis: "left" },
+    { name: "LEIPS", color: "#dc2626", points: band.leipsPoints, width: 2, yAxis: "right" },
   ];
 }
 

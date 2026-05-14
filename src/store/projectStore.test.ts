@@ -76,6 +76,23 @@ describe("project store", () => {
     expect(useProjectStore.getState().project.name).toBe("Imported");
   });
 
+  test("switches analysis slots from demo datasets to imported datasets of the same kind", () => {
+    const incoming = createDemoDatasets().map((dataset) => ({
+      ...dataset,
+      id: `loaded-${dataset.id}`,
+      name: `Loaded ${dataset.name}`,
+    }));
+
+    useProjectStore.getState().addDatasets(incoming);
+
+    const selection = useProjectStore.getState().project.analysis.selection;
+    expect(selection.upsVbDatasetId).toBe("loaded-demo-ups-vb");
+    expect(selection.upsIpDatasetId).toBe("loaded-demo-ups-ip");
+    expect(selection.leetDatasetId).toBe("loaded-demo-leet");
+    expect(selection.leetDerDatasetId).toBe("loaded-demo-leet-der");
+    expect(selection.leipsDatasetId).toBe("loaded-demo-leips");
+  });
+
   test("auto-selects datasets when imported project has no assignments", () => {
     const project = {
       ...useProjectStore.getState().project,
