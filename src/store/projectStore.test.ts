@@ -85,6 +85,9 @@ describe("project store", () => {
 
     useProjectStore.getState().addDatasets(incoming);
 
+    expect(
+      useProjectStore.getState().project.datasets.some((dataset) => dataset.id === "demo-ups-vb"),
+    ).toBe(false);
     const selection = useProjectStore.getState().project.analysis.selection;
     expect(selection.upsVbDatasetId).toBe("loaded-demo-ups-vb");
     expect(selection.upsIpDatasetId).toBe("loaded-demo-ups-ip");

@@ -31,7 +31,8 @@ export const useProjectStore = create<ProjectStore>((set, get) => ({
   },
   addDatasets: (datasets) => {
     set((state) => {
-      const merged = mergeDatasets(state.project.datasets, datasets);
+      const existing = state.project.datasets.filter((dataset) => !isDemoDataset(dataset));
+      const merged = mergeDatasets(existing, datasets);
       const selection = autoSelectDatasets(merged, state.project.analysis.selection, datasets);
       const project = touchProject({
         ...state.project,
@@ -244,6 +245,10 @@ function mergeDatasets(
     byId.set(dataset.id, dataset);
   }
   return [...byId.values()];
+}
+
+function isDemoDataset(dataset: SpectrumDataset): boolean {
+  return dataset.metadata.fixture === "synthetic";
 }
 
 function autoSelectDatasets(

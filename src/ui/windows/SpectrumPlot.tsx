@@ -159,6 +159,13 @@ export function SpectrumPlot({
         <button
           className="rounded border border-slate-300 bg-white/90 px-2 py-0.5 text-[10px] font-semibold text-slate-700 shadow-sm hover:bg-cyan-50"
           type="button"
+          onClick={() => resetXZoom(plotRef.current, data[0])}
+        >
+          Reset
+        </button>
+        <button
+          className="rounded border border-slate-300 bg-white/90 px-2 py-0.5 text-[10px] font-semibold text-slate-700 shadow-sm hover:bg-cyan-50"
+          type="button"
           onClick={() => exportPng(plotRef.current, title)}
         >
           PNG
@@ -182,9 +189,10 @@ export function createSpectrumPlotOptions(input: SpectrumPlotOptionsInput): uPlo
     title: input.title,
     cursor: {
       drag: {
-        setScale: false,
+        setScale: true,
         x: true,
         y: false,
+        dist: 10,
       },
     },
     legend: { show: true },
@@ -220,12 +228,13 @@ export function createSpectrumPlotOptions(input: SpectrumPlotOptionsInput): uPlo
         width: item.width ?? 2,
         dash: item.dash,
         spanGaps: true,
+        auto: item.affectsScale ?? true,
       })),
     ],
     hooks: {
       setSelect: [
         (plot) => {
-          if (!input.onSelectRange || plot.select.width <= 0) {
+          if (!input.onSelectRange || plot.select.width <= 0 || !plot.cursor.event?.shiftKey) {
             return;
           }
           const start = plot.posToVal(plot.select.left, "x");
@@ -414,6 +423,15 @@ function clientXToPlotValue(plot: uPlot, container: HTMLElement, clientX: number
 
 function normalizeRange(range: FitRange): FitRange {
   return { min: Math.min(range.min, range.max), max: Math.max(range.min, range.max) };
+}
+
+function resetXZoom(plot: uPlot | undefined, xValues: readonly number[]): void {
+  const min = xValues[0];
+  const max = xValues[xValues.length - 1];
+  if (!plot || min === undefined || max === undefined) {
+    return;
+  }
+  plot.setScale("x", { min, max });
 }
 
 function exportPng(plot: uPlot | undefined, title: string): void {

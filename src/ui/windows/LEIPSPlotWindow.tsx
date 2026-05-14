@@ -82,7 +82,7 @@ export function LEIPSPlotWindow() {
       series={series}
       markers={markers}
       rangeBands={rangeBands}
-      xDirection="reverse"
+      xDirection="normal"
       onSelectRange={(range) => setFitRange("leet-der-peak", range)}
       onRangeBandChange={(target, range) => setFitRange(target as FitTarget, range)}
     />

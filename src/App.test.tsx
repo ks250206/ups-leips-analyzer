@@ -13,7 +13,7 @@ describe("App", () => {
     expect(screen.getAllByText("UPS IP").length).toBeGreaterThan(0);
     expect(await screen.findAllByText("UPS-LEIPS Band Diagram")).toHaveLength(2);
     expect(screen.getByLabelText("LEET / LEET(der) / LEIPS plot").dataset.xDirection).toBe(
-      "reverse",
+      "normal",
     );
     expect(screen.getByLabelText("LEIPS vs Energy from Evac. plot").dataset.xDirection).toBe(
       "reverse",

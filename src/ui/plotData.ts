@@ -15,6 +15,7 @@ export interface PlotSeries {
   width?: number;
   dash?: number[];
   yAxis?: "left" | "right";
+  affectsScale?: boolean;
 }
 
 export interface PlotMarker {
@@ -44,6 +45,7 @@ export function lineFitSeries(
     color,
     width: 1.5,
     dash: [6, 4],
+    affectsScale: false,
     points: [
       { x: extent.min, y: evaluateLine(fit, extent.min) },
       { x: extent.max, y: evaluateLine(fit, extent.max) },
@@ -72,7 +74,7 @@ export function gaussianSeries(
     const x = min + step * index;
     points.push({ x, y: evaluateGaussian(fit, x) });
   }
-  return { name, color, width: 1.5, dash: [4, 3], points };
+  return { name, color, width: 1.5, dash: [4, 3], points, affectsScale: false };
 }
 
 export function datasetSeries(

@@ -15,6 +15,9 @@ describe("SpectrumPlot options", () => {
     });
 
     expect(options.scales?.x?.dir).toBe(-1);
+    expect(options.cursor?.drag?.setScale).toBe(true);
+    expect(options.cursor?.drag?.x).toBe(true);
+    expect(options.cursor?.drag?.y).toBe(false);
   });
 
   test("sets normal x scale direction", () => {
@@ -73,5 +76,24 @@ describe("SpectrumPlot options", () => {
     expect(options.axes?.[2]?.label).toBe("LEIPS");
     expect(rightValues?.({} as never, [], 2, 10, 0)).toEqual([]);
     expect(options.series?.[2]?.scale).toBe("y2");
+  });
+
+  test("excludes fit series from automatic y-axis scaling", () => {
+    const options = createSpectrumPlotOptions({
+      size: { width: 320, height: 240 },
+      title: "scale",
+      xLabel: "x",
+      yLabel: "y",
+      series: [
+        { name: "raw", color: "#000000", points: [{ x: 1, y: 1 }] },
+        { name: "fit", color: "#dc2626", points: [{ x: 1, y: 999 }], affectsScale: false },
+      ],
+      markers: [],
+      rangeBands: [],
+      xDirection: "normal",
+    });
+
+    expect(options.series?.[1]?.auto).toBe(true);
+    expect(options.series?.[2]?.auto).toBe(false);
   });
 });

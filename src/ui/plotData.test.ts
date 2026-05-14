@@ -1,6 +1,6 @@
 import { describe, expect, test } from "vite-plus/test";
-import type { LineFitResult } from "../domain/types";
-import { bandSeries, lineFitSeries, xExtent } from "./plotData";
+import type { GaussianFitResult, LineFitResult } from "../domain/types";
+import { bandSeries, gaussianSeries, lineFitSeries, xExtent } from "./plotData";
 
 describe("plot data helpers", () => {
   test("extends a line fit to the requested plot extent", () => {
@@ -14,10 +14,36 @@ describe("plot data helpers", () => {
 
     const series = lineFitSeries("fit", fit, fit.range, "#000000", { min: -1, max: 5 });
 
+    expect(series.affectsScale).toBe(false);
     expect(series.points).toEqual([
       { x: -1, y: -1 },
       { x: 5, y: 11 },
     ]);
+  });
+
+  test("marks gaussian fit series as scale-neutral", () => {
+    const fit: GaussianFitResult = {
+      offset: 0,
+      amplitude: 1,
+      center: 0,
+      sigma: 1,
+      rSquared: 1,
+      range: { min: -1, max: 1 },
+      pointsUsed: 3,
+    };
+
+    const series = gaussianSeries(
+      "fit",
+      fit,
+      [
+        { x: -1, y: 0 },
+        { x: 0, y: 1 },
+        { x: 1, y: 0 },
+      ],
+      "#000000",
+    );
+
+    expect(series.affectsScale).toBe(false);
   });
 
   test("calculates an x extent from points", () => {
