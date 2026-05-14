@@ -4,13 +4,13 @@ import type { AnalysisState, FitRanges, Point, SpectrumDataset } from "./types";
 export const DEFAULT_FIT_RANGES: FitRanges = {
   upsVbEdge: { min: 0.9, max: 2.6 },
   upsVbBackground: { min: -3.2, max: -1.0 },
-  upsIpVbmEdge: { min: 0.9, max: 2.6 },
-  upsIpVbmBackground: { min: -3.2, max: -1.0 },
+  upsIpVbmEdge: { min: 0.55, max: 1.7 },
+  upsIpVbmBackground: { min: -3.4, max: -1.6 },
   upsIpEdge: { min: 9.0, max: 11.4 },
   upsIpBackground: { min: 12.2, max: 15.2 },
   leetDerPeak: { min: -6.9, max: -5.7 },
-  leipsEdge: { min: 3.2, max: 5.3 },
-  leipsBackground: { min: 6.2, max: 7.5 },
+  leipsEdge: { min: 3.0, max: 4.6 },
+  leipsBackground: { min: 1.0, max: 2.4 },
 };
 
 export function createDemoDatasets(): SpectrumDataset[] {

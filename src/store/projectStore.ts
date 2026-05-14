@@ -370,8 +370,8 @@ function autoFitRanges(
   return {
     ...current,
     leetDerPeak,
-    leipsEdge: rangeWithFallback(leipsEvacPoints, current.leipsEdge, 0.45, 0.68),
-    leipsBackground: rangeWithFallback(leipsEvacPoints, current.leipsBackground, 0.78, 0.96),
+    leipsEdge: rangeWithFallback(leipsEvacPoints, current.leipsEdge, 0.34, 0.56),
+    leipsBackground: rangeWithFallback(leipsEvacPoints, current.leipsBackground, 0.05, 0.22),
   };
 }
 

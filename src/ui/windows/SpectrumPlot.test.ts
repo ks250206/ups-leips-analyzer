@@ -9,6 +9,7 @@ import {
   rangeAfterCursorDrag,
   selectionRectForMode,
   shouldRenderSeriesInXDomain,
+  shiftRangeByDelta,
   zoomRangeAt,
 } from "./SpectrumPlot";
 
@@ -154,6 +155,10 @@ describe("SpectrumPlot D3 scales", () => {
 
     expect(rangeAfterCursorDrag(band, "min", 6)).toEqual({ min: 5, max: 6 });
     expect(rangeAfterCursorDrag(band, "max", 1)).toEqual({ min: 1, max: 2 });
+  });
+
+  test("shifts a range band without changing its width", () => {
+    expect(shiftRangeByDelta({ min: 2, max: 5 }, -1.5)).toEqual({ min: 0.5, max: 3.5 });
   });
 
   test("zooms a range around the pointer anchor", () => {

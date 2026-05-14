@@ -7,6 +7,7 @@ import {
   useMemo,
   useRef,
   useState,
+  type ReactNode,
   type PointerEvent as ReactPointerEvent,
   type WheelEvent as ReactWheelEvent,
 } from "react";
@@ -24,8 +25,11 @@ interface SpectrumPlotProps {
   markers?: PlotMarker[];
   rangeBands?: PlotRangeBand[];
   xDirection?: "normal" | "reverse";
+  viewportRequest?: { id: number; viewport: PlotViewport };
+  extraControls?: ReactNode;
   onSelectRange?: (range: FitRange) => void;
   onRangeBandChange?: (bandId: string, range: FitRange) => void;
+  onViewportChange?: (viewport: PlotViewport) => void;
 }
 
 export interface SpectrumPlotScaleInput {
@@ -92,8 +96,11 @@ export function SpectrumPlot({
   markers = EMPTY_MARKERS,
   rangeBands = EMPTY_RANGE_BANDS,
   xDirection = "normal",
+  viewportRequest,
+  extraControls,
   onSelectRange,
   onRangeBandChange,
+  onViewportChange,
 }: SpectrumPlotProps) {
   const containerRef = useRef<HTMLDivElement>(null);
   const svgRef = useRef<SVGSVGElement>(null);
@@ -104,6 +111,14 @@ export function SpectrumPlot({
   const [viewport, setViewport] = useState<PlotViewport>({});
   const [drag, setDrag] = useState<DragState | undefined>();
   const hasData = series.some((item) => item.points.length > 0);
+
+  const updateViewport = (next: PlotViewport | ((current: PlotViewport) => PlotViewport)) => {
+    setViewport((current) => {
+      const resolved = typeof next === "function" ? next(current) : next;
+      onViewportChange?.(resolved);
+      return resolved;
+    });
+  };
 
   useEffect(() => {
     const container = containerRef.current;
@@ -121,6 +136,13 @@ export function SpectrumPlot({
     observer.observe(container);
     return () => observer.disconnect();
   }, [hasData]);
+
+  useEffect(() => {
+    if (!viewportRequest) {
+      return;
+    }
+    updateViewport(viewportRequest.viewport);
+  }, [viewportRequest?.id]);
 
   const scales = useMemo(
     () =>
@@ -150,7 +172,7 @@ export function SpectrumPlot({
       }
       event.preventDefault();
       event.stopPropagation();
-      setViewport((current) =>
+      updateViewport((current) =>
         nextViewportAfterWheel(current, currentScales, event, xDirectionRef.current, svg),
       );
     };
@@ -213,7 +235,7 @@ export function SpectrumPlot({
               );
               return;
             }
-            setViewport((current) => nextViewportAfterDrag(current, scales, start, end));
+            updateViewport((current) => nextViewportAfterDrag(current, scales, start, end));
           })
         }
       >
@@ -243,6 +265,7 @@ export function SpectrumPlot({
               key={band.id ?? `${band.label}-${band.min}-${band.max}`}
               band={band}
               geometry={geometry}
+              onRangeBandChange={onRangeBandChange}
               xScale={xScale}
             />
           ))}
@@ -291,7 +314,7 @@ export function SpectrumPlot({
         <button
           className="rounded border border-slate-300 bg-white/90 px-1.5 py-0.5 text-[9px] font-semibold text-slate-700 shadow-sm hover:bg-cyan-50"
           type="button"
-          onClick={() => setViewport({})}
+          onClick={() => updateViewport({})}
         >
           Reset
         </button>
@@ -309,6 +332,7 @@ export function SpectrumPlot({
         >
           SVG
         </button>
+        {extraControls}
       </div>
     </div>
   );
@@ -492,10 +516,12 @@ function SeriesPath({
 function RangeBand({
   band,
   geometry,
+  onRangeBandChange,
   xScale,
 }: {
   band: PlotRangeBand;
   geometry: PlotGeometry;
+  onRangeBandChange?: (bandId: string, range: FitRange) => void;
   xScale: ScaleLinear<number, number>;
 }) {
   const x0 = xScale(Math.min(band.min, band.max));
@@ -505,11 +531,17 @@ function RangeBand({
   return (
     <g>
       <rect
+        className={band.id && onRangeBandChange ? "cursor-grab active:cursor-grabbing" : undefined}
         fill={withAlpha(band.color, 0.055)}
         height={geometry.plotHeight}
         width={width}
         x={left}
         y={geometry.top}
+        onPointerDown={(event) => {
+          event.preventDefault();
+          event.stopPropagation();
+          startRangeBandDrag(event, geometry, xScale, band, onRangeBandChange);
+        }}
       />
       <text fill={band.color} fontSize={11} x={left + 4} y={geometry.plotBottom - 8}>
         {band.label}
@@ -801,9 +833,46 @@ function startHandleDrag(
   window.addEventListener("pointercancel", cleanup, { once: true });
 }
 
+function startRangeBandDrag(
+  event: ReactPointerEvent<SVGRectElement>,
+  geometry: PlotGeometry,
+  xScale: ScaleLinear<number, number>,
+  band: PlotRangeBand,
+  onRangeBandChange: ((bandId: string, range: FitRange) => void) | undefined,
+): void {
+  if (!band.id || !onRangeBandChange) {
+    return;
+  }
+  const svg = event.currentTarget.ownerSVGElement;
+  if (!svg) {
+    return;
+  }
+  const startPosition = eventPositionInPlot(event, geometry, svg);
+  const startValue = xScale.invert(geometry.left + startPosition.left);
+  const initialRange = normalizeRange({ min: band.min, max: band.max });
+  const move = (moveEvent: PointerEvent) => {
+    const position = eventPositionInPlot(moveEvent, geometry, svg);
+    const nextValue = xScale.invert(geometry.left + position.left);
+    const delta = nextValue - startValue;
+    onRangeBandChange(band.id ?? "", shiftRangeByDelta(initialRange, delta));
+  };
+  const cleanup = () => {
+    window.removeEventListener("pointermove", move);
+    window.removeEventListener("pointerup", cleanup);
+    window.removeEventListener("pointercancel", cleanup);
+  };
+  window.addEventListener("pointermove", move);
+  window.addEventListener("pointerup", cleanup, { once: true });
+  window.addEventListener("pointercancel", cleanup, { once: true });
+}
+
 function eventPositionInPlot(
   event: Pick<
-    PointerEvent | ReactPointerEvent<SVGSVGElement> | ReactWheelEvent<SVGSVGElement>,
+    | PointerEvent
+    | ReactPointerEvent<SVGSVGElement>
+    | ReactPointerEvent<SVGRectElement>
+    | ReactWheelEvent<SVGSVGElement>
+    | WheelEvent,
     "clientX" | "clientY" | "currentTarget"
   >,
   geometry: PlotGeometry,
@@ -896,6 +965,10 @@ export function rangeAfterCursorDrag(
   return side === "min"
     ? normalizeRange({ min: value, max: band.max })
     : normalizeRange({ min: band.min, max: value });
+}
+
+export function shiftRangeByDelta(range: FitRange, delta: number): FitRange {
+  return { min: range.min + delta, max: range.max + delta };
 }
 
 export function plotXToValue(

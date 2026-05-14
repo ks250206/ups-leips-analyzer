@@ -1,5 +1,5 @@
-import { useMemo } from "react";
-import type { FitTarget } from "../../domain/types";
+import { useMemo, useState } from "react";
+import type { FitRange, FitTarget } from "../../domain/types";
 import { useProjectStore } from "../../store/projectStore";
 import { formatNumber } from "../format";
 import {
@@ -11,6 +11,7 @@ import {
   xExtent,
 } from "../plotData";
 import { SpectrumPlot } from "./SpectrumPlot";
+import type { PlotViewport } from "./SpectrumPlot";
 
 export function UPSVBPlotWindow() {
   const project = useProjectStore((state) => state.project);
@@ -96,6 +97,14 @@ export function UPSIPPlotWindow() {
   const project = useProjectStore((state) => state.project);
   const activeFitTarget = useProjectStore((state) => state.activeFitTarget);
   const setFitRange = useProjectStore((state) => state.setFitRange);
+  const [viewport, setViewport] = useState<PlotViewport>({});
+  const [viewportRequest, setViewportRequest] = useState<
+    { id: number; viewport: PlotViewport } | undefined
+  >();
+  const [snapshots, setSnapshots] = useState<{
+    evbm?: PlotViewport;
+    cutoff?: PlotViewport;
+  }>({});
   const ipDataset = project.datasets.find(
     (dataset) => dataset.id === project.analysis.selection.upsIpDatasetId,
   );
@@ -199,6 +208,22 @@ export function UPSIPPlotWindow() {
     ],
     [activeFitTarget, project.analysis.fitRanges],
   );
+  const evbmFallbackViewport = useMemo(
+    () =>
+      viewportAroundRanges([
+        project.analysis.fitRanges.upsIpVbmEdge,
+        project.analysis.fitRanges.upsIpVbmBackground,
+      ]),
+    [project.analysis.fitRanges.upsIpVbmBackground, project.analysis.fitRanges.upsIpVbmEdge],
+  );
+  const cutoffFallbackViewport = useMemo(
+    () =>
+      viewportAroundRanges([
+        project.analysis.fitRanges.upsIpEdge,
+        project.analysis.fitRanges.upsIpBackground,
+      ]),
+    [project.analysis.fitRanges.upsIpBackground, project.analysis.fitRanges.upsIpEdge],
+  );
 
   return (
     <SpectrumPlot
@@ -209,10 +234,61 @@ export function UPSIPPlotWindow() {
       markers={markers}
       rangeBands={rangeBands}
       xDirection="reverse"
+      viewportRequest={viewportRequest}
+      onViewportChange={setViewport}
+      extraControls={
+        <>
+          <button
+            className="rounded border border-slate-300 bg-white/90 px-1 py-0.5 text-[9px] font-semibold text-slate-700 shadow-sm hover:bg-cyan-50"
+            type="button"
+            onClick={() => setSnapshots((current) => ({ ...current, evbm: viewport }))}
+          >
+            Save V
+          </button>
+          <button
+            className="rounded border border-slate-300 bg-white/90 px-1 py-0.5 text-[9px] font-semibold text-slate-700 shadow-sm hover:bg-cyan-50"
+            type="button"
+            onClick={() =>
+              setViewportRequest({
+                id: Date.now(),
+                viewport: snapshots.evbm ?? evbmFallbackViewport,
+              })
+            }
+          >
+            VBM
+          </button>
+          <button
+            className="rounded border border-slate-300 bg-white/90 px-1 py-0.5 text-[9px] font-semibold text-slate-700 shadow-sm hover:bg-cyan-50"
+            type="button"
+            onClick={() => setSnapshots((current) => ({ ...current, cutoff: viewport }))}
+          >
+            Save C
+          </button>
+          <button
+            className="rounded border border-slate-300 bg-white/90 px-1 py-0.5 text-[9px] font-semibold text-slate-700 shadow-sm hover:bg-cyan-50"
+            type="button"
+            onClick={() =>
+              setViewportRequest({
+                id: Date.now(),
+                viewport: snapshots.cutoff ?? cutoffFallbackViewport,
+              })
+            }
+          >
+            Cut
+          </button>
+        </>
+      }
       onSelectRange={(range) => setFitRange(ipTarget(activeFitTarget), range)}
       onRangeBandChange={(target, range) => setFitRange(target as FitTarget, range)}
     />
   );
+}
+
+function viewportAroundRanges(ranges: readonly FitRange[]): PlotViewport {
+  const min = Math.min(...ranges.map((range) => Math.min(range.min, range.max)));
+  const max = Math.max(...ranges.map((range) => Math.max(range.min, range.max)));
+  const padding = Math.max((max - min) * 0.3, 0.25);
+  return { x: { min: min - padding, max: max + padding } };
 }
 
 function vbTarget(active: FitTarget): FitTarget {
