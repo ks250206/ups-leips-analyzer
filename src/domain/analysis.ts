@@ -96,7 +96,6 @@ export function createBandDiagram(input: {
 }): BandDiagramResult {
   const vacuumRelativeToEf = input.efMinusEvbm - input.ip;
   const cbmRelativeToEf = vacuumRelativeToEf + input.ea;
-  const leipsShift = input.efMinusEvbm - input.ip;
 
   return {
     efMinusEvbm: input.efMinusEvbm,
@@ -106,6 +105,17 @@ export function createBandDiagram(input: {
     vacuumRelativeToEf,
     cbmRelativeToEf,
     upsPoints: input.vbDataset.points,
-    leipsPoints: input.leipsEvacPoints.map((point) => ({ x: point.x + leipsShift, y: point.y })),
+    leipsPoints: convertLeipsEvacToEfEnergy(input.leipsEvacPoints, {
+      efMinusEvbm: input.efMinusEvbm,
+      ip: input.ip,
+    }),
   };
+}
+
+export function convertLeipsEvacToEfEnergy(
+  points: readonly Point[],
+  input: { efMinusEvbm: number; ip: number },
+): Point[] {
+  const vacuumRelativeToEf = input.efMinusEvbm - input.ip;
+  return points.map((point) => ({ x: point.x + vacuumRelativeToEf, y: point.y }));
 }

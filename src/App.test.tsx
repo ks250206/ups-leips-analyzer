@@ -12,6 +12,13 @@ describe("App", () => {
     expect(screen.getAllByText("UPS VB").length).toBeGreaterThan(0);
     expect(screen.getAllByText("UPS IP").length).toBeGreaterThan(0);
     expect(await screen.findAllByText("UPS-LEIPS Band Diagram")).toHaveLength(2);
+    expect(screen.getByLabelText("LEET / LEET(der) / LEIPS plot").dataset.xDirection).toBe(
+      "reverse",
+    );
+    expect(screen.getByLabelText("LEIPS vs Energy from Evac. plot").dataset.xDirection).toBe(
+      "reverse",
+    );
+    expect(screen.getByLabelText("UPS-LEIPS Band Diagram plot").dataset.xDirection).toBe("reverse");
     expect(screen.getByRole("button", { name: "Band" })).toBeTruthy();
   });
 });

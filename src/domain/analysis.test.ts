@@ -5,6 +5,7 @@ import {
   calculateLEIPSResult,
   calculateUPSResult,
   convertBiasToVacuumEnergy,
+  convertLeipsEvacToEfEnergy,
   createBandDiagram,
 } from "./analysis";
 import { createDemoDatasets, DEFAULT_FIT_RANGES } from "./demoData";
@@ -77,6 +78,22 @@ describe("LEIPS analysis", () => {
     });
     expect(band.eg).toBeCloseTo(2.78, 6);
     expect(band.vacuumRelativeToEf).toBeCloseTo(-5.34, 6);
+    expect(band.cbmRelativeToEf).toBeCloseTo(-2.22, 6);
     expect(band.leipsPoints[0]?.x).toBeCloseTo(-2.22, 6);
+  });
+
+  test("converts LEIPS energy from Evac to energy relative to Ef using the IGOR shift", () => {
+    const shifted = convertLeipsEvacToEfEnergy(
+      [
+        { x: 3.12, y: 1 },
+        { x: 5.5, y: 2 },
+      ],
+      { efMinusEvbm: 0.56, ip: 5.9 },
+    );
+
+    expect(shifted[0]?.x).toBeCloseTo(-2.22, 6);
+    expect(shifted[0]?.y).toBe(1);
+    expect(shifted[1]?.x).toBeCloseTo(0.16, 6);
+    expect(shifted[1]?.y).toBe(2);
   });
 });

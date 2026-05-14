@@ -23,6 +23,20 @@ interface SpectrumPlotProps {
   onRangeBandChange?: (bandId: string, range: FitRange) => void;
 }
 
+export interface SpectrumPlotOptionsInput {
+  size: { width: number; height: number };
+  title: string;
+  xLabel: string;
+  yLabel: string;
+  yRightLabel?: string;
+  series: PlotSeries[];
+  markers: PlotMarker[];
+  rangeBands: PlotRangeBand[];
+  xDirection: "normal" | "reverse";
+  onSelectRange?: (range: FitRange) => void;
+  onSyncHandles?: (plot: uPlot) => void;
+}
+
 interface CursorHandle {
   bandId: string;
   side: "min" | "max";
@@ -49,7 +63,6 @@ export function SpectrumPlot({
   const plotRef = useRef<uPlot | undefined>(undefined);
   const [handles, setHandles] = useState<CursorHandle[]>([]);
   const data = useMemo(() => alignSeries(series), [series]);
-  const hasRightAxis = series.some((item) => item.yAxis === "right");
 
   useEffect(() => {
     const container = containerRef.current;
@@ -64,76 +77,19 @@ export function SpectrumPlot({
       }
     });
 
-    const options: uPlot.Options = {
-      ...sizeFor(container),
+    const options = createSpectrumPlotOptions({
+      size: sizeFor(container),
       title,
-      cursor: {
-        drag: {
-          setScale: false,
-          x: true,
-          y: false,
-        },
-      },
-      legend: { show: true },
-      scales: {
-        x: { time: false, dir: xDirection === "reverse" ? -1 : 1 },
-        ...(hasRightAxis ? { y2: { auto: true } } : {}),
-      },
-      axes: [
-        { label: xLabel, stroke: "#334155", grid: { stroke: "#e2e8f0", width: 1 } },
-        { label: yLabel, stroke: "#334155", grid: { stroke: "#edf2f7", width: 1 } },
-        ...(hasRightAxis
-          ? [
-              {
-                scale: "y2",
-                side: 1,
-                label: yRightLabel ?? "Right axis",
-                stroke: "#dc2626",
-                grid: { show: false },
-              } satisfies uPlot.Axis,
-            ]
-          : []),
-      ],
-      series: [
-        {},
-        ...series.map((item) => ({
-          label: item.name,
-          scale: item.yAxis === "right" ? "y2" : "y",
-          stroke: item.color,
-          width: item.width ?? 2,
-          dash: item.dash,
-          spanGaps: true,
-        })),
-      ],
-      hooks: {
-        setSelect: [
-          (plot) => {
-            if (!onSelectRange || plot.select.width <= 0) {
-              return;
-            }
-            const start = plot.posToVal(plot.select.left, "x");
-            const end = plot.posToVal(plot.select.left + plot.select.width, "x");
-            onSelectRange({ min: Math.min(start, end), max: Math.max(start, end) });
-          },
-        ],
-        drawClear: [
-          (plot) => {
-            drawRangeBands(plot, rangeBands);
-          },
-        ],
-        draw: [
-          (plot) => {
-            drawMarkers(plot, markers);
-            syncHandles(plot, rangeBands, setHandles);
-          },
-        ],
-        ready: [
-          (plot) => {
-            syncHandles(plot, rangeBands, setHandles);
-          },
-        ],
-      },
-    };
+      xLabel,
+      yLabel,
+      yRightLabel,
+      series,
+      markers,
+      rangeBands,
+      xDirection,
+      onSelectRange,
+      onSyncHandles: (plot) => syncHandles(plot, rangeBands, setHandles),
+    });
 
     plotRef.current?.destroy();
     plotRef.current = new uPlot(options, data as uPlot.AlignedData, container);
@@ -147,7 +103,6 @@ export function SpectrumPlot({
     };
   }, [
     data,
-    hasRightAxis,
     markers,
     onSelectRange,
     rangeBands,
@@ -160,7 +115,11 @@ export function SpectrumPlot({
   ]);
 
   return (
-    <div className="relative h-full w-full bg-white">
+    <div
+      aria-label={`${title} plot`}
+      className="relative h-full w-full bg-white"
+      data-x-direction={xDirection}
+    >
       <div ref={containerRef} className="h-full w-full" />
       {handles.map((handle) => (
         <button
@@ -209,6 +168,80 @@ export function SpectrumPlot({
       </div>
     </div>
   );
+}
+
+export function createSpectrumPlotOptions(input: SpectrumPlotOptionsInput): uPlot.Options {
+  const hasRightAxis = input.series.some((item) => item.yAxis === "right");
+  return {
+    ...input.size,
+    title: input.title,
+    cursor: {
+      drag: {
+        setScale: false,
+        x: true,
+        y: false,
+      },
+    },
+    legend: { show: true },
+    scales: {
+      x: { time: false, dir: input.xDirection === "reverse" ? -1 : 1 },
+      ...(hasRightAxis ? { y2: { auto: true } } : {}),
+    },
+    axes: [
+      { label: input.xLabel, stroke: "#334155", grid: { stroke: "#e2e8f0", width: 1 } },
+      { label: input.yLabel, stroke: "#334155", grid: { stroke: "#edf2f7", width: 1 } },
+      ...(hasRightAxis
+        ? [
+            {
+              scale: "y2",
+              side: 1,
+              label: input.yRightLabel ?? "Right axis",
+              stroke: "#dc2626",
+              grid: { show: false },
+            } satisfies uPlot.Axis,
+          ]
+        : []),
+    ],
+    series: [
+      {},
+      ...input.series.map((item) => ({
+        label: item.name,
+        scale: item.yAxis === "right" ? "y2" : "y",
+        stroke: item.color,
+        width: item.width ?? 2,
+        dash: item.dash,
+        spanGaps: true,
+      })),
+    ],
+    hooks: {
+      setSelect: [
+        (plot) => {
+          if (!input.onSelectRange || plot.select.width <= 0) {
+            return;
+          }
+          const start = plot.posToVal(plot.select.left, "x");
+          const end = plot.posToVal(plot.select.left + plot.select.width, "x");
+          input.onSelectRange({ min: Math.min(start, end), max: Math.max(start, end) });
+        },
+      ],
+      drawClear: [
+        (plot) => {
+          drawRangeBands(plot, input.rangeBands);
+        },
+      ],
+      draw: [
+        (plot) => {
+          drawMarkers(plot, input.markers);
+          input.onSyncHandles?.(plot);
+        },
+      ],
+      ready: [
+        (plot) => {
+          input.onSyncHandles?.(plot);
+        },
+      ],
+    },
+  };
 }
 
 function sizeFor(element: HTMLElement): { width: number; height: number } {
