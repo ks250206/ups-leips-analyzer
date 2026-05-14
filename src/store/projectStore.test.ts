@@ -130,6 +130,27 @@ describe("project store", () => {
     expect(selection.leipsDatasetId).toBe("loaded-demo-leips");
   });
 
+  test("initializes LEET derivative peak cursor around the loaded maximum intensity", () => {
+    const incoming = createDemoDatasets().map((dataset) =>
+      dataset.kind === "leet-der"
+        ? {
+            ...dataset,
+            id: "loaded-shifted-leet-der",
+            points: dataset.points.map((point) => ({
+              x: point.x,
+              y: 5 + 120 * Math.exp(-0.5 * ((point.x + 3.25) / 0.2) ** 2),
+            })),
+          }
+        : { ...dataset, id: `loaded-${dataset.id}` },
+    );
+
+    useProjectStore.getState().addDatasets(incoming);
+
+    const range = useProjectStore.getState().project.analysis.fitRanges.leetDerPeak;
+    expect(range.min).toBeCloseTo(-3.76, 1);
+    expect(range.max).toBeCloseTo(-2.76, 1);
+  });
+
   test("auto-selects datasets when imported project has no assignments", () => {
     const project = {
       ...useProjectStore.getState().project,

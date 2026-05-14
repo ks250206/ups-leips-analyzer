@@ -34,11 +34,17 @@ export const useProjectStore = create<ProjectStore>((set, get) => ({
       const existing = state.project.datasets.filter((dataset) => !isDemoDataset(dataset));
       const merged = mergeDatasets(existing, datasets);
       const selection = autoSelectDatasets(merged, state.project.analysis.selection, datasets);
+      const fitRanges = autoFitRanges(
+        merged,
+        selection,
+        state.project.analysis.fitRanges,
+        datasets,
+      );
       const project = touchProject({
         ...state.project,
         datasets: merged,
         selectedDatasetId: datasets[0]?.id ?? state.project.selectedDatasetId,
-        analysis: { ...state.project.analysis, selection },
+        analysis: { ...state.project.analysis, fitRanges, selection },
       });
       return { project: recalculateProject(project) };
     });
@@ -314,6 +320,37 @@ function pickDatasetId(
     currentId ??
     datasets.find((dataset) => dataset.kind === kind)?.id
   );
+}
+
+function autoFitRanges(
+  datasets: readonly SpectrumDataset[],
+  selection: AnalysisState["selection"],
+  current: AnalysisState["fitRanges"],
+  preferred: readonly SpectrumDataset[],
+): AnalysisState["fitRanges"] {
+  const leetDerDataset =
+    preferred.find((dataset) => dataset.kind === "leet-der") ??
+    findDataset(datasets, selection.leetDerDatasetId);
+  const leetDerPeak = leetDerDataset ? peakCenteredRange(leetDerDataset, 1) : current.leetDerPeak;
+  return { ...current, leetDerPeak };
+}
+
+function peakCenteredRange(dataset: SpectrumDataset, width: number): FitRange {
+  if (dataset.points.length === 0) {
+    return DEFAULT_FIT_RANGES.leetDerPeak;
+  }
+  const maxPoint = dataset.points.reduce((currentMax, point) =>
+    point.y > currentMax.y ? point : currentMax,
+  );
+  const minX = Math.min(...dataset.points.map((point) => point.x));
+  const maxX = Math.max(...dataset.points.map((point) => point.x));
+  const halfWidth = width / 2;
+  const span = maxX - minX;
+  if (span <= width) {
+    return { min: minX, max: maxX };
+  }
+  const min = Math.min(Math.max(maxPoint.x - halfWidth, minX), maxX - width);
+  return { min, max: min + width };
 }
 
 function findDataset(
