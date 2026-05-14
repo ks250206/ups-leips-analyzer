@@ -1,6 +1,7 @@
 import { evaluateGaussian, evaluateLine } from "../domain/fit";
 import type {
   BandDiagramResult,
+  FitRange,
   GaussianFitResult,
   LineFitResult,
   Point,
@@ -35,6 +36,7 @@ export function lineFitSeries(
   fit: LineFitResult,
   range: { min: number; max: number },
   color: string,
+  extent: { min: number; max: number } = range,
 ): PlotSeries {
   return {
     name,
@@ -42,9 +44,16 @@ export function lineFitSeries(
     width: 1.5,
     dash: [6, 4],
     points: [
-      { x: range.min, y: evaluateLine(fit, range.min) },
-      { x: range.max, y: evaluateLine(fit, range.max) },
+      { x: extent.min, y: evaluateLine(fit, extent.min) },
+      { x: extent.max, y: evaluateLine(fit, extent.max) },
     ],
+  };
+}
+
+export function xExtent(points: readonly Point[]): FitRange {
+  return {
+    min: Math.min(...points.map((point) => point.x)),
+    max: Math.max(...points.map((point) => point.x)),
   };
 }
 

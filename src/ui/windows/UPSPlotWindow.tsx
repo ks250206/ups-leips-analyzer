@@ -8,6 +8,7 @@ import {
   type PlotMarker,
   type PlotRangeBand,
   type PlotSeries,
+  xExtent,
 } from "../plotData";
 import { SpectrumPlot } from "./SpectrumPlot";
 
@@ -26,8 +27,15 @@ export function UPSVBPlotWindow() {
       items.push(datasetSeries(vbDataset, "#2563eb"));
     }
     if (ups) {
+      const extent = vbDataset ? xExtent(vbDataset.points) : project.analysis.fitRanges.upsVbEdge;
       items.push(
-        lineFitSeries("VB edge", ups.vbEdge, project.analysis.fitRanges.upsVbEdge, "#1d4ed8"),
+        lineFitSeries(
+          "VB edge",
+          ups.vbEdge,
+          project.analysis.fitRanges.upsVbEdge,
+          "#1d4ed8",
+          extent,
+        ),
       );
       items.push(
         lineFitSeries(
@@ -35,6 +43,7 @@ export function UPSVBPlotWindow() {
           ups.vbBackground,
           project.analysis.fitRanges.upsVbBackground,
           "#0f766e",
+          extent,
         ),
       );
     }
@@ -98,12 +107,14 @@ export function UPSIPPlotWindow() {
       items.push(datasetSeries(ipDataset, "#dc2626"));
     }
     if (ups) {
+      const extent = ipDataset ? xExtent(ipDataset.points) : project.analysis.fitRanges.upsIpEdge;
       items.push(
         lineFitSeries(
           "IP VBM edge",
           ups.ipVbmEdge,
           project.analysis.fitRanges.upsIpVbmEdge,
           "#7c3aed",
+          extent,
         ),
       );
       items.push(
@@ -112,6 +123,7 @@ export function UPSIPPlotWindow() {
           ups.ipVbmBackground,
           project.analysis.fitRanges.upsIpVbmBackground,
           "#0f766e",
+          extent,
         ),
       );
       items.push(
@@ -120,6 +132,7 @@ export function UPSIPPlotWindow() {
           ups.cutoffEdge,
           project.analysis.fitRanges.upsIpEdge,
           "#b91c1c",
+          extent,
         ),
       );
       items.push(
@@ -128,6 +141,7 @@ export function UPSIPPlotWindow() {
           ups.cutoffBackground,
           project.analysis.fitRanges.upsIpBackground,
           "#15803d",
+          extent,
         ),
       );
     }

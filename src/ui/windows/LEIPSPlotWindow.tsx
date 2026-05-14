@@ -9,6 +9,7 @@ import {
   type PlotMarker,
   type PlotRangeBand,
   type PlotSeries,
+  xExtent,
 } from "../plotData";
 import { SpectrumPlot } from "./SpectrumPlot";
 
@@ -100,6 +101,7 @@ export function LEIPSEvacPlotWindow() {
     if (!leips) {
       return [];
     }
+    const extent = xExtent(leips.leipsEvacPoints);
     return [
       {
         name: leipsDataset ? `${leipsDataset.name} vs Evac` : "LEIPS vs Evac",
@@ -107,12 +109,19 @@ export function LEIPSEvacPlotWindow() {
         points: leips.leipsEvacPoints,
         width: 2,
       },
-      lineFitSeries("LEIPS edge", leips.leipsEdge, project.analysis.fitRanges.leipsEdge, "#b91c1c"),
+      lineFitSeries(
+        "LEIPS edge",
+        leips.leipsEdge,
+        project.analysis.fitRanges.leipsEdge,
+        "#b91c1c",
+        extent,
+      ),
       lineFitSeries(
         "LEIPS BG",
         leips.leipsBackground,
         project.analysis.fitRanges.leipsBackground,
         "#15803d",
+        extent,
       ),
     ];
   }, [leips, leipsDataset, project.analysis.fitRanges]);
