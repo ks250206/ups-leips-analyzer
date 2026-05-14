@@ -1,5 +1,5 @@
 import { Download, FileUp, RefreshCcw, Upload } from "lucide-react";
-import { useRef, useState } from "react";
+import { useState } from "react";
 import { parseMultiPakCsv } from "../../io/multipakCsv";
 import { exportProjectJson } from "../../store/projectDb";
 import { useProjectStore } from "../../store/projectStore";
@@ -10,20 +10,17 @@ export function DataBrowser() {
   const addDatasets = useProjectStore((state) => state.addDatasets);
   const selectDataset = useProjectStore((state) => state.selectDataset);
   const importProject = useProjectStore((state) => state.importProject);
-  const inputRef = useRef<HTMLInputElement>(null);
-  const projectInputRef = useRef<HTMLInputElement>(null);
   const [error, setError] = useState<string>();
 
-  async function handleFiles(files: FileList | null) {
-    if (!files) {
+  async function handleFiles(fileList: FileList | null) {
+    const files = [...(fileList ?? [])];
+    if (files.length === 0) {
       return;
     }
     setError(undefined);
     try {
       const parsed = await Promise.all(
-        [...files].map(async (file) =>
-          parseMultiPakCsv(await file.text(), { sourceName: file.name }),
-        ),
+        files.map(async (file) => parseMultiPakCsv(await file.text(), { sourceName: file.name })),
       );
       addDatasets(parsed.flat());
     } catch (caught) {
@@ -57,14 +54,20 @@ export function DataBrowser() {
   return (
     <div className="flex h-full flex-col bg-slate-100 text-xs">
       <div className="grid grid-cols-2 gap-2 border-b border-slate-300 p-2">
-        <button
-          className="flex items-center justify-center gap-1 rounded border border-slate-300 bg-white px-2 py-1 hover:bg-cyan-50"
-          type="button"
-          onClick={() => inputRef.current?.click()}
-        >
+        <label className="relative flex cursor-pointer items-center justify-center gap-1 rounded border border-slate-300 bg-white px-2 py-1 hover:bg-cyan-50">
           <FileUp size={14} />
           CSV
-        </button>
+          <input
+            className="absolute inset-0 cursor-pointer opacity-0"
+            type="file"
+            accept=".csv,text/csv"
+            multiple
+            onChange={(event) => {
+              void handleFiles(event.currentTarget.files);
+              event.currentTarget.value = "";
+            }}
+          />
+        </label>
         <button
           className="flex items-center justify-center gap-1 rounded border border-slate-300 bg-white px-2 py-1 hover:bg-cyan-50"
           type="button"
@@ -81,29 +84,19 @@ export function DataBrowser() {
           <Download size={14} />
           JSON
         </button>
-        <button
-          className="flex items-center justify-center gap-1 rounded border border-slate-300 bg-white px-2 py-1 hover:bg-cyan-50"
-          type="button"
-          onClick={() => projectInputRef.current?.click()}
-        >
+        <label className="relative flex cursor-pointer items-center justify-center gap-1 rounded border border-slate-300 bg-white px-2 py-1 hover:bg-cyan-50">
           <Upload size={14} />
           Import
-        </button>
-        <input
-          ref={inputRef}
-          className="hidden"
-          type="file"
-          accept=".csv,text/csv"
-          multiple
-          onChange={(event) => void handleFiles(event.currentTarget.files)}
-        />
-        <input
-          ref={projectInputRef}
-          className="hidden"
-          type="file"
-          accept=".json,application/json"
-          onChange={(event) => void handleProjectFile(event.currentTarget.files)}
-        />
+          <input
+            className="absolute inset-0 cursor-pointer opacity-0"
+            type="file"
+            accept=".json,application/json"
+            onChange={(event) => {
+              void handleProjectFile(event.currentTarget.files);
+              event.currentTarget.value = "";
+            }}
+          />
+        </label>
       </div>
       {error ? (
         <div className="border-b border-red-200 bg-red-50 p-2 text-red-700">{error}</div>
