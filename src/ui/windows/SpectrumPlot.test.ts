@@ -4,6 +4,7 @@ import {
   createPlotScales,
   formatTickParts,
   inferPlotDragZoomMode,
+  nextViewportAfterWheel,
   plotXToValue,
   plotYToValue,
   rangeAfterCursorDrag,
@@ -164,6 +165,55 @@ describe("SpectrumPlot D3 scales", () => {
   test("zooms a range around the pointer anchor", () => {
     expect(zoomRangeAt({ min: 0, max: 10 }, 2, 0.5)).toEqual({ min: 1, max: 6 });
     expect(zoomRangeAt({ min: 0, max: 10 }, 2, 2)).toEqual({ min: -2, max: 18 });
+  });
+
+  test("maps wheel gestures to y zoom, x zoom and alt pan modes", () => {
+    const scales = createPlotScales({
+      size: { width: 320, height: 240 },
+      series: [
+        {
+          name: "raw",
+          color: "#000000",
+          points: [
+            { x: 0, y: 0 },
+            { x: 10, y: 10 },
+          ],
+        },
+      ],
+      xDirection: "normal",
+      viewport: { x: { min: 0, max: 10 }, y: { min: 0, max: 10 } },
+    });
+    const base = { x: { min: 0, max: 10 }, y: { min: 0, max: 10 } };
+    const eventBase = {
+      clientX: scales.geometry.left + scales.geometry.plotWidth / 2,
+      clientY: scales.geometry.top + scales.geometry.plotHeight / 2,
+      currentTarget: {} as EventTarget,
+      altKey: false,
+      shiftKey: false,
+      deltaX: 0,
+      deltaY: -100,
+    };
+
+    const yZoom = nextViewportAfterWheel(base, scales, eventBase, "normal");
+    expect(yZoom.x).toEqual(base.x);
+    expect((yZoom.y?.max ?? 0) - (yZoom.y?.min ?? 0)).toBeLessThan(10);
+
+    const xZoom = nextViewportAfterWheel(base, scales, { ...eventBase, shiftKey: true }, "normal");
+    expect((xZoom.x?.max ?? 0) - (xZoom.x?.min ?? 0)).toBeLessThan(10);
+    expect(xZoom.y).toEqual(base.y);
+
+    const yPan = nextViewportAfterWheel(base, scales, { ...eventBase, altKey: true }, "normal");
+    expect((yPan.y?.max ?? 0) - (yPan.y?.min ?? 0)).toBe(10);
+    expect(yPan.y?.min).not.toBe(0);
+
+    const xPan = nextViewportAfterWheel(
+      base,
+      scales,
+      { ...eventBase, altKey: true, shiftKey: true },
+      "normal",
+    );
+    expect((xPan.x?.max ?? 0) - (xPan.x?.min ?? 0)).toBe(10);
+    expect(xPan.x?.min).not.toBe(0);
   });
 
   test("hides fit series when both fit cursors are outside the visible x domain", () => {

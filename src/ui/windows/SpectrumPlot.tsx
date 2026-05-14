@@ -224,7 +224,11 @@ export function SpectrumPlot({
           event.preventDefault();
           setViewport({});
         }}
-        onPointerDown={(event) =>
+        onPointerDown={(event) => {
+          if (event.altKey) {
+            startPlotPan(event, geometry, scales, updateViewport);
+            return;
+          }
           startPlotDrag(event, geometry, setDrag, (start, end, shiftKey) => {
             if (shiftKey && onSelectRange) {
               onSelectRange(
@@ -236,8 +240,8 @@ export function SpectrumPlot({
               return;
             }
             updateViewport((current) => nextViewportAfterDrag(current, scales, start, end));
-          })
-        }
+          });
+        }}
       >
         <rect fill="#ffffff" height={size.height} width={size.width} x={0} y={0} />
         <defs>
@@ -802,6 +806,33 @@ function startPlotDrag(
   window.addEventListener("pointercancel", cancel, { once: true });
 }
 
+function startPlotPan(
+  event: ReactPointerEvent<SVGSVGElement>,
+  geometry: PlotGeometry,
+  scales: PlotScales,
+  updateViewport: (next: PlotViewport | ((current: PlotViewport) => PlotViewport)) => void,
+): void {
+  if (event.button !== 0 || !isInsidePlot(eventPositionInPlot(event, geometry), geometry)) {
+    return;
+  }
+  event.preventDefault();
+  event.stopPropagation();
+  const svg = event.currentTarget;
+  const start = eventPositionInPlot(event, geometry);
+  const move = (moveEvent: PointerEvent) => {
+    const current = eventPositionInPlot(moveEvent, geometry, svg);
+    updateViewport((viewport) => nextViewportAfterPanDrag(viewport, scales, start, current));
+  };
+  const cleanup = () => {
+    window.removeEventListener("pointermove", move);
+    window.removeEventListener("pointerup", cleanup);
+    window.removeEventListener("pointercancel", cleanup);
+  };
+  window.addEventListener("pointermove", move);
+  window.addEventListener("pointerup", cleanup, { once: true });
+  window.addEventListener("pointercancel", cleanup, { once: true });
+}
+
 function startHandleDrag(
   event: ReactPointerEvent<SVGRectElement>,
   geometry: PlotGeometry,
@@ -1024,19 +1055,12 @@ function nextViewportAfterDrag(
   };
 }
 
-function nextViewportAfterWheel(
+export function nextViewportAfterWheel(
   current: PlotViewport,
   scales: PlotScales,
   event: Pick<
     WheelEvent | ReactWheelEvent<SVGSVGElement>,
-    | "clientX"
-    | "clientY"
-    | "currentTarget"
-    | "metaKey"
-    | "ctrlKey"
-    | "shiftKey"
-    | "deltaX"
-    | "deltaY"
+    "clientX" | "clientY" | "currentTarget" | "altKey" | "shiftKey" | "deltaX" | "deltaY"
   >,
   xDirection: "normal" | "reverse",
   svgElement?: SVGSVGElement,
@@ -1045,27 +1069,54 @@ function nextViewportAfterWheel(
   const x = current.x ?? scales.xDomain;
   const y = current.y ?? scales.yDomain;
   const y2 = current.y2 ?? scales.yRightDomain;
-  if (event.metaKey || event.ctrlKey) {
-    const factor = Math.exp(event.deltaY * 0.001);
-    const y2Anchor = plotY2ToValue(scales, position.top);
-    return {
-      x: zoomRangeAt(x, plotXToValue(scales, position.left), factor),
-      y: zoomRangeAt(y, plotYToValue(scales, position.top), factor),
-      y2: y2 && y2Anchor !== undefined ? zoomRangeAt(y2, y2Anchor, factor) : y2,
-    };
-  }
-  if (event.shiftKey) {
+  if (event.altKey && event.shiftKey) {
     const deltaSource = event.deltaY || event.deltaX;
     const direction = xDirection === "reverse" ? -1 : 1;
     const delta = deltaSource * (x.max - x.min) * 0.001 * direction;
     return { ...current, x: { min: x.min + delta, max: x.max + delta } };
   }
-  const yDelta = event.deltaY * (y.max - y.min) * 0.001;
-  const nextY2Delta = y2 ? event.deltaY * (y2.max - y2.min) * 0.001 : 0;
+  if (event.altKey) {
+    const yDelta = event.deltaY * (y.max - y.min) * 0.001;
+    const nextY2Delta = y2 ? event.deltaY * (y2.max - y2.min) * 0.001 : 0;
+    return {
+      ...current,
+      y: { min: y.min + yDelta, max: y.max + yDelta },
+      y2: y2 ? { min: y2.min + nextY2Delta, max: y2.max + nextY2Delta } : undefined,
+    };
+  }
+  const factor = Math.exp(event.deltaY * 0.001);
+  if (event.shiftKey) {
+    return {
+      ...current,
+      x: zoomRangeAt(x, plotXToValue(scales, position.left), factor),
+    };
+  }
+  const y2Anchor = plotY2ToValue(scales, position.top);
   return {
     ...current,
+    y: zoomRangeAt(y, plotYToValue(scales, position.top), factor),
+    y2: y2 && y2Anchor !== undefined ? zoomRangeAt(y2, y2Anchor, factor) : y2,
+  };
+}
+
+function nextViewportAfterPanDrag(
+  current: PlotViewport,
+  scales: PlotScales,
+  start: { left: number; top: number },
+  end: { left: number; top: number },
+): PlotViewport {
+  const x = current.x ?? scales.xDomain;
+  const y = current.y ?? scales.yDomain;
+  const y2 = current.y2 ?? scales.yRightDomain;
+  const xDelta = plotXToValue(scales, start.left) - plotXToValue(scales, end.left);
+  const yDelta = plotYToValue(scales, start.top) - plotYToValue(scales, end.top);
+  const y2Start = plotY2ToValue(scales, start.top);
+  const y2End = plotY2ToValue(scales, end.top);
+  const y2Delta = y2Start !== undefined && y2End !== undefined ? y2Start - y2End : 0;
+  return {
+    x: { min: x.min + xDelta, max: x.max + xDelta },
     y: { min: y.min + yDelta, max: y.max + yDelta },
-    y2: y2 ? { min: y2.min + nextY2Delta, max: y2.max + nextY2Delta } : undefined,
+    y2: y2 ? { min: y2.min + y2Delta, max: y2.max + y2Delta } : undefined,
   };
 }
 
