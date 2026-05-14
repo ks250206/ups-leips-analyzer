@@ -260,7 +260,12 @@ export function createSpectrumPlotOptions(input: SpectrumPlotOptionsInput): uPlo
       ...(hasRightAxis ? { y2: { auto: true } } : {}),
     },
     axes: [
-      { label: input.xLabel, stroke: "#334155", grid: { stroke: "#e2e8f0", width: 1 } },
+      {
+        label: input.xLabel,
+        stroke: "#334155",
+        size: 48,
+        grid: { stroke: "#e2e8f0", width: 1 },
+      },
       createYAxis({
         label: input.yLabel,
         stroke: "#334155",
@@ -298,6 +303,7 @@ export function createSpectrumPlotOptions(input: SpectrumPlotOptionsInput): uPlo
       ],
       draw: [
         (plot) => {
+          drawPlotBorder(plot);
           drawMarkers(plot, input.markers);
         },
       ],
@@ -329,6 +335,7 @@ function createYAxis(input: {
     side: input.side,
     label: input.label,
     stroke: input.stroke,
+    size: input.side === 1 ? 58 : 64,
     grid: input.hideTicks ? { show: false } : { stroke: "#edf2f7", width: 1 },
     ticks: input.hideTicks ? { show: false } : undefined,
     values: input.hideTicks ? () => [] : undefined,
@@ -366,6 +373,19 @@ function drawMarkers(plot: uPlot, markers: readonly PlotMarker[]): void {
     ctx.setLineDash([]);
     ctx.fillText(marker.label, x + 4, top + 6);
   }
+  ctx.restore();
+}
+
+function drawPlotBorder(plot: uPlot): void {
+  const ctx = plot.ctx;
+  const top = plot.bbox.top / devicePixelRatio;
+  const left = plot.bbox.left / devicePixelRatio;
+  const width = plot.bbox.width / devicePixelRatio;
+  const height = plot.bbox.height / devicePixelRatio;
+  ctx.save();
+  ctx.strokeStyle = "#334155";
+  ctx.lineWidth = 1;
+  ctx.strokeRect(left, top, width, height);
   ctx.restore();
 }
 

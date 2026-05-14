@@ -82,6 +82,24 @@ describe("SpectrumPlot options", () => {
     expect(options.series?.[2]?.scale).toBe("y2");
   });
 
+  test("keeps visible axis space on normal plots", () => {
+    const options = createSpectrumPlotOptions({
+      size: { width: 320, height: 240 },
+      title: "axes",
+      xLabel: "x",
+      yLabel: "Intensity",
+      series: [{ name: "s", color: "#000000", points: [{ x: 1, y: 1 }] }],
+      markers: [],
+      rangeBands: [],
+      xDirection: "normal",
+    });
+
+    expect(options.axes?.[0]?.size).toBe(48);
+    expect(options.axes?.[1]?.label).toBe("Intensity");
+    expect(options.axes?.[1]?.size).toBe(64);
+    expect(options.axes?.[1]?.values).toBeUndefined();
+  });
+
   test("excludes fit series from automatic y-axis scaling", () => {
     const options = createSpectrumPlotOptions({
       size: { width: 320, height: 240 },
