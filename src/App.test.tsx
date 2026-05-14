@@ -1,8 +1,21 @@
-import { render, screen } from "@testing-library/react";
-import { describe, expect, test } from "vite-plus/test";
+import { cleanup, render, screen } from "@testing-library/react";
+import userEvent from "@testing-library/user-event";
+import { afterEach, beforeEach, describe, expect, test } from "vite-plus/test";
 import App from "./App";
+import { createInitialProject, useProjectStore } from "./store/projectStore";
 
 describe("App", () => {
+  beforeEach(() => {
+    useProjectStore.setState({
+      activeFitTarget: "ups-vb-edge",
+      project: createInitialProject(),
+    });
+  });
+
+  afterEach(() => {
+    cleanup();
+  });
+
   test("renders the analyzer workspace without loading demo data initially", async () => {
     render(<App />);
     expect(screen.getByText("UPS-LEIPS Analyzer")).toBeTruthy();
@@ -18,5 +31,20 @@ describe("App", () => {
     expect(screen.getByRole("button", { name: "Band" })).toBeTruthy();
     expect(screen.getByText("0 datasets")).toBeTruthy();
     expect(screen.getAllByText("No data").length).toBeGreaterThan(0);
+  });
+
+  test("keeps the empty workspace interactive", async () => {
+    const user = userEvent.setup();
+    render(<App />);
+
+    await user.click(screen.getByRole("button", { name: "LEIPS" }));
+    expect(screen.getByText("LEIPS spectra analysis")).toBeTruthy();
+
+    await user.click(screen.getByRole("button", { name: "Fit" }));
+    expect(screen.getByText("Cursor / fitting ranges")).toBeTruthy();
+
+    await user.click(screen.getByRole("button", { name: "Recalculate" }));
+    expect(screen.getByText("0 datasets")).toBeTruthy();
+    expect(screen.queryByText("Cannot fit an empty range.")).toBeNull();
   });
 });
