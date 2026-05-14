@@ -18,6 +18,7 @@ interface SpectrumPlotProps {
   yLabel: string;
   yRightLabel?: string;
   hideYTicks?: boolean;
+  largeAxisLabels?: boolean;
   series: PlotSeries[];
   markers?: PlotMarker[];
   rangeBands?: PlotRangeBand[];
@@ -33,6 +34,7 @@ export interface SpectrumPlotOptionsInput {
   yLabel: string;
   yRightLabel?: string;
   hideYTicks?: boolean;
+  largeAxisLabels?: boolean;
   series: PlotSeries[];
   markers: PlotMarker[];
   rangeBands: PlotRangeBand[];
@@ -71,6 +73,7 @@ export function SpectrumPlot({
   yLabel,
   yRightLabel,
   hideYTicks = false,
+  largeAxisLabels = false,
   series,
   markers = EMPTY_MARKERS,
   rangeBands = EMPTY_RANGE_BANDS,
@@ -110,6 +113,7 @@ export function SpectrumPlot({
       yLabel,
       yRightLabel,
       hideYTicks,
+      largeAxisLabels,
       series,
       markers,
       rangeBands,
@@ -163,6 +167,7 @@ export function SpectrumPlot({
     yLabel,
     yRightLabel,
     hideYTicks,
+    largeAxisLabels,
     hasData,
   ]);
 
@@ -186,10 +191,9 @@ export function SpectrumPlot({
       aria-label={`${title} plot`}
       className="relative h-full w-full bg-white"
       data-x-direction={xDirection}
+      data-large-axis-labels={largeAxisLabels ? "true" : "false"}
     >
       <div ref={containerRef} className="h-full w-full" />
-      <span className="plot-y-label plot-y-label-left">{yLabel}</span>
-      {yRightLabel ? <span className="plot-y-label plot-y-label-right">{yRightLabel}</span> : null}
       {handles.map((handle) => (
         <button
           key={`${handle.bandId}-${handle.side}`}
@@ -257,6 +261,7 @@ export function createSpectrumPlotOptions(input: SpectrumPlotOptionsInput): uPlo
   const hasRightAxis = input.series.some((item) => item.yAxis === "right");
   return {
     ...input.size,
+    padding: [input.largeAxisLabels ? 76 : 52, 10, 8, 10],
     cursor: {
       show: false,
       drag: {
@@ -274,15 +279,16 @@ export function createSpectrumPlotOptions(input: SpectrumPlotOptionsInput): uPlo
       {
         label: input.xLabel,
         stroke: "#334155",
-        size: 48,
-        labelSize: 20,
-        labelGap: 6,
+        size: input.largeAxisLabels ? 68 : 52,
+        labelSize: input.largeAxisLabels ? 36 : 22,
+        labelGap: input.largeAxisLabels ? 10 : 8,
         grid: { stroke: "#e2e8f0", width: 1 },
       },
       createYAxis({
         label: input.yLabel,
         stroke: "#334155",
         hideTicks: input.hideYTicks ?? false,
+        largeAxisLabels: input.largeAxisLabels ?? false,
       }),
       ...(hasRightAxis
         ? [
@@ -292,6 +298,7 @@ export function createSpectrumPlotOptions(input: SpectrumPlotOptionsInput): uPlo
               label: input.yRightLabel ?? "Right axis",
               stroke: "#dc2626",
               hideTicks: input.hideYTicks ?? false,
+              largeAxisLabels: input.largeAxisLabels ?? false,
             }),
           ]
         : []),
@@ -317,6 +324,11 @@ export function createSpectrumPlotOptions(input: SpectrumPlotOptionsInput): uPlo
       draw: [
         (plot) => {
           drawPlotBorder(plot);
+          drawAxisLabels(plot, {
+            leftLabel: input.yLabel,
+            rightLabel: input.yRightLabel,
+            large: input.largeAxisLabels ?? false,
+          });
           drawMarkers(plot, input.markers);
         },
       ],
@@ -340,17 +352,18 @@ function createYAxis(input: {
   label: string;
   stroke: string;
   hideTicks: boolean;
+  largeAxisLabels: boolean;
   scale?: string;
   side?: 1;
 }): uPlot.Axis {
   return {
     scale: input.scale,
     side: input.side,
-    label: input.label,
+    label: "",
     stroke: input.stroke,
-    size: input.side === 1 ? 66 : 78,
-    labelSize: 20,
-    labelGap: 8,
+    size: input.largeAxisLabels ? (input.side === 1 ? 120 : 136) : input.side === 1 ? 86 : 102,
+    labelSize: 0,
+    labelGap: 0,
     grid: input.hideTicks ? { show: false } : { stroke: "#edf2f7", width: 1 },
     ticks: input.hideTicks ? { show: false } : undefined,
     values: input.hideTicks ? () => [] : undefined,
@@ -402,6 +415,46 @@ function drawPlotBorder(plot: uPlot): void {
   ctx.lineWidth = 1;
   ctx.setLineDash([]);
   ctx.strokeRect(left, top, width, height);
+  ctx.restore();
+}
+
+function drawAxisLabels(
+  plot: uPlot,
+  input: { leftLabel: string; rightLabel?: string; large: boolean },
+): void {
+  const ctx = plot.ctx;
+  const top = plot.bbox.top / devicePixelRatio;
+  const left = plot.bbox.left / devicePixelRatio;
+  const width = plot.bbox.width / devicePixelRatio;
+  const height = plot.bbox.height / devicePixelRatio;
+  const centerY = top + height / 2;
+  const fontSize = input.large ? 30 : 16;
+  const leftOffset = input.large ? 36 : 22;
+  const rightOffset = input.large ? 36 : 22;
+
+  ctx.save();
+  ctx.font = `800 ${fontSize}px Inter, sans-serif`;
+  ctx.textAlign = "center";
+  ctx.textBaseline = "middle";
+
+  ctx.fillStyle = "#0f172a";
+  ctx.translate(left + leftOffset, centerY);
+  ctx.rotate(-Math.PI / 2);
+  ctx.fillText(input.leftLabel, 0, 0);
+  ctx.restore();
+
+  if (!input.rightLabel) {
+    return;
+  }
+
+  ctx.save();
+  ctx.font = `800 ${fontSize}px Inter, sans-serif`;
+  ctx.textAlign = "center";
+  ctx.textBaseline = "middle";
+  ctx.fillStyle = "#dc2626";
+  ctx.translate(left + width - rightOffset, centerY);
+  ctx.rotate(Math.PI / 2);
+  ctx.fillText(input.rightLabel, 0, 0);
   ctx.restore();
 }
 

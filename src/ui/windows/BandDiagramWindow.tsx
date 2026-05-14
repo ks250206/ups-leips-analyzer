@@ -51,6 +51,7 @@ export function BandDiagramWindow() {
           markers={markers}
           xDirection="reverse"
           hideYTicks
+          largeAxisLabels
         />
       </div>
     </div>

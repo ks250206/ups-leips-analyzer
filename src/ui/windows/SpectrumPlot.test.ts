@@ -72,7 +72,7 @@ describe("SpectrumPlot options", () => {
       xDirection: "reverse",
     });
 
-    expect(options.axes?.[1]?.label).toBe("UPS");
+    expect(options.axes?.[1]?.label).toBe("");
     const leftValues = options.axes?.[1]?.values as
       | ((
           self: never,
@@ -93,7 +93,7 @@ describe("SpectrumPlot options", () => {
       | undefined;
 
     expect(leftValues?.({} as never, [], 1, 10, 0)).toEqual([]);
-    expect(options.axes?.[2]?.label).toBe("LEIPS");
+    expect(options.axes?.[2]?.label).toBe("");
     expect(rightValues?.({} as never, [], 2, 10, 0)).toEqual([]);
     expect(options.series?.[2]?.scale).toBe("y2");
   });
@@ -110,11 +110,38 @@ describe("SpectrumPlot options", () => {
       xDirection: "normal",
     });
 
-    expect(options.axes?.[0]?.size).toBe(48);
-    expect(options.axes?.[1]?.label).toBe("Intensity");
-    expect(options.axes?.[1]?.size).toBe(78);
-    expect(options.axes?.[1]?.labelSize).toBe(20);
+    expect(options.padding).toEqual([52, 10, 8, 10]);
+    expect(options.axes?.[0]?.size).toBe(52);
+    expect(options.axes?.[1]?.label).toBe("");
+    expect(options.axes?.[1]?.size).toBe(102);
+    expect(options.axes?.[1]?.labelSize).toBe(0);
     expect(options.axes?.[1]?.values).toBeUndefined();
+  });
+
+  test("uses larger plot padding and labels for band diagrams", () => {
+    const options = createSpectrumPlotOptions({
+      size: { width: 520, height: 360 },
+      title: "band",
+      xLabel: "Energy relative to Ef/eV",
+      yLabel: "UPS",
+      yRightLabel: "LEIPS",
+      largeAxisLabels: true,
+      hideYTicks: true,
+      series: [
+        { name: "UPS", color: "#2563eb", points: [{ x: 1, y: 1 }], yAxis: "left" },
+        { name: "LEIPS", color: "#dc2626", points: [{ x: 1, y: 1 }], yAxis: "right" },
+      ],
+      markers: [],
+      rangeBands: [],
+      xDirection: "reverse",
+    });
+
+    expect(options.padding).toEqual([76, 10, 8, 10]);
+    expect(options.axes?.[0]?.labelSize).toBe(36);
+    expect(options.axes?.[1]?.label).toBe("");
+    expect(options.axes?.[1]?.labelSize).toBe(0);
+    expect(options.axes?.[2]?.label).toBe("");
+    expect(options.axes?.[2]?.labelSize).toBe(0);
   });
 
   test("excludes fit series from automatic y-axis scaling", () => {
