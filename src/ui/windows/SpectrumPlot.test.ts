@@ -3,6 +3,7 @@ import {
   createPlotGeometry,
   createPlotScales,
   inferPlotDragZoomMode,
+  rangeAfterCursorDrag,
   selectionRectForMode,
 } from "./SpectrumPlot";
 
@@ -99,5 +100,12 @@ describe("SpectrumPlot D3 scales", () => {
     expect(selectionRectForMode({ left: 120, top: 40 }, { left: 220, top: 140 }, plotSize)).toEqual(
       { left: 120, top: 40, width: 100, height: 100 },
     );
+  });
+
+  test("normalizes cursor handle range updates", () => {
+    const band = { min: 2, max: 5 };
+
+    expect(rangeAfterCursorDrag(band, "min", 6)).toEqual({ min: 5, max: 6 });
+    expect(rangeAfterCursorDrag(band, "max", 1)).toEqual({ min: 1, max: 2 });
   });
 });

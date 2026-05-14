@@ -736,10 +736,7 @@ function startHandleDrag(
   const move = (moveEvent: PointerEvent) => {
     const position = eventPositionInPlot(moveEvent, geometry, svg);
     const nextX = xScale.invert(position.left);
-    const nextRange =
-      side === "min"
-        ? normalizeRange({ min: nextX, max: band.max })
-        : normalizeRange({ min: band.min, max: nextX });
+    const nextRange = rangeAfterCursorDrag(band, side, nextX);
     onRangeBandChange(band.id ?? "", nextRange);
   };
   const cleanup = () => {
@@ -837,6 +834,16 @@ export function selectionRectForMode(
     return { left: 0, width: plotSize.width, ...vertical };
   }
   return { ...horizontal, ...vertical };
+}
+
+export function rangeAfterCursorDrag(
+  band: Pick<PlotRangeBand, "min" | "max">,
+  side: "min" | "max",
+  value: number,
+): FitRange {
+  return side === "min"
+    ? normalizeRange({ min: value, max: band.max })
+    : normalizeRange({ min: band.min, max: value });
 }
 
 function nextViewportAfterDrag(
