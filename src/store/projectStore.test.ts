@@ -21,6 +21,17 @@ describe("project store", () => {
     useProjectStore.getState().loadDemo();
   });
 
+  test("starts with no datasets and loads demo datasets only on request", () => {
+    useProjectStore.setState({ project: useProjectStore.getInitialState().project });
+    expect(useProjectStore.getState().project.datasets).toHaveLength(0);
+    expect(useProjectStore.getState().project.analysis.ups).toBeUndefined();
+
+    useProjectStore.getState().loadDemo();
+
+    expect(useProjectStore.getState().project.datasets).toHaveLength(5);
+    expect(useProjectStore.getState().project.analysis.ups).toBeDefined();
+  });
+
   test("maps every fit target to a fit range key", () => {
     expect(TARGETS.map((target) => fitRangeKey(target))).toEqual([
       "upsVbEdge",

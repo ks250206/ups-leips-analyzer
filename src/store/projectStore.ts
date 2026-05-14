@@ -24,10 +24,10 @@ interface ProjectStore {
 }
 
 export const useProjectStore = create<ProjectStore>((set, get) => ({
-  project: createInitialProject(),
+  project: createEmptyProject(),
   activeFitTarget: "ups-vb-edge",
   loadDemo: () => {
-    set({ project: createInitialProject() });
+    set({ project: createDemoProject() });
   },
   addDatasets: (datasets) => {
     set((state) => {
@@ -125,6 +125,24 @@ export const useProjectStore = create<ProjectStore>((set, get) => ({
 }));
 
 export function createInitialProject(): ProjectSnapshot {
+  return createEmptyProject();
+}
+
+export function createEmptyProject(): ProjectSnapshot {
+  const now = new Date().toISOString();
+  return {
+    id: "default-project",
+    name: "UPS-LEIPS Project",
+    datasets: [],
+    selectedDatasetId: undefined,
+    analysis: createInitialAnalysis([]),
+    windows: defaultWindows(),
+    createdAt: now,
+    updatedAt: now,
+  };
+}
+
+export function createDemoProject(): ProjectSnapshot {
   const datasets = createDemoDatasets();
   const now = new Date().toISOString();
   return {
