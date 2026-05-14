@@ -188,14 +188,8 @@ export function SpectrumPlot({
       data-x-direction={xDirection}
     >
       <div ref={containerRef} className="h-full w-full" />
-      <span className="pointer-events-none absolute left-1 top-1/2 z-10 -translate-y-1/2 -rotate-90 text-xs font-semibold text-slate-700">
-        {yLabel}
-      </span>
-      {yRightLabel ? (
-        <span className="pointer-events-none absolute right-1 top-1/2 z-10 -translate-y-1/2 rotate-90 text-xs font-semibold text-red-600">
-          {yRightLabel}
-        </span>
-      ) : null}
+      <span className="plot-y-label plot-y-label-left">{yLabel}</span>
+      {yRightLabel ? <span className="plot-y-label plot-y-label-right">{yRightLabel}</span> : null}
       {handles.map((handle) => (
         <button
           key={`${handle.bandId}-${handle.side}`}
@@ -406,6 +400,7 @@ function drawPlotBorder(plot: uPlot): void {
   ctx.save();
   ctx.strokeStyle = "#334155";
   ctx.lineWidth = 1;
+  ctx.setLineDash([]);
   ctx.strokeRect(left, top, width, height);
   ctx.restore();
 }
@@ -427,8 +422,6 @@ function drawRangeBands(plot: uPlot, rangeBands: readonly PlotRangeBand[]): void
     const width = x1 - x0;
     ctx.fillStyle = withAlpha(band.color, 0.11);
     ctx.fillRect(x0, top, width, height);
-    ctx.strokeStyle = withAlpha(band.color, 0.65);
-    ctx.strokeRect(x0, top, width, height);
     ctx.fillStyle = band.color;
     ctx.fillText(band.label, x0 + 4, top + height - 18);
   }

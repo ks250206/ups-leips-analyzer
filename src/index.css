@@ -53,10 +53,35 @@ select {
 
 .uplot .u-cursor-x,
 .uplot .u-cursor-y {
-  border: 0 !important;
+  display: none !important;
 }
 
 .uplot .u-select {
   border: 0 !important;
   outline: 0 !important;
+}
+
+.plot-y-label {
+  pointer-events: none;
+  position: absolute;
+  top: 50%;
+  z-index: 20;
+  font-size: 12px;
+  font-weight: 700;
+  line-height: 1;
+  white-space: nowrap;
+}
+
+.plot-y-label-left {
+  left: 10px;
+  color: #334155;
+  transform: translateY(-50%) rotate(-90deg);
+  transform-origin: center;
+}
+
+.plot-y-label-right {
+  right: 10px;
+  color: #dc2626;
+  transform: translateY(-50%) rotate(90deg);
+  transform-origin: center;
 }
