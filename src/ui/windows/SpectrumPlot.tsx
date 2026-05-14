@@ -10,6 +10,7 @@ interface SpectrumPlotProps {
   series: PlotSeries[];
   markers?: PlotMarker[];
   rangeBands?: PlotRangeBand[];
+  xDirection?: "normal" | "reverse";
   onSelectRange?: (range: FitRange) => void;
 }
 
@@ -20,6 +21,7 @@ export function SpectrumPlot({
   series,
   markers = [],
   rangeBands = [],
+  xDirection = "normal",
   onSelectRange,
 }: SpectrumPlotProps) {
   const containerRef = useRef<HTMLDivElement>(null);
@@ -50,7 +52,7 @@ export function SpectrumPlot({
         },
       },
       legend: { show: true },
-      scales: { x: { time: false } },
+      scales: { x: { time: false, dir: xDirection === "reverse" ? -1 : 1 } },
       axes: [
         { label: xLabel, stroke: "#334155", grid: { stroke: "#e2e8f0", width: 1 } },
         { label: yLabel, stroke: "#334155", grid: { stroke: "#edf2f7", width: 1 } },
@@ -97,7 +99,7 @@ export function SpectrumPlot({
       plotRef.current?.destroy();
       plotRef.current = undefined;
     };
-  }, [data, markers, onSelectRange, rangeBands, series, title, xLabel, yLabel]);
+  }, [data, markers, onSelectRange, rangeBands, series, title, xDirection, xLabel, yLabel]);
 
   return (
     <div className="relative h-full w-full bg-white">

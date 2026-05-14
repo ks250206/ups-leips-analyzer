@@ -1,4 +1,5 @@
 import { useMemo } from "react";
+import type { FitTarget } from "../../domain/types";
 import { useProjectStore } from "../../store/projectStore";
 import { formatNumber } from "../format";
 import {
@@ -10,15 +11,12 @@ import {
 } from "../plotData";
 import { SpectrumPlot } from "./SpectrumPlot";
 
-export function UPSPlotWindow() {
+export function UPSVBPlotWindow() {
   const project = useProjectStore((state) => state.project);
   const activeFitTarget = useProjectStore((state) => state.activeFitTarget);
   const setFitRange = useProjectStore((state) => state.setFitRange);
   const vbDataset = project.datasets.find(
     (dataset) => dataset.id === project.analysis.selection.upsVbDatasetId,
-  );
-  const ipDataset = project.datasets.find(
-    (dataset) => dataset.id === project.analysis.selection.upsIpDatasetId,
   );
   const ups = project.analysis.ups;
 
@@ -26,9 +24,6 @@ export function UPSPlotWindow() {
     const items: PlotSeries[] = [];
     if (vbDataset) {
       items.push(datasetSeries(vbDataset, "#2563eb"));
-    }
-    if (ipDataset) {
-      items.push(datasetSeries(ipDataset, "#dc2626"));
     }
     if (ups) {
       items.push(
@@ -42,6 +37,60 @@ export function UPSPlotWindow() {
           "#0f766e",
         ),
       );
+    }
+    return items;
+  }, [project.analysis.fitRanges, ups, vbDataset]);
+
+  const markers = useMemo<PlotMarker[]>(
+    () =>
+      ups ? [{ x: ups.vbm, label: `VBM ${formatNumber(ups.vbm, 2)} eV`, color: "#2563eb" }] : [],
+    [ups],
+  );
+  const rangeBands = useMemo<PlotRangeBand[]>(
+    () => [
+      {
+        ...project.analysis.fitRanges.upsVbEdge,
+        label: activeFitTarget === "ups-vb-edge" ? "active VBM edge" : "VBM edge",
+        color: "#2563eb",
+      },
+      {
+        ...project.analysis.fitRanges.upsVbBackground,
+        label: activeFitTarget === "ups-vb-bg" ? "active VBM BG" : "VBM BG",
+        color: "#0f766e",
+      },
+    ],
+    [activeFitTarget, project.analysis.fitRanges],
+  );
+
+  return (
+    <SpectrumPlot
+      title="UPS VB"
+      xLabel="Binding Energy / eV"
+      yLabel="Intensity / a.u."
+      series={series}
+      markers={markers}
+      rangeBands={rangeBands}
+      xDirection="reverse"
+      onSelectRange={(range) => setFitRange(vbTarget(activeFitTarget), range)}
+    />
+  );
+}
+
+export function UPSIPPlotWindow() {
+  const project = useProjectStore((state) => state.project);
+  const activeFitTarget = useProjectStore((state) => state.activeFitTarget);
+  const setFitRange = useProjectStore((state) => state.setFitRange);
+  const ipDataset = project.datasets.find(
+    (dataset) => dataset.id === project.analysis.selection.upsIpDatasetId,
+  );
+  const ups = project.analysis.ups;
+
+  const series = useMemo<PlotSeries[]>(() => {
+    const items: PlotSeries[] = [];
+    if (ipDataset) {
+      items.push(datasetSeries(ipDataset, "#dc2626"));
+    }
+    if (ups) {
       items.push(
         lineFitSeries(
           "Cut-off edge",
@@ -60,13 +109,12 @@ export function UPSPlotWindow() {
       );
     }
     return items;
-  }, [ipDataset, project.analysis.fitRanges, ups, vbDataset]);
+  }, [ipDataset, project.analysis.fitRanges, ups]);
 
   const markers = useMemo<PlotMarker[]>(
     () =>
       ups
         ? [
-            { x: ups.vbm, label: `VBM ${formatNumber(ups.vbm, 2)} eV`, color: "#2563eb" },
             {
               x: ups.ecutoff,
               label: `Cut-off ${formatNumber(ups.ecutoff, 2)} eV`,
@@ -78,16 +126,6 @@ export function UPSPlotWindow() {
   );
   const rangeBands = useMemo<PlotRangeBand[]>(
     () => [
-      {
-        ...project.analysis.fitRanges.upsVbEdge,
-        label: activeFitTarget === "ups-vb-edge" ? "active VBM edge" : "VBM edge",
-        color: "#2563eb",
-      },
-      {
-        ...project.analysis.fitRanges.upsVbBackground,
-        label: activeFitTarget === "ups-vb-bg" ? "active VBM BG" : "VBM BG",
-        color: "#0f766e",
-      },
       {
         ...project.analysis.fitRanges.upsIpEdge,
         label: activeFitTarget === "ups-ip-edge" ? "active cut-off edge" : "cut-off edge",
@@ -104,13 +142,22 @@ export function UPSPlotWindow() {
 
   return (
     <SpectrumPlot
-      title="UPS"
+      title="UPS IP"
       xLabel="Binding Energy / eV"
       yLabel="Intensity / a.u."
       series={series}
       markers={markers}
       rangeBands={rangeBands}
-      onSelectRange={(range) => setFitRange(activeFitTarget, range)}
+      xDirection="reverse"
+      onSelectRange={(range) => setFitRange(ipTarget(activeFitTarget), range)}
     />
   );
+}
+
+function vbTarget(active: FitTarget): FitTarget {
+  return active === "ups-vb-edge" || active === "ups-vb-bg" ? active : "ups-vb-edge";
+}
+
+function ipTarget(active: FitTarget): FitTarget {
+  return active === "ups-ip-edge" || active === "ups-ip-bg" ? active : "ups-ip-edge";
 }

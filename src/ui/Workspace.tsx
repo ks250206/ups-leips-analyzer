@@ -14,7 +14,7 @@ import { BandDiagramWindow } from "./windows/BandDiagramWindow";
 import { DataBrowser } from "./windows/DataBrowser";
 import { DataTable } from "./windows/DataTable";
 import { LEIPSPlotWindow } from "./windows/LEIPSPlotWindow";
-import { UPSPlotWindow } from "./windows/UPSPlotWindow";
+import { UPSIPPlotWindow, UPSVBPlotWindow } from "./windows/UPSPlotWindow";
 import { WindowFrame } from "./windows/WindowFrame";
 
 export function Workspace() {
@@ -88,7 +88,10 @@ function renderWindow(window: WindowLayout) {
     case "table":
       return <DataTable />;
     case "ups":
-      return <UPSPlotWindow />;
+    case "ups-ip":
+      return <UPSIPPlotWindow />;
+    case "ups-vb":
+      return <UPSVBPlotWindow />;
     case "leips":
       return <LEIPSPlotWindow />;
     case "band":
@@ -105,6 +108,8 @@ function iconForWindow(kind: WindowLayout["kind"]) {
     case "table":
       return <Table2 size={14} />;
     case "ups":
+    case "ups-vb":
+    case "ups-ip":
     case "leips":
       return <LineChart size={14} />;
     case "band":
