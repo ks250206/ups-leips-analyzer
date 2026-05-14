@@ -1,4 +1,11 @@
-import { useEffect, useMemo, useRef } from "react";
+import {
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+  type PointerEvent as ReactPointerEvent,
+  type RefObject,
+} from "react";
 import uPlot from "uplot";
 import type { FitRange } from "../../domain/types";
 import { alignSeries, type PlotMarker, type PlotRangeBand, type PlotSeries } from "../plotData";
@@ -12,6 +19,17 @@ interface SpectrumPlotProps {
   rangeBands?: PlotRangeBand[];
   xDirection?: "normal" | "reverse";
   onSelectRange?: (range: FitRange) => void;
+  onRangeBandChange?: (bandId: string, range: FitRange) => void;
+}
+
+interface CursorHandle {
+  bandId: string;
+  side: "min" | "max";
+  label: string;
+  color: string;
+  left: number;
+  top: number;
+  height: number;
 }
 
 export function SpectrumPlot({
@@ -23,9 +41,11 @@ export function SpectrumPlot({
   rangeBands = [],
   xDirection = "normal",
   onSelectRange,
+  onRangeBandChange,
 }: SpectrumPlotProps) {
   const containerRef = useRef<HTMLDivElement>(null);
   const plotRef = useRef<uPlot | undefined>(undefined);
+  const [handles, setHandles] = useState<CursorHandle[]>([]);
   const data = useMemo(() => alignSeries(series), [series]);
 
   useEffect(() => {
@@ -64,6 +84,7 @@ export function SpectrumPlot({
           stroke: item.color,
           width: item.width ?? 2,
           dash: item.dash,
+          spanGaps: true,
         })),
       ],
       hooks: {
@@ -85,6 +106,12 @@ export function SpectrumPlot({
         draw: [
           (plot) => {
             drawMarkers(plot, markers);
+            syncHandles(plot, rangeBands, setHandles);
+          },
+        ],
+        ready: [
+          (plot) => {
+            syncHandles(plot, rangeBands, setHandles);
           },
         ],
       },
@@ -98,12 +125,42 @@ export function SpectrumPlot({
       resizeObserver.disconnect();
       plotRef.current?.destroy();
       plotRef.current = undefined;
+      setHandles([]);
     };
   }, [data, markers, onSelectRange, rangeBands, series, title, xDirection, xLabel, yLabel]);
 
   return (
     <div className="relative h-full w-full bg-white">
       <div ref={containerRef} className="h-full w-full" />
+      {handles.map((handle) => (
+        <button
+          key={`${handle.bandId}-${handle.side}`}
+          aria-label={`${handle.label} cursor`}
+          className="absolute z-10 cursor-ew-resize border-0 bg-transparent p-0"
+          style={{
+            left: handle.left - 5,
+            top: handle.top,
+            height: handle.height,
+            width: 10,
+          }}
+          type="button"
+          onPointerDown={(event) => {
+            event.preventDefault();
+            startHandleDrag(event, handle, plotRef, rangeBands, onRangeBandChange);
+          }}
+        >
+          <span
+            className="absolute left-1/2 top-0 h-full w-px -translate-x-1/2"
+            style={{ backgroundColor: handle.color }}
+          />
+          <span
+            className="absolute left-1/2 top-1 -translate-x-1/2 rounded px-1 py-0.5 text-[10px] font-bold leading-none text-white shadow"
+            style={{ backgroundColor: handle.color }}
+          >
+            {handle.label}
+          </span>
+        </button>
+      ))}
       <div className="absolute right-2 top-9 flex gap-1">
         <button
           className="rounded border border-slate-300 bg-white/90 px-2 py-0.5 text-[10px] font-semibold text-slate-700 shadow-sm hover:bg-cyan-50"
@@ -183,6 +240,90 @@ function drawRangeBands(plot: uPlot, rangeBands: readonly PlotRangeBand[]): void
     ctx.fillText(band.label, x0 + 4, top + height - 18);
   }
   ctx.restore();
+}
+
+function syncHandles(
+  plot: uPlot,
+  rangeBands: readonly PlotRangeBand[],
+  setHandles: (handles: CursorHandle[]) => void,
+): void {
+  const top = plot.bbox.top / devicePixelRatio;
+  const left = plot.bbox.left / devicePixelRatio;
+  const height = plot.bbox.height / devicePixelRatio;
+  const nextHandles = rangeBands.flatMap((band): CursorHandle[] => {
+    if (!band.id) {
+      return [];
+    }
+    const [minLabel, maxLabel] = band.cursorLabels ?? ["A", "B"];
+    return [
+      {
+        bandId: band.id,
+        side: "min",
+        label: minLabel,
+        color: band.color,
+        left: left + plot.valToPos(band.min, "x"),
+        top,
+        height,
+      },
+      {
+        bandId: band.id,
+        side: "max",
+        label: maxLabel,
+        color: band.color,
+        left: left + plot.valToPos(band.max, "x"),
+        top,
+        height,
+      },
+    ];
+  });
+  setHandles(nextHandles);
+}
+
+function startHandleDrag(
+  event: ReactPointerEvent<HTMLButtonElement>,
+  handle: CursorHandle,
+  plotRef: RefObject<uPlot | undefined>,
+  rangeBands: readonly PlotRangeBand[],
+  onRangeBandChange: ((bandId: string, range: FitRange) => void) | undefined,
+): void {
+  const plot = plotRef.current;
+  const container = plot?.root.parentElement;
+  const band = rangeBands.find((item) => item.id === handle.bandId);
+  if (!plot || !container || !band || !onRangeBandChange) {
+    return;
+  }
+  const pointerId = event.pointerId;
+  event.currentTarget.setPointerCapture(pointerId);
+
+  const move = (moveEvent: PointerEvent) => {
+    const nextX = clientXToPlotValue(plot, container, moveEvent.clientX);
+    const nextRange =
+      handle.side === "min"
+        ? normalizeRange({ min: nextX, max: band.max })
+        : normalizeRange({ min: band.min, max: nextX });
+    onRangeBandChange(handle.bandId, nextRange);
+  };
+  const cleanup = () => {
+    window.removeEventListener("pointermove", move);
+    window.removeEventListener("pointerup", cleanup);
+    window.removeEventListener("pointercancel", cleanup);
+  };
+
+  window.addEventListener("pointermove", move);
+  window.addEventListener("pointerup", cleanup, { once: true });
+  window.addEventListener("pointercancel", cleanup, { once: true });
+}
+
+function clientXToPlotValue(plot: uPlot, container: HTMLElement, clientX: number): number {
+  const rect = container.getBoundingClientRect();
+  const plotLeft = plot.bbox.left / devicePixelRatio;
+  const plotWidth = plot.bbox.width / devicePixelRatio;
+  const position = Math.min(Math.max(clientX - rect.left - plotLeft, 0), plotWidth);
+  return plot.posToVal(position, "x");
+}
+
+function normalizeRange(range: FitRange): FitRange {
+  return { min: Math.min(range.min, range.max), max: Math.max(range.min, range.max) };
 }
 
 function exportPng(plot: uPlot | undefined, title: string): void {

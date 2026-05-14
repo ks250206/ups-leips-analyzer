@@ -49,14 +49,18 @@ export function UPSVBPlotWindow() {
   const rangeBands = useMemo<PlotRangeBand[]>(
     () => [
       {
+        id: "ups-vb-edge",
         ...project.analysis.fitRanges.upsVbEdge,
         label: activeFitTarget === "ups-vb-edge" ? "active VBM edge" : "VBM edge",
         color: "#2563eb",
+        cursorLabels: ["A", "B"],
       },
       {
+        id: "ups-vb-bg",
         ...project.analysis.fitRanges.upsVbBackground,
         label: activeFitTarget === "ups-vb-bg" ? "active VBM BG" : "VBM BG",
         color: "#0f766e",
+        cursorLabels: ["C", "D"],
       },
     ],
     [activeFitTarget, project.analysis.fitRanges],
@@ -72,6 +76,7 @@ export function UPSVBPlotWindow() {
       rangeBands={rangeBands}
       xDirection="reverse"
       onSelectRange={(range) => setFitRange(vbTarget(activeFitTarget), range)}
+      onRangeBandChange={(target, range) => setFitRange(target as FitTarget, range)}
     />
   );
 }
@@ -127,14 +132,18 @@ export function UPSIPPlotWindow() {
   const rangeBands = useMemo<PlotRangeBand[]>(
     () => [
       {
+        id: "ups-ip-edge",
         ...project.analysis.fitRanges.upsIpEdge,
         label: activeFitTarget === "ups-ip-edge" ? "active cut-off edge" : "cut-off edge",
         color: "#dc2626",
+        cursorLabels: ["A", "B"],
       },
       {
+        id: "ups-ip-bg",
         ...project.analysis.fitRanges.upsIpBackground,
         label: activeFitTarget === "ups-ip-bg" ? "active cut-off BG" : "cut-off BG",
         color: "#15803d",
+        cursorLabels: ["C", "D"],
       },
     ],
     [activeFitTarget, project.analysis.fitRanges],
@@ -150,6 +159,7 @@ export function UPSIPPlotWindow() {
       rangeBands={rangeBands}
       xDirection="reverse"
       onSelectRange={(range) => setFitRange(ipTarget(activeFitTarget), range)}
+      onRangeBandChange={(target, range) => setFitRange(target as FitTarget, range)}
     />
   );
 }

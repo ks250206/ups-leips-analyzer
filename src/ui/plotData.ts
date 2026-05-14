@@ -22,10 +22,12 @@ export interface PlotMarker {
 }
 
 export interface PlotRangeBand {
+  id?: string;
   min: number;
   max: number;
   label: string;
   color: string;
+  cursorLabels?: readonly [string, string];
 }
 
 export function lineFitSeries(
