@@ -14,6 +14,7 @@ export interface PlotSeries {
   points: Point[];
   width?: number;
   dash?: number[];
+  yAxis?: "left" | "right";
 }
 
 export interface PlotMarker {
@@ -74,8 +75,12 @@ export function gaussianSeries(
   return { name, color, width: 1.5, dash: [4, 3], points };
 }
 
-export function datasetSeries(dataset: SpectrumDataset, color: string): PlotSeries {
-  return { name: dataset.name, color, points: dataset.points, width: 2 };
+export function datasetSeries(
+  dataset: SpectrumDataset,
+  color: string,
+  yAxis: PlotSeries["yAxis"] = "left",
+): PlotSeries {
+  return { name: dataset.name, color, points: dataset.points, width: 2, yAxis };
 }
 
 export function bandSeries(band: BandDiagramResult): PlotSeries[] {

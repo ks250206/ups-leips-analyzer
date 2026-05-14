@@ -14,6 +14,7 @@ interface SpectrumPlotProps {
   title: string;
   xLabel: string;
   yLabel: string;
+  yRightLabel?: string;
   series: PlotSeries[];
   markers?: PlotMarker[];
   rangeBands?: PlotRangeBand[];
@@ -36,6 +37,7 @@ export function SpectrumPlot({
   title,
   xLabel,
   yLabel,
+  yRightLabel,
   series,
   markers = [],
   rangeBands = [],
@@ -47,6 +49,7 @@ export function SpectrumPlot({
   const plotRef = useRef<uPlot | undefined>(undefined);
   const [handles, setHandles] = useState<CursorHandle[]>([]);
   const data = useMemo(() => alignSeries(series), [series]);
+  const hasRightAxis = series.some((item) => item.yAxis === "right");
 
   useEffect(() => {
     const container = containerRef.current;
@@ -72,15 +75,30 @@ export function SpectrumPlot({
         },
       },
       legend: { show: true },
-      scales: { x: { time: false, dir: xDirection === "reverse" ? -1 : 1 } },
+      scales: {
+        x: { time: false, dir: xDirection === "reverse" ? -1 : 1 },
+        ...(hasRightAxis ? { y2: { auto: true } } : {}),
+      },
       axes: [
         { label: xLabel, stroke: "#334155", grid: { stroke: "#e2e8f0", width: 1 } },
         { label: yLabel, stroke: "#334155", grid: { stroke: "#edf2f7", width: 1 } },
+        ...(hasRightAxis
+          ? [
+              {
+                scale: "y2",
+                side: 1,
+                label: yRightLabel ?? "Right axis",
+                stroke: "#dc2626",
+                grid: { show: false },
+              } satisfies uPlot.Axis,
+            ]
+          : []),
       ],
       series: [
         {},
         ...series.map((item) => ({
           label: item.name,
+          scale: item.yAxis === "right" ? "y2" : "y",
           stroke: item.color,
           width: item.width ?? 2,
           dash: item.dash,
@@ -127,7 +145,19 @@ export function SpectrumPlot({
       plotRef.current = undefined;
       setHandles([]);
     };
-  }, [data, markers, onSelectRange, rangeBands, series, title, xDirection, xLabel, yLabel]);
+  }, [
+    data,
+    hasRightAxis,
+    markers,
+    onSelectRange,
+    rangeBands,
+    series,
+    title,
+    xDirection,
+    xLabel,
+    yLabel,
+    yRightLabel,
+  ]);
 
   return (
     <div className="relative h-full w-full bg-white">

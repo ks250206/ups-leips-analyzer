@@ -37,7 +37,7 @@ export function LEIPSPlotWindow() {
       items.push(datasetSeries(leetDerDataset, "#2563eb"));
     }
     if (leipsDataset) {
-      items.push(datasetSeries(leipsDataset, "#dc2626"));
+      items.push(datasetSeries(leipsDataset, "#dc2626", "right"));
     }
     if (leips && leetDerDataset) {
       items.push(gaussianSeries("LEET(der) fit", leips.peakFit, leetDerDataset.points, "#0f172a"));
@@ -78,6 +78,7 @@ export function LEIPSPlotWindow() {
       title="LEET / LEET(der) / LEIPS"
       xLabel="Applied Bias Vbias / V"
       yLabel="Intensity / a.u."
+      yRightLabel="LEIPS Intensity / a.u."
       series={series}
       markers={markers}
       rangeBands={rangeBands}
