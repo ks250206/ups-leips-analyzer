@@ -1,7 +1,7 @@
 import { beforeEach, describe, expect, test } from "vite-plus/test";
 import { createDemoDatasets } from "../domain/demoData";
 import type { FitTarget } from "../domain/types";
-import { exportProjectJson } from "./projectDb";
+import { DEFAULT_CATALOG_ID, DEFAULT_CATALOG_NAME, exportProjectJson } from "./projectDb";
 import { fitRangeKey, useProjectStore } from "./projectStore";
 
 const TARGETS: FitTarget[] = [
@@ -20,6 +20,15 @@ const TARGETS: FitTarget[] = [
 
 describe("project store", () => {
   beforeEach(() => {
+    useProjectStore.setState({
+      activeCatalog: {
+        id: DEFAULT_CATALOG_ID,
+        name: DEFAULT_CATALOG_NAME,
+        createdAt: new Date(0).toISOString(),
+        updatedAt: new Date(0).toISOString(),
+        lastOpenedAt: new Date(0).toISOString(),
+      },
+    });
     useProjectStore.getState().loadDemo();
   });
 
@@ -219,6 +228,65 @@ describe("project store", () => {
     await useProjectStore.getState().loadSavedProject(savedId);
     expect(useProjectStore.getState().project.name).toBe("Saved Copy");
     expect(useProjectStore.getState().project.datasets).toHaveLength(6);
+  });
+
+  test("returns save-as requirement when saving an unsaved new project", async () => {
+    useProjectStore.getState().newProject();
+
+    await expect(useProjectStore.getState().saveCurrentProject()).resolves.toBe("needs-name");
+
+    await useProjectStore.getState().saveProjectAs(`Named ${crypto.randomUUID()}`);
+    await expect(useProjectStore.getState().saveCurrentProject()).resolves.toBe("saved");
+  });
+
+  test("creates and switches catalogs without sharing project lists", async () => {
+    const catalogName = `Catalog ${crypto.randomUUID()}`;
+    await useProjectStore.getState().createCatalog(catalogName);
+    expect(useProjectStore.getState().activeCatalog.name).toBe(catalogName);
+    await useProjectStore.getState().saveProjectAs("Catalog Local Project");
+    expect(await useProjectStore.getState().listRecentProjects()).toHaveLength(1);
+
+    await useProjectStore.getState().switchCatalog(DEFAULT_CATALOG_ID);
+    expect(useProjectStore.getState().activeCatalog.id).toBe(DEFAULT_CATALOG_ID);
+    expect(
+      (await useProjectStore.getState().listRecentProjects()).some(
+        (project) => project.name === "Catalog Local Project",
+      ),
+    ).toBe(false);
+  });
+
+  test("renames and deletes catalogs while keeping a usable active catalog", async () => {
+    const firstName = `First ${crypto.randomUUID()}`;
+    await useProjectStore.getState().createCatalog(firstName);
+    const firstId = useProjectStore.getState().activeCatalog.id;
+    await useProjectStore.getState().renameCatalog(firstId, `${firstName} Renamed`);
+    expect(useProjectStore.getState().activeCatalog.name).toBe(`${firstName} Renamed`);
+
+    await useProjectStore.getState().createCatalog(`Second ${crypto.randomUUID()}`);
+    const secondId = useProjectStore.getState().activeCatalog.id;
+    await useProjectStore.getState().deleteCatalog(firstId);
+    expect(useProjectStore.getState().activeCatalog.id).toBe(secondId);
+
+    await useProjectStore.getState().deleteCatalog(secondId);
+    expect(useProjectStore.getState().activeCatalog.id).not.toBe(secondId);
+    expect(useProjectStore.getState().project.name).toBeDefined();
+  });
+
+  test("exports and imports the active catalog with project UI state", async () => {
+    const catalogName = `Exportable ${crypto.randomUUID()}`;
+    await useProjectStore.getState().createCatalog(catalogName);
+    useProjectStore.getState().setPlotCursorStyle("upsIp", "range");
+    await useProjectStore.getState().saveProjectAs("Stored In Catalog");
+    const exported = await useProjectStore
+      .getState()
+      .exportCatalog(useProjectStore.getState().activeCatalog.id);
+
+    const imported = await useProjectStore.getState().importCatalog(exported);
+
+    expect(imported.id).toBe(useProjectStore.getState().activeCatalog.id);
+    expect(imported.name).toBe(`${catalogName} 2`);
+    expect(useProjectStore.getState().project.name).toBe("Stored In Catalog");
+    expect(useProjectStore.getState().project.ui?.cursorStyles?.upsIp).toBe("range");
   });
 
   test("save as overwrites a saved project with the same name", async () => {

@@ -40,3 +40,9 @@ x,y1,y2,...
 - Project共有用の標準exportは、Project JSONをgzip圧縮した `.upsleips.gz` とする。
 - importはgzip版と従来の生JSON版 `.json` の両方を受け付ける。
 - gzipの圧縮/展開はブラウザ内で `fflate` を使い、Project JSONのスキーマ自体は変更しない。
+
+## Catalog Export
+
+- Catalog共有用の標準exportは、Catalog archive JSONをgzip圧縮した `.upsleips-catalog.json.gz` とする。
+- Catalog archiveはCatalog metadataと、そのCatalog専用Dexie DB内の全table rowsを含む。
+- Catalog importは既存Catalogを上書きせず、新しいCatalog IDで追加する。Project IDはCatalog内でそのまま保持する。

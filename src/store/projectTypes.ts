@@ -86,3 +86,11 @@ export interface ProjectSnapshot {
 export interface ProjectRecord extends ProjectSnapshot {
   savedAt: string;
 }
+
+export interface CatalogRecord {
+  id: string;
+  name: string;
+  createdAt: string;
+  updatedAt: string;
+  lastOpenedAt: string;
+}

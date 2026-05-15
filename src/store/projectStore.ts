@@ -15,14 +15,27 @@ import {
 } from "./projectModel";
 import { createDemoProject, createEmptyProject, defaultWindows } from "./projectFactory";
 import {
+  DEFAULT_CATALOG_ID,
+  DEFAULT_CATALOG_NAME,
+  createCatalogRecord,
+  deleteCatalogRecord,
   deleteProject,
+  ensureDefaultCatalog,
+  exportCatalogGzip,
   findProjectByName,
+  getCatalog,
+  getCatalogProjectDb,
+  importCatalogGzip,
   importProjectJson,
+  listCatalogs,
   listProjects,
   loadProject,
+  renameCatalogRecord,
   saveProject,
+  touchCatalog,
 } from "./projectDb";
 import type {
+  CatalogRecord,
   CursorStyle,
   PlotCursorStyleKey,
   ProjectRecord,
@@ -36,6 +49,7 @@ export { createInitialProject } from "./projectFactory";
 export { fitRangeKey, resolvedBandpassEnergy } from "./projectModel";
 
 interface ProjectStore {
+  activeCatalog: CatalogRecord;
   project: ProjectSnapshot;
   activeFitTarget: FitTarget;
   newProject: () => void;
@@ -69,15 +83,31 @@ interface ProjectStore {
   toggleHelpWindow: () => void;
   toggleProjectsWindow: () => void;
   recalculate: () => void;
-  saveCurrentProject: () => Promise<void>;
+  saveCurrentProject: () => Promise<"saved" | "needs-name">;
   saveProjectAs: (name: string) => Promise<void>;
   deleteCurrentProject: () => Promise<void>;
   loadSavedProject: (id: string) => Promise<void>;
   listRecentProjects: () => Promise<ProjectRecord[]>;
   importProject: (json: string) => void;
+  createCatalog: (name: string) => Promise<void>;
+  switchCatalog: (id: string) => Promise<void>;
+  renameCatalog: (id: string, name: string) => Promise<void>;
+  deleteCatalog: (id: string) => Promise<void>;
+  listCatalogs: () => Promise<CatalogRecord[]>;
+  exportCatalog: (id: string) => Promise<Uint8Array>;
+  importCatalog: (bytes: ArrayBuffer | Uint8Array) => Promise<CatalogRecord>;
 }
 
+const DEFAULT_CATALOG: CatalogRecord = {
+  id: DEFAULT_CATALOG_ID,
+  name: DEFAULT_CATALOG_NAME,
+  createdAt: new Date(0).toISOString(),
+  updatedAt: new Date(0).toISOString(),
+  lastOpenedAt: new Date(0).toISOString(),
+};
+
 export const useProjectStore = create<ProjectStore>((set, get) => ({
+  activeCatalog: DEFAULT_CATALOG,
   project: createEmptyProject(),
   activeFitTarget: "ups-vb-edge",
   newProject: () => {
@@ -488,15 +518,22 @@ export const useProjectStore = create<ProjectStore>((set, get) => ({
     set((state) => ({ project: recalculateProject(touchProject(state.project)) }));
   },
   saveCurrentProject: async () => {
-    await saveProject(get().project);
+    const db = await activeProjectDb(get().activeCatalog.id);
+    const existing = await loadProject(get().project.id, db);
+    if (!existing) {
+      return "needs-name";
+    }
+    await saveProject(get().project, db);
+    return "saved";
   },
   saveProjectAs: async (name) => {
     const trimmed = name.trim();
     if (!trimmed) {
       return;
     }
+    const db = await activeProjectDb(get().activeCatalog.id);
     const now = new Date().toISOString();
-    const existing = await findProjectByName(trimmed);
+    const existing = await findProjectByName(trimmed, db);
     const project = touchProject({
       ...get().project,
       id: existing?.id ?? `project-${Date.now()}`,
@@ -504,23 +541,92 @@ export const useProjectStore = create<ProjectStore>((set, get) => ({
       createdAt: existing?.createdAt ?? now,
     });
     set({ project });
-    await saveProject(project);
+    await saveProject(project, db);
   },
   deleteCurrentProject: async () => {
-    await deleteProject(get().project.id);
+    const db = await activeProjectDb(get().activeCatalog.id);
+    await deleteProject(get().project.id, db);
     set({ activeFitTarget: "ups-vb-edge", project: createEmptyProject() });
   },
   loadSavedProject: async (id) => {
-    const project = await loadProject(id);
+    const db = await activeProjectDb(get().activeCatalog.id);
+    const project = await loadProject(id, db);
     if (project) {
       set({ project: recalculateProject(normalizeProject(project)) });
     }
   },
-  listRecentProjects: () => listProjects(),
+  listRecentProjects: async () => {
+    const db = await activeProjectDb(get().activeCatalog.id);
+    return listProjects(db);
+  },
   importProject: (json) => {
     set({ project: recalculateProject(normalizeProject(importProjectJson(json))) });
   },
+  createCatalog: async (name) => {
+    const catalog = await createCatalogRecord(name);
+    set({ activeCatalog: catalog, activeFitTarget: "ups-vb-edge", project: createEmptyProject() });
+  },
+  switchCatalog: async (id) => {
+    const catalog = await touchCatalog(id);
+    if (!catalog) {
+      return;
+    }
+    const project = await latestProjectForCatalog(catalog.id);
+    set({
+      activeCatalog: catalog,
+      activeFitTarget: "ups-vb-edge",
+      project: project ? recalculateProject(normalizeProject(project)) : createEmptyProject(),
+    });
+  },
+  renameCatalog: async (id, name) => {
+    const catalog = await renameCatalogRecord(id, name);
+    if (catalog && id === get().activeCatalog.id) {
+      set({ activeCatalog: catalog });
+    }
+  },
+  deleteCatalog: async (id) => {
+    await deleteCatalogRecord(id);
+    if (id !== get().activeCatalog.id) {
+      return;
+    }
+    const catalogs = await listCatalogs();
+    const nextCatalog = catalogs[0] ?? (await ensureDefaultCatalog());
+    const project = await latestProjectForCatalog(nextCatalog.id);
+    set({
+      activeCatalog: nextCatalog,
+      activeFitTarget: "ups-vb-edge",
+      project: project ? recalculateProject(normalizeProject(project)) : createEmptyProject(),
+    });
+  },
+  listCatalogs: () => listCatalogs(),
+  exportCatalog: (id) => exportCatalogGzip(id),
+  importCatalog: async (bytes) => {
+    const catalog = await importCatalogGzip(bytes);
+    const project = await latestProjectForCatalog(catalog.id);
+    set({
+      activeCatalog: catalog,
+      activeFitTarget: "ups-vb-edge",
+      project: project ? recalculateProject(normalizeProject(project)) : createEmptyProject(),
+    });
+    return catalog;
+  },
 }));
+
+async function activeProjectDb(catalogId: string) {
+  await ensureDefaultCatalog();
+  const catalog = await getCatalog(catalogId);
+  return getCatalogProjectDb(catalog?.id ?? DEFAULT_CATALOG_ID);
+}
+
+async function latestProjectForCatalog(catalogId: string): Promise<ProjectSnapshot | undefined> {
+  const db = await activeProjectDb(catalogId);
+  const projects = await listProjects(db);
+  if (projects.length === 0) {
+    return undefined;
+  }
+  const { savedAt: _savedAt, ...project } = projects[0]!;
+  return project;
+}
 
 const SELECTION_KIND: Record<keyof AnalysisState["selection"], SpectrumDataset["kind"]> = {
   upsVbDatasetId: "ups-vb",

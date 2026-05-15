@@ -4,14 +4,15 @@
 
 - `src/domain`: スペクトル型、線形fit、ガウスfit、UPS/LEIPS/REELS/バンド図計算、Sample Info helper。
 - `src/io`: MultiPak CSV parserとdataset kind推定。
-- `src/store`: Zustand store、Dexie database、Project JSON import/export。
+- `src/store`: Zustand store、Catalog registry Dexie、Catalog別Project Dexie、Project/Catalog import/export。
 - `src/ui`: Workspace window、Data Browser、Table、D3/SVG plot wrapper、解析パネル。
 
 ## Module Responsibilities
 
-- `src/store/projectStore.ts`: Zustand state/action wiring、Dexie呼び出し、公開store API。
+- `src/store/projectStore.ts`: Zustand state/action wiring、active Catalog、Dexie呼び出し、公開store API。
 - `src/store/projectFactory.ts`: 空Project、demo Project、初期dataset/window生成。
 - `src/store/projectModel.ts`: 解析再計算、dataset auto selection、dataset role変更時のaxis label補正、fit range migration、Project JSON変換。
+- `src/store/projectDb.ts`: Catalog registry DB、Catalog別Project DB生成、legacy Project DB migration、Project/Catalog gzip import/export。
 - `src/store/windowModel.ts`: workspace window生成とdefault layout。
 - `ProjectSnapshot.ui`: UPS/LEIPS/REELS/Band Diagram plot viewport、plot別cursor表示設定、Sample Info、Help window状態などProjectと一緒に復元したいUI state。Sample Infoのmulti-select値はProject JSON import時に旧string値から配列へ軽量migrationする。
 - `src/ui/Workspace.tsx`: workspace viewport、background pan/context menu、window frame配置、modal open state。
@@ -33,7 +34,7 @@
 
 ## State
 
-Zustandは現在のProject snapshotを保持する。Dexieは保存済みProjectを保持する。Project JSONは同じsnapshot構造を使う。
+Zustandは現在のCatalog recordとProject snapshotを保持する。DexieはCatalog registry DBとCatalog別Project DBに分かれる。Catalog registryはCatalog metadataだけを持ち、Project情報は参照しない。Project JSONは単一Project共有用、Catalog archiveはCatalog専用DB全体の共有用に使う。
 
 ## Build
 
