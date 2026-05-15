@@ -1,5 +1,5 @@
 import { ChevronDown, FileUp } from "lucide-react";
-import { useState } from "react";
+import { useRef, useState } from "react";
 import { parseMultiPakCsv } from "../../io/multipakCsv";
 import { useProjectStore } from "../../store/projectStore";
 
@@ -7,6 +7,7 @@ export function DataBrowser() {
   const project = useProjectStore((state) => state.project);
   const addDatasets = useProjectStore((state) => state.addDatasets);
   const selectDataset = useProjectStore((state) => state.selectDataset);
+  const csvInputRef = useRef<HTMLInputElement>(null);
   const [error, setError] = useState<string>();
 
   async function handleFiles(fileList: FileList | null) {
@@ -29,6 +30,7 @@ export function DataBrowser() {
     <div className="flex h-full flex-col bg-slate-100 text-xs">
       <div className="border-b border-slate-300 p-2">
         <input
+          ref={csvInputRef}
           id="dataset-csv-input"
           className="sr-only"
           type="file"
@@ -39,16 +41,25 @@ export function DataBrowser() {
             event.currentTarget.value = "";
           }}
         />
-        <label
+        <div
+          role="button"
+          tabIndex={0}
           className="flex cursor-pointer items-center justify-between gap-2 rounded border border-slate-300 bg-white px-2 py-1.5 text-left hover:bg-cyan-50"
-          htmlFor="dataset-csv-input"
+          onClick={() => csvInputRef.current?.click()}
+          onKeyDown={(event) => {
+            if (event.key === "Enter" || event.key === " ") {
+              event.preventDefault();
+              csvInputRef.current?.click();
+            }
+          }}
+          onPointerDown={(event) => event.stopPropagation()}
         >
           <span className="flex items-center gap-1.5">
             <FileUp size={14} />
             Load CSVs
           </span>
           <ChevronDown size={14} className="text-slate-500" />
-        </label>
+        </div>
         <div className="mt-1 text-[10px] text-slate-500">
           Dropdown file field for MultiPak CSVs.
         </div>

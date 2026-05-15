@@ -109,7 +109,7 @@ export function REELSPlotWindow() {
       series={series}
       markers={markers}
       rangeBands={rangeBands}
-      xDirection="normal"
+      xDirection="reverse"
       onSelectRange={(range) => {
         if (activeFitTarget === "reels-bg" || activeFitTarget === "reels-edge") {
           setFitRange(activeFitTarget, range);

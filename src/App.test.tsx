@@ -27,6 +27,7 @@ describe("App", () => {
     expect(screen.getByLabelText("LEET / LEET(der) / LEIPS plot").dataset.xDirection).toBe(
       "normal",
     );
+    expect(screen.getByLabelText("REELS plot").dataset.xDirection).toBe("reverse");
     expect(screen.getByRole("button", { name: "Band" })).toBeTruthy();
     expect(screen.getByText("0 datasets")).toBeTruthy();
     expect(screen.getAllByText("No data").length).toBeGreaterThan(0);
@@ -36,6 +37,7 @@ describe("App", () => {
     expect(screen.getByText("Load CSVs")).toBeTruthy();
     expect(screen.getByText("Dropdown file field for MultiPak CSVs.")).toBeTruthy();
     expect(screen.getAllByText("Load CSV data to render this plot.").length).toBeGreaterThan(0);
+    expect(screen.getByRole("button", { name: /Load CSVs/ })).toBeTruthy();
   });
 
   test("keeps the empty workspace interactive", async () => {

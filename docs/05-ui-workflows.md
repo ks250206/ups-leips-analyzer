@@ -8,7 +8,7 @@ IGOR Proの複数グラフ/操作パネル画面とSciSpace風ワークベンチ
 - Table: 選択datasetをTanStack Table + Virtualで表示。
 - UPS Plot: VB/IPスペクトル、fit line、VBM/cut-off marker。
 - LEIPS Plot: LEET、LEET(der)、LEIPS、ガウスfit、真空準位marker、EA marker。
-- REELS Plot: Kinetic Energy datasetをElectron loss energyへ変換し、onset edge/BG fit、Eg markerを表示する。
+- REELS Plot: Kinetic Energy datasetをElectron loss energyへ変換し、onset edge/BG fit、Eg markerを表示する。横軸は左が+側、右が-側になるよう反転表示する。
 - UPS VB、UPS IP、LEIPS Plot、LEIPS vs Energy from Evac.、REELS Plotのwindow titleには現在割当中の主dataset名を表示する。window titlebar/context menuからAnalysis Controls Data tabと同じdataset割当を変更できる。
 - Band Diagram: UPSとLEIPSをEnergy relative to Ef/eVで重ね、IGOR Pro風の大きいUPS/LEIPSラベル、VBM/CBM/Vacuum levelの縦線、IP/EA/Egの両矢印を表示する。調整欄はplot下に固定幅のcompact controlとして置き、UPS+/LEIPS+は各スペクトル強度レンジに対するpercent offsetとして扱う。IP/EA/Eg indicatorのfont sizeとarrow scaleは数値入力で調整できる。
 - Band DiagramのUPS/LEIPS annotationはseriesより上に描画し、曲線と重なる部分を白いhaloで隠して読めるようにする。VBM/CBM/Vacuum levelとEgのsubscriptもFont入力に追従する。
