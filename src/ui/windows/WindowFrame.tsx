@@ -52,7 +52,7 @@ export function WindowFrame({
         <section
           className={
             isActive
-              ? "flex h-full flex-col overflow-hidden rounded-md border border-slate-600 bg-slate-50 shadow-2xl shadow-slate-700/35 ring-2 ring-cyan-500/25"
+              ? "flex h-full flex-col overflow-hidden rounded-md border border-slate-700 bg-slate-50 shadow-2xl shadow-slate-700/40 ring-2 ring-slate-500/25"
               : "flex h-full flex-col overflow-hidden rounded-md border border-slate-400 bg-slate-50 shadow-xl shadow-slate-500/20"
           }
           onPointerDownCapture={(event) => {

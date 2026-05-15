@@ -414,6 +414,10 @@ function IgorBandDiagramPlot({
         >
           Intensity / a.u.
         </text>
+        <g clipPath={`url(#${clipId})`}>
+          <path d={model.upsPath ?? undefined} fill="none" stroke="#004cff" strokeWidth={4} />
+          <path d={model.leipsPath ?? undefined} fill="none" stroke="#ff0000" strokeWidth={4} />
+        </g>
         <text
           fill="#004cff"
           fontSize={38}
@@ -421,7 +425,7 @@ function IgorBandDiagramPlot({
           paintOrder="stroke fill"
           stroke="white"
           strokeLinejoin="round"
-          strokeWidth={9}
+          strokeWidth={12}
           x={plot.left + 34}
           y={plot.top + 66}
         >
@@ -434,30 +438,29 @@ function IgorBandDiagramPlot({
           paintOrder="stroke fill"
           stroke="white"
           strokeLinejoin="round"
-          strokeWidth={9}
+          strokeWidth={12}
           textAnchor="end"
           x={plotRight - 46}
           y={plot.top + 66}
         >
           LEIPS
         </text>
-        <g clipPath={`url(#${clipId})`}>
-          <path d={model.upsPath ?? undefined} fill="none" stroke="#004cff" strokeWidth={4} />
-          <path d={model.leipsPath ?? undefined} fill="none" stroke="#ff0000" strokeWidth={4} />
-        </g>
         <BandVerticalLine
+          fontSize={indicatorFontSize}
           label="VBM"
           labelY={plotBottom - 116}
           model={model}
           value={band.efMinusEvbm}
         />
         <BandVerticalLine
+          fontSize={indicatorFontSize}
           label="CBM"
           labelY={plotBottom - 116}
           model={model}
           value={band.cbmRelativeToEf}
         />
         <BandVerticalLine
+          fontSize={indicatorFontSize}
           label={`Vacuum level (${formatNumber(band.vacuumRelativeToEf, 2)} eV)`}
           labelY={plotBottom - 220}
           model={model}
@@ -488,7 +491,7 @@ function IgorBandDiagramPlot({
           label={
             <>
               E
-              <tspan baselineShift="sub" fontSize={26}>
+              <tspan baselineShift="sub" fontSize={Math.max(10, indicatorFontSize * 0.65)}>
                 g
               </tspan>
               = {formatNumber(band.eg, 2)} eV
@@ -680,11 +683,13 @@ function BandVerticalLine({
   value,
   label,
   labelY,
+  fontSize,
 }: {
   model: IgorBandModel;
   value: number;
   label: string;
   labelY: number;
+  fontSize: number;
 }) {
   const x = model.xScale(value);
   return (
@@ -700,7 +705,7 @@ function BandVerticalLine({
       />
       <text
         fill="black"
-        fontSize={32}
+        fontSize={fontSize}
         textAnchor="middle"
         transform={`rotate(90 ${x + 12} ${labelY})`}
         x={x + 12}
