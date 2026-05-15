@@ -235,5 +235,6 @@ describe("Igor-style band diagram plot model", () => {
     );
 
     expect(screen.getByTestId("band-annotation-clip").getAttribute("clip-path")).toContain("url(");
+    expect(Number(screen.getByTestId("band-line-CBM").getAttribute("y1"))).toBeGreaterThan(250);
   });
 });

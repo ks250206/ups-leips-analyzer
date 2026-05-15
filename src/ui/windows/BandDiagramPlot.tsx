@@ -312,7 +312,7 @@ export function IgorBandDiagramPlot({
             label="CBM"
             labelY={plotBottom - 116}
             model={model}
-            upperOffset={160}
+            upperOffset={205}
             value={band.cbmRelativeToEf}
           />
           <BandVerticalLine

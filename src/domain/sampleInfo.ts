@@ -4,6 +4,7 @@ export interface SampleInfoState {
   researcherFirstNameEnglish?: string;
   researcherLastNameEnglish?: string;
   sampleName?: string;
+  sampleState?: string;
   nominalComposition?: string;
   crystalStructure?: string;
   crystalState?: string;
@@ -84,6 +85,7 @@ export const SAMPLE_INFO_FIELDS: readonly SampleInfoFieldDefinition[] = [
     placeholder: "Yamada",
   },
   { field: "sampleName", label: "試料名", kind: "text", placeholder: "Sample-001" },
+  { field: "sampleState", label: "sample state", kind: "text", placeholder: "powder sample" },
   { field: "nominalComposition", label: "組成(仕込)", kind: "text", placeholder: "Li6PS5Cl" },
   { field: "crystalStructure", label: "結晶構造", kind: "text", placeholder: "argyrodite" },
   {
@@ -163,6 +165,15 @@ export function normalizeSampleInfo(input: SampleInfoState | undefined): SampleI
     ...input,
     batteryIonSpecies: normalizeStringArray(input.batteryIonSpecies),
   };
+}
+
+export function isValidBasePressurePa(value: string): boolean {
+  const trimmed = value.trim();
+  if (trimmed.length === 0) {
+    return true;
+  }
+  const numeric = Number(trimmed);
+  return Number.isFinite(numeric) && numeric > 0;
 }
 
 function normalizeStringArray(value: string | string[] | undefined): string[] | undefined {

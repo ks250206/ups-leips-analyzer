@@ -134,6 +134,7 @@ describe("project store", () => {
     useProjectStore.getState().setSampleInfoField("nominalComposition", "Li6PS5Cl");
     useProjectStore.getState().setSampleInfoField("batteryIonSpecies", ["Li+", "Na+"]);
     useProjectStore.getState().setSampleInfoField("sampleName", "sample-a");
+    useProjectStore.getState().setSampleInfoField("sampleState", "pellet");
 
     const project = useProjectStore.getState().project;
     expect(project.ui?.cursorStyles?.upsIp).toBe("range");
@@ -145,6 +146,7 @@ describe("project store", () => {
       .importProject(exportProjectJson({ ...project, id: "sample-info", name: "Sample Info" }));
     expect(useProjectStore.getState().project.ui?.cursorStyles?.upsIp).toBe("range");
     expect(useProjectStore.getState().project.ui?.sampleInfo?.sampleName).toBe("sample-a");
+    expect(useProjectStore.getState().project.ui?.sampleInfo?.sampleState).toBe("pellet");
     expect(useProjectStore.getState().project.ui?.sampleInfo?.batteryIonSpecies).toEqual([
       "Li+",
       "Na+",

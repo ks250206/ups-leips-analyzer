@@ -1,5 +1,10 @@
 import { describe, expect, test } from "vite-plus/test";
-import { SAMPLE_HOLDER_OPTIONS, SAMPLE_INFO_FIELDS, elementsFromComposition } from "./sampleInfo";
+import {
+  SAMPLE_HOLDER_OPTIONS,
+  SAMPLE_INFO_FIELDS,
+  elementsFromComposition,
+  isValidBasePressurePa,
+} from "./sampleInfo";
 
 describe("sample info helpers", () => {
   test("extracts unique elements from nominal composition", () => {
@@ -12,5 +17,15 @@ describe("sample info helpers", () => {
     expect(SAMPLE_HOLDER_OPTIONS).toContain("LEIPS測定対応傾斜試料ホルダ_MOD201");
     expect(SAMPLE_INFO_FIELDS.some((field) => field.field === "holder")).toBe(true);
     expect(SAMPLE_INFO_FIELDS.some((field) => field.field === "nominalComposition")).toBe(true);
+    expect(SAMPLE_INFO_FIELDS.some((field) => field.field === "sampleState")).toBe(true);
+  });
+
+  test("validates base pressure values", () => {
+    expect(isValidBasePressurePa("")).toBe(true);
+    expect(isValidBasePressurePa("6.7E-8")).toBe(true);
+    expect(isValidBasePressurePa("0.00012")).toBe(true);
+    expect(isValidBasePressurePa("0")).toBe(false);
+    expect(isValidBasePressurePa("-1e-6")).toBe(false);
+    expect(isValidBasePressurePa("abc")).toBe(false);
   });
 });

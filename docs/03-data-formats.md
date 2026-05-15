@@ -16,19 +16,20 @@ x,y1,y2,...
 ```
 
 - 先頭5行をmetadataとして扱う。
-- 3行目を測定種別の第一候補にする。
+- 3行目を測定種別metadataとして扱い、filenameと合わせてdataset kindを推定する。
 - 5行目以降を数値行として扱う。
 - y列が複数あるCSVは、1つのx列を共有する複数datasetに展開する。
 - 行末の空行、非数値行、`0,0` 終端は読み飛ばす。
 
 ## Dataset Kinds
 
-- UPS VB: filenameまたはkindに `VB` を含む。
-- UPS IP/cut-off: filenameまたはkindに `IP` を含む。
-- LEET: filenameまたはkindに `LEET` を含み、`der` を含まない。
-- LEET(der): filenameまたはkindに `LEET` と `der` を含む。
-- LEIPS: filenameまたはkindに `LEIPS` を含む。
+- UPS VB: metadataに`VB`、またはfilenameに`UPS`と`VB`を含む。
+- UPS IP/cut-off: metadataに`IP`、またはfilenameに`UPS`と`IP`を含む。
+- LEET: filenameに`LEET`を含み`der`を含まない。LEIPS系filenameではmetadataに`LEET`を含み`der`を含まない場合もLEETとして扱う。
+- LEET(der): filenameに`LEET`と`der`を含む。LEIPS系filenameではmetadataに`LEET`と`der`を含む場合もLEET(der)として扱う。
+- LEIPS: filenameに`LEIPS`を含みLEET/der判定に該当しない場合はLEIPSとして扱う。metadataに`LEIPS`を含む場合もLEIPSとして扱う。
 - REELS: filenameまたはkindに `REELS` を含む。raw x軸はKinetic Energy / eVとして扱う。
+- 判定はcase insensitiveで、区切り文字の違いは無視する。1つのCSV内で列ごとに異なる測定種別が混在する場合の列別推定は未対応で、Data Browserの`Change role`で手動補正する。
 
 ## SPE
 

@@ -12,13 +12,14 @@ IGOR Proの複数グラフ/操作パネル画面とSciSpace風ワークベンチ
 - UPS VB、UPS IP、LEIPS Plot、LEIPS vs Energy from Evac.、REELS Plotのwindow titleには現在割当中の主dataset名を表示する。window titlebar/context menuからAnalysis Controls Data tabと同じdataset割当を変更できる。
 - Band Diagram: UPSとLEIPSをEnergy relative to Ef/eVで重ね、IGOR Pro風の大きいUPS/LEIPSラベル、VBM/CBM/Vacuum levelの縦線、IP/EA/Egの両矢印を表示する。調整欄はplot下に固定幅のcompact controlとして置き、UPS+/LEIPS+は各スペクトル強度レンジに対するpercent offsetとして扱う。IP/EA/Eg indicatorのfont sizeとarrow scaleは数値入力で調整できる。
 - Band DiagramのUPS/LEIPS annotationはseriesより上に描画し、曲線と重なる部分を白いhaloで隠して読めるようにする。VBM/CBM/Vacuum levelとEgのsubscriptもFont入力に追従する。
-- Analysis Controls: Data tabでdataset割当、Sample tabで試料情報、各解析tabでfit範囲、bandpass、REELS incident energy、計算結果を扱う。bandpassは固定候補に加えてcustom値を入力できる。
-- Sample InfoはProject stateに保存する。初期値は空で、Excelテンプレート由来の例値はplaceholderとしてだけ表示する。選択式項目は自前dropdownで表示し、placeholderは選択肢に含めない。複数選択が自然な項目だけcustom multi-selectを使う。含有元素は組成文字列から自動抽出し、組成入力の直下に表示する。
+- Analysis Controls: Sample tabを初期表示にし、Sample/Data/UPS/LEIPS/REELS/Band/Fitの順で並べる。Data tabでdataset割当、Sample tabで試料情報、各解析tabでfit範囲、bandpass、REELS incident energy、計算結果を扱う。bandpassは固定候補に加えてcustom値を入力できる。
+- Sample InfoはProject stateに保存する。初期値は空で、Excelテンプレート由来の例値はplaceholderとしてだけ表示する。選択式項目は自前dropdownで表示し、placeholderは選択肢に含めない。複数選択が自然な項目だけcustom multi-selectを使う。含有元素は組成文字列から自動抽出し、組成入力の直下に表示する。`sample state`は自由記述欄として保存する。到達真空度(Pa)は空または正の有限数値だけ有効とする。
 - Analysis Controlsは初期表示をData tabにし、plot/windowを選択したときは関連tab（UPS/LEIPS/REELS/Band/Data）へ同期する。
 - 各plotのcontext menuにはcursor range表示のtoggle、Reset view、Copy PNG、Export PNG/SVGを置く。LEIPS PlotのFilter > Custom band passはmodalで任意値を入力する。REELS Plotだけ`REELS BG mode`を表示し、BG single point horizontal modeを選べる。
 - Window context menuとWindows menuからwindow position/sizeをdefault layoutへ戻せる。Windows menuには全window position/size resetも置く。
 - UPS VB、UPS IP、LEIPS Plot、LEIPS vs Energy from Evac.、REELS Plot、Band Diagramのplot viewportはProject stateに保存し、Project save/load/import/exportで復元する。fit cursor位置はfit range stateとして同じProject JSON/import/exportに含める。
 - Band DiagramのX range controlは左入力を高エネルギー側、右入力を低エネルギー側として並べ、defaultは`8`から`-5`にする。
+- Band DiagramのCBM点線はEA annotationと干渉しないよう、上端を短くする。
 - Top menu: Project/View/Windows/Helpを配置し、背景右クリックでも同じメニュー構成を表示する。ひとつのmenuを開いた状態で別menuにhoverした場合は、その列のmenuへ切り替える。Recent projectなどのsubmenuは対象行へhoverしたときだけ展開する。
 - Plot context menuはplot固有項目を先に出し、Reset view / Export PNG / Export SVGは末尾に配置する。
 

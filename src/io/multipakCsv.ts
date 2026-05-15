@@ -40,7 +40,13 @@ export function parseMultiPakCsv(text: string, options: ParseMultiPakOptions): S
       continue;
     }
     const seriesLabel = header[yIndex] && header[yIndex] !== "" ? header[yIndex] : `${yIndex}`;
-    const kind = options.forcedKind ?? inferSpectrumKind(`${options.sourceName} ${kindText}`);
+    const kind =
+      options.forcedKind ??
+      inferSpectrumKind({
+        sourceName: options.sourceName,
+        metadataKind: kindText,
+        headerText: metadataRows.join(" "),
+      });
     datasets.push({
       id: createDatasetId(options.sourceName, yIndex),
       name:
@@ -68,27 +74,84 @@ export function parseMultiPakCsv(text: string, options: ParseMultiPakOptions): S
   return datasets;
 }
 
-export function inferSpectrumKind(value: string): SpectrumKind {
-  const normalized = value.toLowerCase();
-  if (normalized.includes("reels")) {
+export function inferSpectrumKind(
+  input: string | { sourceName: string; metadataKind?: string; headerText?: string },
+): SpectrumKind {
+  if (typeof input === "string") {
+    return inferSpectrumKindFromContext({
+      sourceName: input,
+      metadataKind: input,
+      headerText: input,
+    });
+  }
+  return inferSpectrumKindFromContext(input);
+}
+
+function inferSpectrumKindFromContext(input: {
+  sourceName: string;
+  metadataKind?: string;
+  headerText?: string;
+}): SpectrumKind {
+  const filename = normalizeKindText(input.sourceName);
+  const metadata = normalizeKindText(`${input.metadataKind ?? ""} ${input.headerText ?? ""}`);
+  const combined = `${filename} ${metadata}`;
+  if (hasTerm(combined, "reels")) {
     return "reels";
   }
-  if (normalized.includes("leips")) {
-    return "leips";
-  }
-  if (normalized.includes("leet") && normalized.includes("der")) {
-    return "leet-der";
-  }
-  if (normalized.includes("leet")) {
-    return "leet";
-  }
-  if (normalized.includes("ups") && normalized.includes("vb")) {
-    return "ups-vb";
-  }
-  if (normalized.includes("ip")) {
+  if (hasTerm(metadata, "ip")) {
     return "ups-ip";
   }
+  if (hasTerm(metadata, "vb")) {
+    return "ups-vb";
+  }
+  if (hasTerm(filename, "ups") && hasTerm(filename, "ip")) {
+    return "ups-ip";
+  }
+  if (hasTerm(filename, "ups") && hasTerm(filename, "vb")) {
+    return "ups-vb";
+  }
+  if (hasTerm(filename, "leips")) {
+    if (hasTerm(filename, "leet") && hasTerm(filename, "der")) {
+      return "leet-der";
+    }
+    if (hasTerm(filename, "leet")) {
+      return "leet";
+    }
+    if (hasTerm(metadata, "leet") && hasTerm(metadata, "der")) {
+      return "leet-der";
+    }
+    if (hasTerm(metadata, "leet")) {
+      return "leet";
+    }
+    if (hasTerm(metadata, "leips")) {
+      return "leips";
+    }
+    return "leips";
+  }
+  if (hasTerm(filename, "leet") && hasTerm(filename, "der")) {
+    return "leet-der";
+  }
+  if (hasTerm(filename, "leet")) {
+    return "leet";
+  }
+  if (hasTerm(metadata, "leet") && hasTerm(metadata, "der")) {
+    return "leet-der";
+  }
+  if (hasTerm(metadata, "leet")) {
+    return "leet";
+  }
+  if (hasTerm(metadata, "leips")) {
+    return "leips";
+  }
   return "unknown";
+}
+
+function normalizeKindText(value: string): string {
+  return value.toLowerCase().replace(/[^a-z0-9]+/g, " ");
+}
+
+function hasTerm(value: string, term: string): boolean {
+  return new RegExp(`(^|\\s)${term}(\\s|$)`, "u").test(value);
 }
 
 function splitCsvLine(line: string): string[] {

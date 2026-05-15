@@ -102,7 +102,7 @@ export function REELSPlotWindow() {
             },
             {
               x: displayBandGap,
-              label: `Eg ${formatNumber(displayBandGap, 2)} eV`,
+              label: "",
               color: "#111827",
             },
           ]
@@ -116,7 +116,15 @@ export function REELSPlotWindow() {
         ? [
             {
               type: "x-arrow",
-              label: `Eg=${formatNumber(displayBandGap, 2)} eV`,
+              label: (
+                <>
+                  E
+                  <tspan baselineShift="sub" fontSize={9}>
+                    g
+                  </tspan>
+                  ={formatNumber(displayBandGap, 2)} eV
+                </>
+              ),
               color: "#111827",
               x1: 0,
               x2: displayBandGap,

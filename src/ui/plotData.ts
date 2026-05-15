@@ -1,4 +1,5 @@
 import { evaluateGaussian, evaluateLine } from "../domain/fit";
+import type { ReactNode } from "react";
 import type {
   BandDiagramResult,
   FitRange,
@@ -49,7 +50,7 @@ export type PlotAnnotation =
     }
   | {
       type: "x-arrow";
-      label: string;
+      label: ReactNode;
       color: string;
       x1: number;
       x2: number;

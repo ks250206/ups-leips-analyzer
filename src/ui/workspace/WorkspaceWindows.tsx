@@ -22,7 +22,7 @@ import { UPSIPPlotWindow, UPSVBPlotWindow } from "../windows/UPSPlotWindow";
 
 export type AnalysisControlTab = "data" | "sample" | "ups" | "leips" | "reels" | "band" | "fit";
 
-export function renderWindow(window: WindowLayout, analysisTab: AnalysisControlTab = "data") {
+export function renderWindow(window: WindowLayout, analysisTab: AnalysisControlTab = "sample") {
   switch (window.kind) {
     case "browser":
       return <DataBrowser />;

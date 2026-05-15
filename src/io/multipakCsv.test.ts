@@ -22,11 +22,24 @@ describe("parseMultiPakCsv", () => {
 
   test("infers spectrum kinds from filenames", () => {
     expect(inferSpectrumKind("UPS VB.csv")).toBe("ups-vb");
+    expect(inferSpectrumKind("UPS IP.csv")).toBe("ups-ip");
     expect(inferSpectrumKind("LEET der 1st.spe.csv")).toBe("leet-der");
     expect(inferSpectrumKind("LEET 1st.spe.csv")).toBe("leet");
+    expect(inferSpectrumKind("LEIPS LEET der 1st.spe.csv")).toBe("leet-der");
+    expect(inferSpectrumKind("LEIPS LEET 1st.spe.csv")).toBe("leet");
     expect(inferSpectrumKind("LEIPS 2nd.spe.csv")).toBe("leips");
     expect(inferSpectrumKind("No.23_Li-rich_REELS.csv")).toBe("reels");
     expect(inferSpectrumKind("unknown.txt")).toBe("unknown");
+  });
+
+  test("uses metadata fallback for UPS and LEIPS family kinds", () => {
+    expect(inferSpectrumKind({ sourceName: "scan.csv", metadataKind: "IP" })).toBe("ups-ip");
+    expect(inferSpectrumKind({ sourceName: "scan.csv", metadataKind: "VB" })).toBe("ups-vb");
+    expect(inferSpectrumKind({ sourceName: "LEIPS scan.csv", metadataKind: "LEET der" })).toBe(
+      "leet-der",
+    );
+    expect(inferSpectrumKind({ sourceName: "LEIPS scan.csv", metadataKind: "LEET" })).toBe("leet");
+    expect(inferSpectrumKind({ sourceName: "scan.csv", metadataKind: "LEIPS" })).toBe("leips");
   });
 
   test("supports forced kinds and 0,0 termination", () => {

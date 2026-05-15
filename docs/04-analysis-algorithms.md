@@ -52,6 +52,7 @@ Eg_REELS = intersection(onsetEdgeFit, backgroundFit)
 
 `incidentEnergy` はAnalysis ControlsのREELS tabで編集できる。REELS Egは独立解析結果として扱い、UPS-LEIPS Band Diagramの `Eg = IP - EA` には反映しない。
 REELS BG single point modeでは、BG cursorの中心点 `(x0, y0)` を使い、BGを `y = y0` の水平線として扱う。
+REELS plot上のEg表示は0 eVとEg位置の縦marker、および0 eVからEg位置へ向かう水平矢印で示す。矢印labelの`g`は下付きで表示し、上部marker labelは0 eVのみ表示する。
 
 ## Rounding
 

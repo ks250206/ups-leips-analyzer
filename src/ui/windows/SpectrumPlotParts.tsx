@@ -341,9 +341,11 @@ export function MarkerLine({
         y1={geometry.top}
         y2={geometry.plotBottom}
       />
-      <text fill={marker.color} fontSize={12} x={x + 4} y={geometry.top + 16}>
-        {marker.label}
-      </text>
+      {marker.label ? (
+        <text fill={marker.color} fontSize={12} x={x + 4} y={geometry.top + 16}>
+          {marker.label}
+        </text>
+      ) : null}
     </g>
   );
 }
@@ -749,7 +751,7 @@ export function PlotAnnotations({
         const x2 = xScale(annotation.x2);
         const y = geometry.top + geometry.plotHeight * annotation.yFraction;
         return (
-          <g key={`arrow-${annotation.label}-${index}`}>
+          <g key={`arrow-${index}`}>
             <line
               markerEnd="url(#plot-arrow)"
               stroke={annotation.color}

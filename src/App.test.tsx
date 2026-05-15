@@ -32,7 +32,10 @@ describe("App", () => {
   test("renders the analyzer workspace without loading demo data initially", async () => {
     render(<App />);
     expect(screen.getByText("UPS-LEIPS Analyzer")).toBeTruthy();
-    expect(screen.getByText("Datasets")).toBeTruthy();
+    expect(screen.getByText("Sample Info")).toBeTruthy();
+    const tabButtons = screen.getAllByRole("button").map((button) => button.textContent ?? "");
+    expect(tabButtons.indexOf("Sample")).toBeLessThan(tabButtons.indexOf("Data"));
+    expect(screen.getByLabelText("sample state")).toBeTruthy();
     expect(screen.getAllByText("UPS VB").length).toBeGreaterThan(0);
     expect(screen.getAllByText("UPS IP").length).toBeGreaterThan(0);
     expect(screen.getAllByText("REELS Plot").length).toBeGreaterThan(0);
@@ -167,6 +170,8 @@ describe("App", () => {
     fireEvent.mouseEnter(screen.getByText("REELS BG mode"));
     await user.click(screen.getByText("Single point y=const"));
     expect(screen.getByLabelText("BG single point cursor")).toBeTruthy();
+    expect(screen.queryByText(/Eg \d+\.\d+ eV/)).toBeNull();
+    expect(document.body.textContent).toContain("Eg=");
 
     fireEvent.pointerDown(document.body);
     fireEvent.contextMenu(screen.getByLabelText("LEET / LEET(der) / LEIPS plot"));
@@ -175,14 +180,13 @@ describe("App", () => {
     expect(screen.getByText("1_4.77 eV ✓")).toBeTruthy();
     await user.click(screen.getByText("Custom"));
     expect(screen.getByRole("heading", { name: "Custom band pass" })).toBeTruthy();
-    expect(screen.getAllByText(/Eg=/).length).toBeGreaterThan(0);
   });
 
   test("focuses analysis tabs from related plot windows", async () => {
     useProjectStore.getState().loadDemo();
     render(<App />);
 
-    expect(screen.getByText("Datasets")).toBeTruthy();
+    expect(screen.getByText("Sample Info")).toBeTruthy();
     fireEvent.pointerDown(screen.getByText(/UPS VB -/));
     expect(await screen.findByText("UPS spectra analysis")).toBeTruthy();
 
@@ -219,6 +223,14 @@ describe("App", () => {
     expect(screen.queryByRole("button", { name: "Sample Info" })).toBeNull();
     await user.type(screen.getByLabelText("組成(仕込)"), "Li6PS5Cl");
     expect(screen.getByDisplayValue("Li, P, S, Cl")).toBeTruthy();
+    await user.type(screen.getByLabelText("sample state"), "pellet");
+    const basePressureInput = screen.getByLabelText("到達真空度 (Pa)");
+    await user.type(basePressureInput, "abc");
+    expect(screen.getByText("Enter a positive pressure value, e.g. 6.7E-8.")).toBeTruthy();
+    expect(useProjectStore.getState().project.ui?.sampleInfo?.basePressurePa).toBeUndefined();
+    await user.clear(basePressureInput);
+    await user.type(basePressureInput, "6.7E-8");
+    expect(useProjectStore.getState().project.ui?.sampleInfo?.basePressurePa).toBe("6.7E-8");
     await user.click(screen.getByLabelText("電池のイオン種"));
     expect(screen.queryByRole("option", { name: "Li+" })).toBeNull();
     await user.click(screen.getAllByText("Li+")[1]!);

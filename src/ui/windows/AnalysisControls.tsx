@@ -2,6 +2,7 @@ import { BANDPASS_OPTIONS, CUSTOM_BANDPASS_TYPE } from "../../domain/constants";
 import {
   SAMPLE_INFO_FIELDS,
   elementsFromComposition,
+  isValidBasePressurePa,
   type SampleInfoFieldDefinition,
   type SampleInfoFieldValue,
   type SampleInfoState,
@@ -45,7 +46,7 @@ const DATASET_SLOTS: Array<{
 
 type AnalysisTab = "data" | "sample" | "ups" | "leips" | "reels" | "band" | "fit";
 
-export function AnalysisControls({ activeTab = "data" }: { activeTab?: AnalysisTab }) {
+export function AnalysisControls({ activeTab = "sample" }: { activeTab?: AnalysisTab }) {
   const project = useProjectStore((state) => state.project);
   const activeFitTarget = useProjectStore((state) => state.activeFitTarget);
   const assignDataset = useProjectStore((state) => state.assignDataset);
@@ -71,8 +72,8 @@ export function AnalysisControls({ activeTab = "data" }: { activeTab?: AnalysisT
       ) : null}
       <div className="grid grid-cols-7 gap-1 border-b border-slate-300 bg-slate-200 p-2">
         {[
-          ["data", "Data"],
           ["sample", "Sample"],
+          ["data", "Data"],
           ["ups", "UPS"],
           ["leips", "LEIPS"],
           ["reels", "REELS"],
@@ -325,14 +326,26 @@ function SampleInfoFieldRow({
   onChange: (value: SampleInfoFieldValue) => void;
 }) {
   const commonClass = "min-w-0 rounded border border-slate-300 bg-white px-2 py-1";
-  return (
-    <label
-      className={
-        definition.kind === "textarea"
-          ? "grid grid-cols-[118px_1fr] items-start gap-2"
-          : "grid grid-cols-[118px_1fr] items-center gap-2"
+  const stringValue = typeof value === "string" ? value : "";
+  const validatesBasePressure = definition.field === "basePressurePa";
+  const [draftValue, setDraftValue] = useState(stringValue);
+  useEffect(() => {
+    setDraftValue(stringValue);
+  }, [stringValue]);
+  const hasBasePressureError =
+    validatesBasePressure && draftValue.length > 0 && !isValidBasePressurePa(draftValue);
+  const updateTextValue = (next: string) => {
+    if (validatesBasePressure) {
+      setDraftValue(next);
+      if (isValidBasePressurePa(next)) {
+        onChange(next);
       }
-    >
+      return;
+    }
+    onChange(next);
+  };
+  return (
+    <label className="grid grid-cols-[118px_1fr] items-start gap-2">
       <span className="font-semibold text-slate-600">{definition.label}</span>
       {definition.kind === "select" ? (
         <SelectField
@@ -353,18 +366,28 @@ function SampleInfoFieldRow({
       ) : definition.kind === "textarea" ? (
         <textarea
           className={`${commonClass} min-h-20 resize-y`}
-          value={typeof value === "string" ? value : ""}
+          value={stringValue}
           placeholder={definition.placeholder}
-          onChange={(event) => onChange(event.currentTarget.value)}
+          onChange={(event) => updateTextValue(event.currentTarget.value)}
         />
       ) : (
-        <input
-          className={commonClass}
-          type={definition.kind === "date" ? "date" : "text"}
-          value={typeof value === "string" ? value : ""}
-          placeholder={definition.placeholder}
-          onChange={(event) => onChange(event.currentTarget.value)}
-        />
+        <span className="grid gap-1">
+          <input
+            aria-invalid={hasBasePressureError || undefined}
+            className={
+              hasBasePressureError ? `${commonClass} border-red-400 bg-red-50` : commonClass
+            }
+            type={definition.kind === "date" ? "date" : "text"}
+            value={validatesBasePressure ? draftValue : stringValue}
+            placeholder={definition.placeholder}
+            onChange={(event) => updateTextValue(event.currentTarget.value)}
+          />
+          {hasBasePressureError ? (
+            <span className="text-[10px] font-semibold text-red-600">
+              Enter a positive pressure value, e.g. 6.7E-8.
+            </span>
+          ) : null}
+        </span>
       )}
     </label>
   );

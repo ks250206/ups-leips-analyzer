@@ -45,7 +45,7 @@ export function Workspace() {
   const { menu, openMenu, closeMenu } = useContextMenu();
   const [viewport, setViewport] = useState({ x: 0, y: 0, scale: 1 });
   const [activeWindowId, setActiveWindowId] = useState<string>();
-  const [analysisTab, setAnalysisTab] = useState<AnalysisControlTab>("data");
+  const [analysisTab, setAnalysisTab] = useState<AnalysisControlTab>("sample");
   const [saveAsOpen, setSaveAsOpen] = useState(false);
   const [deleteOpen, setDeleteOpen] = useState(false);
   const [loadProjectOpen, setLoadProjectOpen] = useState(false);

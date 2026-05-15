@@ -20,6 +20,7 @@ export function BandVerticalLine({
   return (
     <g>
       <line
+        data-testid={`band-line-${label}`}
         stroke="black"
         strokeDasharray="14 10"
         strokeWidth={3}
