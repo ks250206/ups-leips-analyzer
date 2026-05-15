@@ -9,7 +9,7 @@ import {
   writeLastOpenedWorkspace,
 } from "./lastOpenedWorkspace";
 import { fitRangeKey, useProjectStore } from "./projectStore";
-import { normalizeProject } from "./projectModel";
+import { normalizeProject, resolveBandIp } from "./projectModel";
 
 const TARGETS: FitTarget[] = [
   "ups-vb-edge",
@@ -264,6 +264,80 @@ describe("project store", () => {
 
     useProjectStore.getState().setBandIpSource({ mode: "zero-voltage-extrapolated" });
     expect(useProjectStore.getState().project.analysis.band?.ip).toBeGreaterThan(0);
+  });
+
+  test("defaults Band IP source to 0 V extrapolation unless a 0 V IP dataset is selected", () => {
+    expect(useProjectStore.getState().project.analysis.bandIpSource?.mode).toBe(
+      "zero-voltage-extrapolated",
+    );
+
+    const project = useProjectStore.getState().project;
+    const ipId = project.analysis.selection.upsIpDatasetIds?.[0];
+    expect(ipId).toBeDefined();
+    const normalized = normalizeProject({
+      ...project,
+      analysis: {
+        ...project.analysis,
+        bandIpSource: undefined,
+        selection: { ...project.analysis.selection, upsIpDatasetIds: [ipId!] },
+        upsIpConfigsByDatasetId: { [ipId!]: { appliedVoltage: 0 } },
+      },
+    });
+
+    expect(normalized.analysis.bandIpSource).toEqual({ mode: "dataset", datasetId: ipId });
+  });
+
+  test("resolves an unspecified Band IP source from result voltages", () => {
+    const base = {
+      datasetName: "IP",
+      photonEnergy: 21.22,
+      ipEvbm: 0,
+      ecutoff: 0,
+      ipVbmEdge: { intercept: 0, slope: 0, rSquared: 1, range: { min: 0, max: 1 }, pointsUsed: 2 },
+      ipVbmBackground: {
+        intercept: 0,
+        slope: 0,
+        rSquared: 1,
+        range: { min: 0, max: 1 },
+        pointsUsed: 2,
+      },
+      cutoffEdge: {
+        intercept: 0,
+        slope: 0,
+        rSquared: 1,
+        range: { min: 0, max: 1 },
+        pointsUsed: 2,
+      },
+      cutoffBackground: {
+        intercept: 0,
+        slope: 0,
+        rSquared: 1,
+        range: { min: 0, max: 1 },
+        pointsUsed: 2,
+      },
+    };
+
+    expect(
+      resolveBandIp(
+        [
+          { ...base, datasetId: "minus", appliedVoltage: -5, ip: 4 },
+          { ...base, datasetId: "zero", appliedVoltage: 0, ip: 6 },
+        ],
+        undefined,
+      ),
+    ).toBe(6);
+    expect(
+      resolveBandIp(
+        [
+          { ...base, datasetId: "minus-10", appliedVoltage: -10, ip: 4 },
+          { ...base, datasetId: "minus-5", appliedVoltage: -5, ip: 5 },
+        ],
+        undefined,
+      ),
+    ).toBeCloseTo(6);
+    expect(
+      resolveBandIp([{ ...base, datasetId: "single", appliedVoltage: -5, ip: 7 }], undefined),
+    ).toBe(7);
   });
 
   test("keeps Band unavailable when 0 V IP extrapolation has fewer than two points", () => {

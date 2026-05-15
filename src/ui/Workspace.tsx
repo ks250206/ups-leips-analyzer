@@ -648,6 +648,7 @@ function tabForWindowKind(kind: WindowLayout["kind"] | undefined): AnalysisContr
     case "ups":
     case "ups-vb":
     case "ups-ip":
+    case "ups-bias":
       return "ups";
     case "leips":
     case "leips-evac":

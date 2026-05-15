@@ -1,4 +1,5 @@
 import { BANDPASS_OPTIONS, CUSTOM_BANDPASS_TYPE } from "../../domain/constants";
+import { calculateBiasDependence } from "../../domain/analysis";
 import {
   SAMPLE_INFO_FIELDS,
   elementsFromComposition,
@@ -165,6 +166,14 @@ export function AnalysisControls({ activeTab = "sample" }: { activeTab?: Analysi
           <Panel title="UPS spectra analysis">
             <h3 className="mb-1 font-bold text-slate-700">VB set</h3>
             <ResultGrid rows={[["EVBM", formatNumber(analysis.ups?.vbEvbm), "eV"]]} />
+            <h3 className="mb-1 mt-3 font-bold text-slate-700">Band IP source</h3>
+            <IpSourceSelect analysis={analysis} setBandIpSource={setBandIpSource} />
+            <ResultGrid
+              rows={[
+                ["0 V extrapolated IP", formatNumber(zeroVoltageIp(analysis)), "eV"],
+                ["Average IP", formatNumber(averageIp(analysis)), "eV"],
+              ]}
+            />
             <h3 className="mb-1 mt-3 font-bold text-slate-700">IP set</h3>
             <div className="grid gap-2">
               {(analysis.ups?.ipResults ?? []).map((result) => (
@@ -258,45 +267,7 @@ export function AnalysisControls({ activeTab = "sample" }: { activeTab?: Analysi
 
         {tab === "band" ? (
           <Panel title="Band Diagram">
-            <label className="mb-2 grid grid-cols-[118px_1fr_34px] items-center gap-2">
-              <span className="font-semibold text-slate-600">IP source</span>
-              <SelectField
-                ariaLabel="Band Diagram IP source"
-                options={[
-                  "zero-voltage-extrapolated",
-                  "average",
-                  ...(analysis.ups?.ipResults ?? []).map((result) => `dataset:${result.datasetId}`),
-                ]}
-                value={bandIpSourceValue(analysis.bandIpSource)}
-                disabledOptions={
-                  (analysis.ups?.ipResults ?? []).filter((result) => Number.isFinite(result.ip))
-                    .length < 2
-                    ? ["zero-voltage-extrapolated"]
-                    : []
-                }
-                labelForOption={(value) => {
-                  if (value === "zero-voltage-extrapolated") {
-                    return "0 V extrapolated";
-                  }
-                  if (value === "average") {
-                    return "Average";
-                  }
-                  const datasetId = value.replace("dataset:", "");
-                  return (
-                    (analysis.ups?.ipResults ?? []).find((result) => result.datasetId === datasetId)
-                      ?.datasetName ?? datasetId
-                  );
-                }}
-                onChange={(value) => {
-                  if (value === "average" || value === "zero-voltage-extrapolated") {
-                    setBandIpSource({ mode: value });
-                  } else {
-                    setBandIpSource({ mode: "dataset", datasetId: value.replace("dataset:", "") });
-                  }
-                }}
-              />
-              <span className="text-slate-500">IP</span>
-            </label>
+            <IpSourceSelect analysis={analysis} setBandIpSource={setBandIpSource} />
             <label className="mb-2 grid grid-cols-[118px_1fr_34px] items-center gap-2">
               <span className="font-semibold text-slate-600">
                 E<sub>VBM</sub>
@@ -375,6 +346,87 @@ function bandIpSourceValue(source: AnalysisState["bandIpSource"]): string {
     return `dataset:${source.datasetId ?? ""}`;
   }
   return source.mode;
+}
+
+function defaultIpSourceForDisplay(
+  analysis: AnalysisState,
+): NonNullable<AnalysisState["bandIpSource"]> {
+  const results = (analysis.ups?.ipResults ?? []).filter((result) => Number.isFinite(result.ip));
+  const zeroVoltageResult = results.find((result) => Math.abs(result.appliedVoltage) < 1e-9);
+  if (zeroVoltageResult) {
+    return { mode: "dataset", datasetId: zeroVoltageResult.datasetId };
+  }
+  if (results.length >= 2) {
+    return { mode: "zero-voltage-extrapolated" };
+  }
+  return { mode: "dataset", datasetId: results[0]?.datasetId };
+}
+
+function IpSourceSelect({
+  analysis,
+  setBandIpSource,
+}: {
+  analysis: AnalysisState;
+  setBandIpSource: (source: NonNullable<AnalysisState["bandIpSource"]>) => void;
+}) {
+  const validIpResults = (analysis.ups?.ipResults ?? []).filter((result) =>
+    Number.isFinite(result.ip),
+  );
+  return (
+    <label className="mb-2 grid grid-cols-[118px_1fr_34px] items-center gap-2">
+      <span className="font-semibold text-slate-600">IP source</span>
+      <SelectField
+        ariaLabel="Band Diagram IP source"
+        options={[
+          "zero-voltage-extrapolated",
+          "average",
+          ...(analysis.ups?.ipResults ?? []).map((result) => `dataset:${result.datasetId}`),
+        ]}
+        value={bandIpSourceValue(analysis.bandIpSource ?? defaultIpSourceForDisplay(analysis))}
+        disabledOptions={validIpResults.length < 2 ? ["zero-voltage-extrapolated"] : []}
+        labelForOption={(value) => {
+          if (value === "zero-voltage-extrapolated") {
+            return "0 V extrapolated";
+          }
+          if (value === "average") {
+            return "Average";
+          }
+          const datasetId = value.replace("dataset:", "");
+          return (
+            (analysis.ups?.ipResults ?? []).find((result) => result.datasetId === datasetId)
+              ?.datasetName ?? datasetId
+          );
+        }}
+        onChange={(value) => {
+          if (value === "average" || value === "zero-voltage-extrapolated") {
+            setBandIpSource({ mode: value });
+          } else {
+            setBandIpSource({ mode: "dataset", datasetId: value.replace("dataset:", "") });
+          }
+        }}
+      />
+      <span className="text-slate-500">IP</span>
+    </label>
+  );
+}
+
+function zeroVoltageIp(analysis: AnalysisState): number | undefined {
+  return calculateBiasDependence(
+    (analysis.ups?.ipResults ?? []).map((result) => ({
+      voltage: result.appliedVoltage,
+      value: result.ip,
+    })),
+  )?.valueAtZero;
+}
+
+function averageIp(analysis: AnalysisState): number | undefined {
+  const values = (analysis.ups?.ipResults ?? [])
+    .map((result) => result.ip)
+    .filter((value) => Number.isFinite(value));
+  if (values.length === 0) {
+    return undefined;
+  }
+  return values.reduce((sum, value) => sum + value, 0) / values.length;
 }
 
 function FragmentWithElements({

@@ -137,7 +137,7 @@ export function PlotAxes({
         x={largeAxisLabels ? 28 : 18}
         y={geometry.top + geometry.plotHeight / 2}
       >
-        {yLabel}
+        <AxisLabelText label={yLabel} largeAxisLabels={largeAxisLabels} />
       </text>
       {yRightLabel ? (
         <text

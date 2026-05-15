@@ -447,6 +447,7 @@ function BiasDependencePlot({
           xLabel="Applied Bias Vbias / V"
           yLabel={config.label}
           series={series}
+          xLabelBottomPadding={18}
           viewportRequest={{ id: `${config.id}-${viewportKey}`, viewport }}
           onViewportChange={onViewportChange}
         />

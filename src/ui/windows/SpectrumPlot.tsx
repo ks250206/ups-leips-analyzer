@@ -363,7 +363,7 @@ export function SpectrumPlot({
               geometry={geometry}
               visibleXDomain={scales.xDomain}
               series={item}
-              showFitLabel={!showCursorRanges}
+              showFitLabel={!showCursorRanges || rangeBands.length === 0}
               xScale={xScale}
               yScale={item.yAxis === "right" && yRightScale ? yRightScale : yScale}
             />

@@ -277,6 +277,13 @@ describe("App", () => {
     expect(screen.getByText("Sample Info")).toBeTruthy();
     fireEvent.pointerDown(screen.getByText(/UPS VB -/));
     expect(await screen.findByText("UPS spectra analysis")).toBeTruthy();
+    expect(screen.getByText("Band IP source")).toBeTruthy();
+    expect(screen.getByText("0 V extrapolated IP")).toBeTruthy();
+    expect(screen.getByText("Average IP")).toBeTruthy();
+
+    fireEvent.pointerDown(screen.getByText("UPS Bias Dependence"));
+    expect(await screen.findByText("UPS spectra analysis")).toBeTruthy();
+    expect(screen.getAllByText(/y = .*x \+/).length).toBeGreaterThan(0);
 
     fireEvent.pointerDown(screen.getByText(/LEIPS Plot -/));
     expect(await screen.findByText("LEIPS spectra analysis")).toBeTruthy();

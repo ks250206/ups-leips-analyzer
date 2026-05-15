@@ -142,6 +142,8 @@ export function fitRangeKey(target: FitTarget): keyof AnalysisState["fitRanges"]
 }
 
 export function normalizeProject(project: ProjectSnapshot): ProjectSnapshot {
+  const selection = normalizeSelection(project.analysis.selection);
+  const upsIpConfigsByDatasetId = normalizeUpsIpConfigs(project);
   return {
     ...project,
     windows: normalizeWindows(project.windows),
@@ -158,10 +160,12 @@ export function normalizeProject(project: ProjectSnapshot): ProjectSnapshot {
         ...DEFAULT_FIT_RANGES,
         ...project.analysis.fitRanges,
       },
-      selection: normalizeSelection(project.analysis.selection),
+      selection,
       upsIpFitRangesByDatasetId: normalizeUpsIpFitRanges(project),
-      upsIpConfigsByDatasetId: normalizeUpsIpConfigs(project),
-      bandIpSource: project.analysis.bandIpSource ?? defaultBandIpSource(project.analysis),
+      upsIpConfigsByDatasetId,
+      bandIpSource:
+        project.analysis.bandIpSource ??
+        defaultBandIpSource({ ...project.analysis, selection, upsIpConfigsByDatasetId }),
     },
   };
 }
@@ -192,7 +196,18 @@ function normalizeWindows(windows: ProjectSnapshot["windows"]): ProjectSnapshot[
 }
 
 function defaultBandIpSource(analysis: AnalysisState): BandIpSource {
-  return { mode: "dataset", datasetId: selectedUpsIpDatasetIds(analysis.selection)[0] };
+  const selectedIds = selectedUpsIpDatasetIds(analysis.selection);
+  const zeroVoltageDatasetId = selectedIds.find((id) => {
+    const voltage = analysis.upsIpConfigsByDatasetId?.[id]?.appliedVoltage;
+    return voltage !== undefined && Math.abs(voltage) < 1e-9;
+  });
+  if (zeroVoltageDatasetId) {
+    return { mode: "dataset", datasetId: zeroVoltageDatasetId };
+  }
+  if (selectedIds.length >= 2) {
+    return { mode: "zero-voltage-extrapolated" };
+  }
+  return { mode: "dataset", datasetId: selectedIds[0] };
 }
 
 export function mergeDatasets(
@@ -359,7 +374,7 @@ export function resolveBandIp(
   source: BandIpSource | undefined,
 ): number {
   const finiteResults = ipResults.filter((result) => Number.isFinite(result.ip));
-  const resolvedSource = source ?? { mode: "dataset" };
+  const resolvedSource = source ?? defaultBandIpSourceFromResults(finiteResults);
   if (resolvedSource.mode === "average") {
     return average(finiteResults.map((result) => result.ip));
   }
@@ -380,6 +395,17 @@ export function resolveBandIp(
     finiteResults[0]?.ip ??
     Number.NaN
   );
+}
+
+function defaultBandIpSourceFromResults(ipResults: readonly UPSIPResult[]): BandIpSource {
+  const zeroVoltageResult = ipResults.find((result) => Math.abs(result.appliedVoltage) < 1e-9);
+  if (zeroVoltageResult) {
+    return { mode: "dataset", datasetId: zeroVoltageResult.datasetId };
+  }
+  if (ipResults.length >= 2) {
+    return { mode: "zero-voltage-extrapolated" };
+  }
+  return { mode: "dataset", datasetId: ipResults[0]?.datasetId };
 }
 
 function average(values: readonly number[]): number {

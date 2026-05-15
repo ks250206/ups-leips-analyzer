@@ -46,6 +46,10 @@ export function createInitialAnalysis(datasets: readonly SpectrumDataset[]): Ana
     leipsDatasetId: findByKind(datasets, "leips")?.id,
     reelsDatasetId: findByKind(datasets, "reels")?.id,
   };
+  const zeroVoltageIpDatasetId = selection.upsIpDatasetIds.find((id) => {
+    const voltage = Number(datasets.find((dataset) => dataset.id === id)?.metadata.appliedVoltage);
+    return Number.isFinite(voltage) && Math.abs(voltage) < 1e-9;
+  });
 
   const base = {
     selection,
@@ -55,6 +59,11 @@ export function createInitialAnalysis(datasets: readonly SpectrumDataset[]): Ana
     photonEnergy: 21.22,
     reelsIncidentEnergy: 1000,
     efMinusEvbm: 0,
+    bandIpSource: zeroVoltageIpDatasetId
+      ? ({ mode: "dataset", datasetId: zeroVoltageIpDatasetId } as const)
+      : selection.upsIpDatasetIds.length >= 2
+        ? ({ mode: "zero-voltage-extrapolated" } as const)
+        : ({ mode: "dataset", datasetId: selection.upsIpDatasetIds[0] } as const),
   };
 
   const vbDataset = findById(datasets, selection.upsVbDatasetId);
