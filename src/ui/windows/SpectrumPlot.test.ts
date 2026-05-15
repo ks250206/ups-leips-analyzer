@@ -41,12 +41,12 @@ describe("SpectrumPlot D3 scales", () => {
   test("keeps visible axis space on normal plots", () => {
     const geometry = createPlotGeometry({ width: 320, height: 240 });
 
-    expect(geometry.top).toBe(20);
+    expect(geometry.top).toBe(16);
     expect(geometry.left).toBe(78);
     expect(geometry.right).toBe(30);
-    expect(geometry.bottom).toBe(44);
+    expect(geometry.bottom).toBe(36);
     expect(geometry.plotWidth).toBe(212);
-    expect(geometry.plotHeight).toBe(176);
+    expect(geometry.plotHeight).toBe(188);
   });
 
   test("uses larger plot margins for band diagrams", () => {
@@ -65,6 +65,7 @@ describe("SpectrumPlot D3 scales", () => {
 
     expect(geometry.left).toBe(76);
     expect(geometry.right).toBe(70);
+    expect(geometry.bottom).toBe(54);
     expect(geometry.plotWidth).toBe(174);
   });
 

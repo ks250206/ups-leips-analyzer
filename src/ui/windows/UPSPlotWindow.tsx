@@ -444,7 +444,7 @@ function BiasDependencePlot({
       <div className="aspect-[4/3] w-full">
         <SpectrumPlot
           title={`UPS Bias Dependence ${config.id}`}
-          xLabel="Applied Bias / V"
+          xLabel="Applied Bias Vbias / V"
           yLabel={config.label}
           series={series}
           viewportRequest={{ id: `${config.id}-${viewportKey}`, viewport }}

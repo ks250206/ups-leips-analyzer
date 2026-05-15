@@ -181,6 +181,25 @@ describe("project store", () => {
     expect(normalized.windows.find((window) => window.id === "controls")?.x).toBe(1448);
   });
 
+  test("normalizes legacy LEIPS plot heights and lower-row positions", () => {
+    const project = useProjectStore.getState().project;
+    const normalized = normalizeProject({
+      ...project,
+      windows: project.windows.map((window) =>
+        window.id === "leips" || window.id === "leips-evac"
+          ? { ...window, height: 350 }
+          : window.id === "band" || window.id === "reels"
+            ? { ...window, y: 1090 }
+            : window,
+      ),
+    });
+
+    expect(normalized.windows.find((window) => window.id === "leips")?.height).toBe(370);
+    expect(normalized.windows.find((window) => window.id === "leips-evac")?.height).toBe(370);
+    expect(normalized.windows.find((window) => window.id === "band")?.y).toBe(1110);
+    expect(normalized.windows.find((window) => window.id === "reels")?.y).toBe(1110);
+  });
+
   test("stores per-IP applied voltage and fit ranges", () => {
     const ipId = useProjectStore.getState().project.analysis.selection.upsIpDatasetIds?.[0];
     expect(ipId).toBeDefined();

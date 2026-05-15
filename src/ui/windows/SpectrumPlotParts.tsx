@@ -122,7 +122,7 @@ export function PlotAxes({
         fontWeight={labelWeight}
         textAnchor="middle"
         x={geometry.left + geometry.plotWidth / 2}
-        y={geometry.height - (largeAxisLabels ? 8 : 4)}
+        y={geometry.plotBottom + (largeAxisLabels ? 54 : 28)}
       >
         <AxisLabelText label={xLabel} largeAxisLabels={largeAxisLabels} />
       </text>
@@ -163,6 +163,17 @@ function AxisLabelText({ label, largeAxisLabels }: { label: string; largeAxisLab
           vac.
         </tspan>{" "}
         / eV
+      </>
+    );
+  }
+  if (label === "Applied Bias Vbias / V") {
+    return (
+      <>
+        Applied Bias V
+        <tspan baselineShift="sub" fontSize={largeAxisLabels ? 16 : 10}>
+          bias
+        </tspan>{" "}
+        / V
       </>
     );
   }

@@ -172,6 +172,14 @@ function normalizeWindows(windows: ProjectSnapshot["windows"]): ProjectSnapshot[
       const defaultWindow = defaults.find((item) => item.id === "controls");
       return defaultWindow ? { ...window, x: defaultWindow.x, width: defaultWindow.width } : window;
     }
+    if ((window.id === "leips" || window.id === "leips-evac") && window.height < 370) {
+      const defaultWindow = defaults.find((item) => item.id === window.id);
+      return defaultWindow ? { ...window, height: defaultWindow.height } : window;
+    }
+    if ((window.id === "band" || window.id === "reels") && window.y < 1110) {
+      const defaultWindow = defaults.find((item) => item.id === window.id);
+      return defaultWindow ? { ...window, y: defaultWindow.y } : window;
+    }
     if (window.id !== "ups-bias" || (window.width > 600 && window.y <= 728)) {
       return window;
     }
