@@ -18,14 +18,22 @@
           packages = [
             pkgs.nodejs_24
             pkgs.corepack
+            pkgs.pnpm
             pkgs.go
             pkgs.git
+            pkgs.podman
+            pkgs.podman-compose
+            pkgs.docker-compose
           ];
 
           shellHook = ''
+            export PATH="$PWD/node_modules/.bin:$PATH"
+            export COREPACK_ENABLE_DOWNLOAD_PROMPT=0
             corepack enable >/dev/null 2>&1 || true
             echo "UPS-LEIPS Analyzer dev shell"
-            echo "Run: vp install && vp dev"
+            echo "Run once: pnpm install"
+            echo "Then: vp dev"
+            echo "Container: podman compose build && podman compose up"
             echo "macOS .app icon generation uses system iconutil and sips."
           '';
         };
