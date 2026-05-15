@@ -1,7 +1,7 @@
 import { useEffect, useId, useMemo, useRef, useState } from "react";
 import type { FitRange } from "../../domain/types";
 import { ContextMenu, type ContextMenuItem, useContextMenu } from "../ContextMenu";
-import { cursorStyleLabel, useSettingsStore, type CursorStyle } from "../Settings";
+import { cursorStyleLabel, type CursorStyle } from "../Settings";
 import type { PlotAnnotation, PlotMarker, PlotRangeBand, PlotSeries } from "../plotData";
 import {
   clampPlotPosition,
@@ -69,6 +69,8 @@ interface SpectrumPlotProps {
   xDirection?: "normal" | "reverse";
   viewportRequest?: { id: number | string; viewport: PlotViewport };
   extraContextMenuItems?: ContextMenuItem[];
+  cursorStyle?: CursorStyle;
+  onCursorStyleChange?: (style: CursorStyle) => void;
   onSelectRange?: (range: FitRange) => void;
   onRangeBandChange?: (bandId: string, range: FitRange) => void;
   onViewportChange?: (viewport: PlotViewport) => void;
@@ -89,6 +91,8 @@ export function SpectrumPlot({
   xDirection = "normal",
   viewportRequest,
   extraContextMenuItems = [],
+  cursorStyle = "point",
+  onCursorStyleChange,
   onSelectRange,
   onRangeBandChange,
   onViewportChange,
@@ -103,8 +107,6 @@ export function SpectrumPlot({
   const [viewport, setViewport] = useState<PlotViewport>({});
   const [drag, setDrag] = useState<DragState | undefined>();
   const [showCursorRanges, setShowCursorRanges] = useState(true);
-  const cursorStyle = useSettingsStore((state) => state.cursorStyle);
-  const setCursorStyle = useSettingsStore((state) => state.setCursorStyle);
   const { menu, openMenu, closeMenu } = useContextMenu();
   const hasData = series.some((item) => item.points.length > 0);
 
@@ -129,7 +131,7 @@ export function SpectrumPlot({
             {
               type: "submenu",
               label: "Cursor style",
-              items: cursorStyleItems(cursorStyle, setCursorStyle),
+              items: cursorStyleItems(cursorStyle, onCursorStyleChange),
             },
           ] as ContextMenuItem[])
         : []),
@@ -417,11 +419,11 @@ const cursorStyles: readonly CursorStyle[] = ["point", "range"];
 
 function cursorStyleItems(
   cursorStyle: CursorStyle,
-  setCursorStyle: (style: CursorStyle) => void,
+  setCursorStyle: ((style: CursorStyle) => void) | undefined,
 ): ContextMenuItem[] {
   return cursorStyles.map((style) => ({
     type: "item",
     label: `${cursorStyle === style ? "✓ " : ""}${cursorStyleLabel(style)}`,
-    action: () => setCursorStyle(style),
+    action: () => setCursorStyle?.(style),
   }));
 }

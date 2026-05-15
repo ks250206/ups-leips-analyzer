@@ -16,16 +16,19 @@ export function startBandDrag(
   event.preventDefault();
   const svg = event.currentTarget;
   const start = eventPositionInBandPlot(event, model, svg);
+  if (!isInsideBandPosition(start, model.geometry)) {
+    return;
+  }
   setDrag({ start, current: start });
   svg.setPointerCapture?.(event.pointerId);
   const handleMove = (moveEvent: PointerEvent) => {
     setDrag({
       start,
-      current: eventPositionInBandPlot(moveEvent, model, svg),
+      current: eventPositionInBandPlot(moveEvent, model, svg, false),
     });
   };
   const handleUp = (upEvent: PointerEvent) => {
-    const end = eventPositionInBandPlot(upEvent, model, svg);
+    const end = eventPositionInBandPlot(upEvent, model, svg, false);
     setDrag(undefined);
     onComplete(start, end);
     svg.releasePointerCapture?.(event.pointerId);
@@ -45,6 +48,9 @@ export function startBandPan(
   event.preventDefault();
   const svg = event.currentTarget;
   const start = eventPositionInBandPlot(event, model, svg);
+  if (!isInsideBandPosition(start, model.geometry)) {
+    return;
+  }
   const startViewport = currentBandViewport(model, viewport);
   svg.setPointerCapture?.(event.pointerId);
   const handleMove = (moveEvent: PointerEvent) => {
@@ -164,19 +170,18 @@ function eventPositionInBandPlot(
   event: Pick<MouseEvent | PointerEvent | ReactWheelEvent<SVGSVGElement>, "clientX" | "clientY">,
   model: IgorBandModel,
   svg: SVGSVGElement,
+  clamp = true,
 ): { left: number; top: number } {
   const svgLike = svg as SVGSVGElement & { createSVGPoint?: SVGSVGElement["createSVGPoint"] };
   if (typeof svgLike.createSVGPoint !== "function") {
     const rect = svg.getBoundingClientRect();
     const scaleX = 860 / Math.max(rect.width, 1);
-    const scaleY = 620 / Math.max(rect.height, 1);
-    return clampBandPosition(
-      {
-        left: (event.clientX - rect.left) * scaleX - model.geometry.left,
-        top: (event.clientY - rect.top) * scaleY - model.geometry.top,
-      },
-      model.geometry,
-    );
+    const scaleY = 700 / Math.max(rect.height, 1);
+    const position = {
+      left: (event.clientX - rect.left) * scaleX - model.geometry.left,
+      top: (event.clientY - rect.top) * scaleY - model.geometry.top,
+    };
+    return clamp ? clampBandPosition(position, model.geometry) : position;
   }
   const point = svgLike.createSVGPoint();
   point.x = event.clientX;
@@ -186,13 +191,11 @@ function eventPositionInBandPlot(
     return { left: 0, top: 0 };
   }
   const transformed = point.matrixTransform(matrix.inverse());
-  return clampBandPosition(
-    {
-      left: transformed.x - model.geometry.left,
-      top: transformed.y - model.geometry.top,
-    },
-    model.geometry,
-  );
+  const position = {
+    left: transformed.x - model.geometry.left,
+    top: transformed.y - model.geometry.top,
+  };
+  return clamp ? clampBandPosition(position, model.geometry) : position;
 }
 
 export function clampBandPosition(
@@ -203,6 +206,18 @@ export function clampBandPosition(
     left: Math.min(Math.max(position.left, 0), geometry.plotWidth),
     top: Math.min(Math.max(position.top, 0), geometry.plotHeight),
   };
+}
+
+function isInsideBandPosition(
+  position: { left: number; top: number },
+  geometry: Pick<BandGeometry, "plotWidth" | "plotHeight">,
+): boolean {
+  return (
+    position.left >= 0 &&
+    position.left <= geometry.plotWidth &&
+    position.top >= 0 &&
+    position.top <= geometry.plotHeight
+  );
 }
 
 export function selectionRectForBandDrag(

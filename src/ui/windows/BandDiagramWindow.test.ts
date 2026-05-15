@@ -1,4 +1,6 @@
-import { describe, expect, test } from "vite-plus/test";
+import { cleanup, render, screen } from "@testing-library/react";
+import { createElement } from "react";
+import { afterEach, describe, expect, test } from "vite-plus/test";
 import {
   bandPlotDataSignature,
   createBandAutoViewport,
@@ -17,6 +19,7 @@ import {
   clampSignificantDigits,
 } from "./BandDiagramWindow";
 import { formatSignificant } from "../format";
+import { IgorBandDiagramPlot } from "./BandDiagramPlot";
 
 const BAND = {
   efMinusEvbm: 1,
@@ -48,6 +51,10 @@ function model() {
 }
 
 describe("Igor-style band diagram plot model", () => {
+  afterEach(() => {
+    cleanup();
+  });
+
   test("uses compact default annotation controls", () => {
     expect(DEFAULT_BAND_INDICATOR_FONT_SIZE).toBe(30);
     expect(DEFAULT_BAND_INDICATOR_ARROW_SCALE).toBe(0.7);
@@ -194,5 +201,39 @@ describe("Igor-style band diagram plot model", () => {
     expect((next.y?.max ?? 0) - (next.y?.min ?? 0)).toBeLessThan(
       current.yDomain.max - current.yDomain.min,
     );
+  });
+
+  test("drag zoom can end outside the plot area", () => {
+    const current = model();
+    const next = nextIgorBandViewportAfterDrag(
+      { x: { min: -6, max: 4 }, y: current.yDomain, y2: current.yRightDomain },
+      current,
+      { left: 100, top: 100 },
+      { left: 900, top: 700 },
+    );
+
+    expect(next.x?.min).toBeLessThan(-6);
+    expect(next.y?.min).toBeLessThan(current.yDomain.min);
+  });
+
+  test("clips band annotations to the plot area", () => {
+    render(
+      createElement(IgorBandDiagramPlot, {
+        band: BAND,
+        indicatorArrowScale: 0.7,
+        indicatorFontSize: 30,
+        leipsOffset: 0,
+        leipsScale: 1,
+        onResetView: () => undefined,
+        onViewportChange: () => undefined,
+        significantDigits: 3,
+        upsOffset: 0,
+        upsScale: 1,
+        viewport: { x: { min: -6, max: 4 } },
+        xDomain: { min: -6, max: 4 },
+      }),
+    );
+
+    expect(screen.getByTestId("band-annotation-clip").getAttribute("clip-path")).toContain("url(");
   });
 });

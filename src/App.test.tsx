@@ -3,7 +3,6 @@ import userEvent from "@testing-library/user-event";
 import { afterEach, beforeEach, describe, expect, test } from "vite-plus/test";
 import App from "./App";
 import { createInitialProject, useProjectStore } from "./store/projectStore";
-import { useSettingsStore } from "./ui/Settings";
 import { useToastStore } from "./ui/Toast";
 
 const CSV = `2
@@ -23,7 +22,6 @@ describe("App", () => {
       activeFitTarget: "ups-vb-edge",
       project: createInitialProject(),
     });
-    useSettingsStore.setState({ cursorStyle: "point" });
     useToastStore.setState({ messages: [] });
   });
 
@@ -107,16 +105,6 @@ describe("App", () => {
     await user.click(screen.getByRole("button", { name: "Cancel" }));
 
     fireEvent.pointerDown(document.body);
-    await user.click(screen.getByRole("button", { name: "Setting" }));
-    expect(screen.getByText("Cursor style")).toBeTruthy();
-    fireEvent.mouseEnter(screen.getByText("Cursor style"));
-    expect(screen.getByText("✓ Point cursor")).toBeTruthy();
-    expect(screen.getByText("Range cursor")).toBeTruthy();
-    await user.click(screen.getByText("Range cursor"));
-    expect(localStorage.getItem("ups-leips-analyzer-settings")).toContain('"cursorStyle":"range"');
-    useSettingsStore.getState().setCursorStyle("point");
-
-    fireEvent.pointerDown(document.body);
     await user.click(screen.getByRole("button", { name: "Project" }));
     await user.click(screen.getByText("Delete project"));
     expect(screen.getByRole("heading", { name: "Delete project" })).toBeTruthy();
@@ -168,6 +156,10 @@ describe("App", () => {
     expect(screen.getByText("Export SVG")).toBeTruthy();
     expect(screen.getByText("Save VBM view")).toBeTruthy();
     expect(screen.getByText("Recall Cut-off view")).toBeTruthy();
+    fireEvent.mouseEnter(screen.getByText("Cursor style"));
+    await user.click(screen.getByText("Range cursor"));
+    expect(useProjectStore.getState().project.ui?.cursorStyles?.upsIp).toBe("range");
+    expect(useProjectStore.getState().project.ui?.cursorStyles?.leips).toBeUndefined();
 
     fireEvent.pointerDown(document.body);
     fireEvent.contextMenu(screen.getByLabelText("REELS plot"));
@@ -213,8 +205,26 @@ describe("App", () => {
     expect(screen.getAllByText("Project").length).toBeGreaterThan(1);
     expect(screen.getAllByText("View").length).toBeGreaterThan(1);
     expect(screen.getAllByText("Windows").length).toBeGreaterThan(1);
-    expect(screen.getAllByText("Setting").length).toBeGreaterThan(1);
+    expect(screen.queryByText("Setting")).toBeNull();
     expect(screen.getAllByText("Help").length).toBeGreaterThan(1);
     expect(screen.queryByText("Load Demo")).toBeNull();
+  });
+
+  test("shows sample info fields and cancels load project from backdrop", async () => {
+    const user = userEvent.setup();
+    render(<App />);
+
+    await user.click(screen.getByRole("button", { name: "Sample Info" }));
+    expect(screen.getAllByText("Sample Info").length).toBeGreaterThan(1);
+    await user.type(screen.getByLabelText("組成(仕込)"), "Li6PS5Cl");
+    expect(screen.getByDisplayValue("Li, P, S, Cl")).toBeTruthy();
+    expect(screen.getByLabelText("試料台")).toBeTruthy();
+    expect(screen.getByText("LEIPS測定対応傾斜試料ホルダ_MOD201")).toBeTruthy();
+
+    await user.click(screen.getByRole("button", { name: "Project" }));
+    await user.click(screen.getByText("Load Project"));
+    expect(screen.getByRole("heading", { name: "Load Project" })).toBeTruthy();
+    fireEvent.pointerDown(screen.getByTestId("modal-backdrop"));
+    expect(screen.queryByRole("heading", { name: "Load Project" })).toBeNull();
   });
 });

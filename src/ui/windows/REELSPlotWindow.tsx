@@ -20,6 +20,7 @@ export function REELSPlotWindow() {
   const setFitRange = useProjectStore((state) => state.setFitRange);
   const setReelsPlotViewport = useProjectStore((state) => state.setReelsPlotViewport);
   const setReelsBackgroundMode = useProjectStore((state) => state.setReelsBackgroundMode);
+  const setPlotCursorStyle = useProjectStore((state) => state.setPlotCursorStyle);
   const reelsDataset = project.datasets.find(
     (dataset) => dataset.id === project.analysis.selection.reelsDatasetId,
   );
@@ -190,6 +191,8 @@ export function REELSPlotWindow() {
       }}
       extraContextMenuItems={contextItems}
       onViewportChange={setReelsPlotViewport}
+      cursorStyle={project.ui?.cursorStyles?.reels ?? "point"}
+      onCursorStyleChange={(style) => setPlotCursorStyle("reels", style)}
       onSelectRange={(range) => {
         if (activeFitTarget === "reels-bg" || activeFitTarget === "reels-edge") {
           setFitRange(activeFitTarget, range);

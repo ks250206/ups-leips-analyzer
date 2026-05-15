@@ -272,95 +272,97 @@ export function IgorBandDiagramPlot({
           <path d={model.upsPath ?? undefined} fill="none" stroke="#004cff" strokeWidth={4} />
           <path d={model.leipsPath ?? undefined} fill="none" stroke="#ff0000" strokeWidth={4} />
         </g>
-        <text
-          fill="#004cff"
-          fontSize={38}
-          fontWeight={700}
-          paintOrder="stroke fill"
-          stroke="white"
-          strokeLinejoin="round"
-          strokeWidth={18}
-          x={plot.left + 34}
-          y={plot.top + 66}
-        >
-          UPS
-        </text>
-        <text
-          fill="#ff0000"
-          fontSize={38}
-          fontWeight={700}
-          paintOrder="stroke fill"
-          stroke="white"
-          strokeLinejoin="round"
-          strokeWidth={18}
-          textAnchor="end"
-          x={plotRight - 46}
-          y={plot.top + 66}
-        >
-          LEIPS
-        </text>
-        <BandVerticalLine
-          fontSize={indicatorFontSize}
-          label="VBM"
-          labelY={plotBottom - 116}
-          model={model}
-          value={band.efMinusEvbm}
-        />
-        <BandVerticalLine
-          fontSize={indicatorFontSize}
-          label="CBM"
-          labelY={plotBottom - 116}
-          model={model}
-          upperOffset={160}
-          value={band.cbmRelativeToEf}
-        />
-        <BandVerticalLine
-          fontSize={indicatorFontSize}
-          label={`Vacuum level (${formatSignificant(band.vacuumRelativeToEf, significantDigits)} eV)`}
-          labelY={plotBottom - 220}
-          model={model}
-          value={band.vacuumRelativeToEf}
-        />
-        <BandArrow
-          arrowId={arrowId}
-          arrowHead="left"
-          label={`IP=${formatSignificant(band.ip, significantDigits)} eV`}
-          fontSize={indicatorFontSize}
-          arrowScale={indicatorArrowScale}
-          model={model}
-          x1={band.efMinusEvbm}
-          x2={band.vacuumRelativeToEf}
-          y={plot.top + 102}
-        />
-        <BandArrow
-          arrowId={arrowId}
-          arrowHead="left"
-          label={`EA= ${formatSignificant(band.ea, significantDigits)} eV`}
-          fontSize={indicatorFontSize}
-          arrowScale={indicatorArrowScale}
-          model={model}
-          x1={band.cbmRelativeToEf}
-          x2={band.vacuumRelativeToEf}
-          y={plot.top + 188}
-        />
-        <BandArrow
-          arrowId={arrowId}
-          label={
-            <>
-              E
-              <tspan baselineShift="sub" fontSize={Math.max(10, indicatorFontSize * 0.65)}>
-                g
-              </tspan>
-              = {formatSignificant(band.eg, significantDigits)} eV
-            </>
-          }
-          fontSize={indicatorFontSize}
-          arrowScale={indicatorArrowScale}
-          model={model}
-          x1={band.efMinusEvbm}
-          x2={band.cbmRelativeToEf}
-          y={plot.top + 272}
-        />
+        <g clipPath={`url(#${clipId})`} data-testid="band-annotation-clip">
+          <text
+            fill="#004cff"
+            fontSize={38}
+            fontWeight={700}
+            paintOrder="stroke fill"
+            stroke="white"
+            strokeLinejoin="round"
+            strokeWidth={18}
+            x={plot.left + 34}
+            y={plot.top + 66}
+          >
+            UPS
+          </text>
+          <text
+            fill="#ff0000"
+            fontSize={38}
+            fontWeight={700}
+            paintOrder="stroke fill"
+            stroke="white"
+            strokeLinejoin="round"
+            strokeWidth={18}
+            textAnchor="end"
+            x={plotRight - 46}
+            y={plot.top + 66}
+          >
+            LEIPS
+          </text>
+          <BandVerticalLine
+            fontSize={indicatorFontSize}
+            label="VBM"
+            labelY={plotBottom - 116}
+            model={model}
+            value={band.efMinusEvbm}
+          />
+          <BandVerticalLine
+            fontSize={indicatorFontSize}
+            label="CBM"
+            labelY={plotBottom - 116}
+            model={model}
+            upperOffset={160}
+            value={band.cbmRelativeToEf}
+          />
+          <BandVerticalLine
+            fontSize={indicatorFontSize}
+            label={`Vacuum level (${formatSignificant(band.vacuumRelativeToEf, significantDigits)} eV)`}
+            labelY={plotBottom - 220}
+            model={model}
+            value={band.vacuumRelativeToEf}
+          />
+          <BandArrow
+            arrowId={arrowId}
+            arrowHead="left"
+            label={`IP=${formatSignificant(band.ip, significantDigits)} eV`}
+            fontSize={indicatorFontSize}
+            arrowScale={indicatorArrowScale}
+            model={model}
+            x1={band.efMinusEvbm}
+            x2={band.vacuumRelativeToEf}
+            y={plot.top + 102}
+          />
+          <BandArrow
+            arrowId={arrowId}
+            arrowHead="left"
+            label={`EA= ${formatSignificant(band.ea, significantDigits)} eV`}
+            fontSize={indicatorFontSize}
+            arrowScale={indicatorArrowScale}
+            model={model}
+            x1={band.cbmRelativeToEf}
+            x2={band.vacuumRelativeToEf}
+            y={plot.top + 188}
+          />
+          <BandArrow
+            arrowId={arrowId}
+            label={
+              <>
+                E
+                <tspan baselineShift="sub" fontSize={Math.max(10, indicatorFontSize * 0.65)}>
+                  g
+                </tspan>
+                = {formatSignificant(band.eg, significantDigits)} eV
+              </>
+            }
+            fontSize={indicatorFontSize}
+            arrowScale={indicatorArrowScale}
+            model={model}
+            x1={band.efMinusEvbm}
+            x2={band.cbmRelativeToEf}
+            y={plot.top + 272}
+          />
+        </g>
       </svg>
       <ContextMenu menu={menu} onClose={closeMenu} />
     </div>

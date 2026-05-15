@@ -19,6 +19,7 @@ export function UPSVBPlotWindow() {
   const activeFitTarget = useProjectStore((state) => state.activeFitTarget);
   const setFitRange = useProjectStore((state) => state.setFitRange);
   const setUpsVbPlotViewport = useProjectStore((state) => state.setUpsVbPlotViewport);
+  const setPlotCursorStyle = useProjectStore((state) => state.setPlotCursorStyle);
   const vbDataset = project.datasets.find(
     (dataset) => dataset.id === project.analysis.selection.upsVbDatasetId,
   );
@@ -96,6 +97,8 @@ export function UPSVBPlotWindow() {
         viewport: persistedViewport,
       }}
       onViewportChange={setUpsVbPlotViewport}
+      cursorStyle={project.ui?.cursorStyles?.upsVb ?? "point"}
+      onCursorStyleChange={(style) => setPlotCursorStyle("upsVb", style)}
       onSelectRange={(range) => setFitRange(vbTarget(activeFitTarget), range)}
       onRangeBandChange={(target, range) => setFitRange(target as FitTarget, range)}
     />
@@ -107,6 +110,7 @@ export function UPSIPPlotWindow() {
   const activeFitTarget = useProjectStore((state) => state.activeFitTarget);
   const setFitRange = useProjectStore((state) => state.setFitRange);
   const setUpsIpPlotViewport = useProjectStore((state) => state.setUpsIpPlotViewport);
+  const setPlotCursorStyle = useProjectStore((state) => state.setPlotCursorStyle);
   const [viewport, setViewport] = useState<PlotViewport>({});
   const [viewportRequest, setViewportRequest] = useState<
     { id: number; viewport: PlotViewport } | undefined
@@ -290,6 +294,8 @@ export function UPSIPPlotWindow() {
         setViewport(next);
         setUpsIpPlotViewport(next);
       }}
+      cursorStyle={project.ui?.cursorStyles?.upsIp ?? "point"}
+      onCursorStyleChange={(style) => setPlotCursorStyle("upsIp", style)}
       extraContextMenuItems={contextItems}
       onSelectRange={(range) => setFitRange(ipTarget(activeFitTarget), range)}
       onRangeBandChange={(target, range) => setFitRange(target as FitTarget, range)}

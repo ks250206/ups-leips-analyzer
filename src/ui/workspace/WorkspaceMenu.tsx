@@ -3,7 +3,6 @@ import { useRef, useState } from "react";
 import type { ProjectRecord, WindowLayout } from "../../store/projectTypes";
 import { useProjectStore } from "../../store/projectStore";
 import { ContextMenu, type ContextMenuItem, useContextMenu } from "../ContextMenu";
-import { cursorStyleLabel, useSettingsStore, type CursorStyle } from "../Settings";
 
 export interface MenuGroup {
   label: string;
@@ -20,8 +19,6 @@ export function TopBar({
   zoomScale?: number;
 }) {
   const project = useProjectStore((state) => state.project);
-  const cursorStyle = useSettingsStore((state) => state.cursorStyle);
-  const setCursorStyle = useSettingsStore((state) => state.setCursorStyle);
   const { menu, openMenu, closeMenu } = useContextMenu();
   const [activeMenu, setActiveMenu] = useState<string>();
   const buttonRefs = useRef(new Map<string, HTMLButtonElement>());
@@ -29,11 +26,7 @@ export function TopBar({
     const rect = buttonRefs.current.get(group.label)?.getBoundingClientRect();
     setActiveMenu(group.label);
     onMenuOpen();
-    openMenu(
-      rect?.left ?? 0,
-      rect?.bottom ?? 0,
-      resolveMenuItems(group, cursorStyle, setCursorStyle),
-    );
+    openMenu(rect?.left ?? 0, rect?.bottom ?? 0, group.items);
   };
   const closeTopMenu = () => {
     setActiveMenu(undefined);
@@ -178,10 +171,6 @@ export function buildMenuGroups(input: {
       items: [{ type: "item", label: "Reset view", action: input.actions.resetWorkspaceView }],
     },
     {
-      label: "Setting",
-      items: settingMenuItems,
-    },
-    {
       label: "Windows",
       items: windowsItems,
     },
@@ -190,40 +179,6 @@ export function buildMenuGroups(input: {
       items: [
         { type: "item", label: "About UPS-LEIPS Analyzer", action: input.actions.toggleHelpWindow },
       ],
-    },
-  ];
-}
-
-const cursorStyles: readonly CursorStyle[] = ["point", "range"];
-
-const settingMenuItems: ContextMenuItem[] = [
-  {
-    type: "submenu",
-    label: "Cursor style",
-    items: cursorStyles.map((style) => ({
-      type: "item",
-      label: cursorStyleLabel(style),
-    })),
-  },
-];
-
-export function resolveMenuItems(
-  group: MenuGroup,
-  cursorStyle: CursorStyle,
-  setCursorStyle: (style: CursorStyle) => void,
-): ContextMenuItem[] {
-  if (group.label !== "Setting") {
-    return group.items;
-  }
-  return [
-    {
-      type: "submenu",
-      label: "Cursor style",
-      items: cursorStyles.map((style) => ({
-        type: "item",
-        label: `${cursorStyle === style ? "✓ " : ""}${cursorStyleLabel(style)}`,
-        action: () => setCursorStyle(style),
-      })),
     },
   ];
 }

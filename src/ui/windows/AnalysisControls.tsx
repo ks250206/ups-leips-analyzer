@@ -1,4 +1,9 @@
 import { BANDPASS_OPTIONS, CUSTOM_BANDPASS_TYPE } from "../../domain/constants";
+import {
+  SAMPLE_INFO_FIELDS,
+  elementsFromComposition,
+  type SampleInfoFieldDefinition,
+} from "../../domain/sampleInfo";
 import { useEffect, useState, type ReactNode } from "react";
 import type { AnalysisSelection, FitRange, FitTarget, SpectrumDataset } from "../../domain/types";
 import { fitRangeKey, useProjectStore } from "../../store/projectStore";
@@ -35,7 +40,7 @@ const DATASET_SLOTS: Array<{
   { slot: "reelsDatasetId", label: "REELS", filter: (dataset) => dataset.kind === "reels" },
 ];
 
-type AnalysisTab = "data" | "ups" | "leips" | "reels" | "band" | "fit";
+type AnalysisTab = "data" | "sample" | "ups" | "leips" | "reels" | "band" | "fit";
 
 export function AnalysisControls({ activeTab = "data" }: { activeTab?: AnalysisTab }) {
   const project = useProjectStore((state) => state.project);
@@ -47,8 +52,10 @@ export function AnalysisControls({ activeTab = "data" }: { activeTab?: AnalysisT
   const setCustomBandpassEnergy = useProjectStore((state) => state.setCustomBandpassEnergy);
   const setReelsIncidentEnergy = useProjectStore((state) => state.setReelsIncidentEnergy);
   const setEfMinusEvbm = useProjectStore((state) => state.setEfMinusEvbm);
+  const setSampleInfoField = useProjectStore((state) => state.setSampleInfoField);
   const recalculate = useProjectStore((state) => state.recalculate);
   const analysis = project.analysis;
+  const sampleInfo = project.ui?.sampleInfo ?? {};
   const [tab, setTab] = useState<AnalysisTab>(activeTab);
   useEffect(() => setTab(activeTab), [activeTab]);
 
@@ -59,9 +66,10 @@ export function AnalysisControls({ activeTab = "data" }: { activeTab?: AnalysisT
           {analysis.error}
         </div>
       ) : null}
-      <div className="grid grid-cols-6 gap-1 border-b border-slate-300 bg-slate-200 p-2">
+      <div className="grid grid-cols-7 gap-1 border-b border-slate-300 bg-slate-200 p-2">
         {[
           ["data", "Data"],
+          ["sample", "Sample Info"],
           ["ups", "UPS"],
           ["leips", "LEIPS"],
           ["reels", "REELS"],
@@ -103,6 +111,30 @@ export function AnalysisControls({ activeTab = "data" }: { activeTab?: AnalysisT
                   </select>
                 </label>
               ))}
+            </div>
+          </Panel>
+        ) : null}
+
+        {tab === "sample" ? (
+          <Panel title="Sample Info">
+            <div className="grid gap-2">
+              {SAMPLE_INFO_FIELDS.map((field) => (
+                <SampleInfoFieldRow
+                  key={field.field}
+                  definition={field}
+                  value={sampleInfo[field.field] ?? ""}
+                  onChange={(value) => setSampleInfoField(field.field, value)}
+                />
+              ))}
+              <label className="grid grid-cols-[118px_1fr] items-center gap-2">
+                <span className="font-semibold text-slate-600">含有元素</span>
+                <input
+                  className="min-w-0 rounded border border-slate-300 bg-slate-50 px-2 py-1 text-slate-600"
+                  readOnly
+                  value={elementsFromComposition(sampleInfo.nominalComposition)}
+                  placeholder="Li, P, S, Cl"
+                />
+              </label>
             </div>
           </Panel>
         ) : null}
@@ -179,10 +211,10 @@ export function AnalysisControls({ activeTab = "data" }: { activeTab?: AnalysisT
         ) : null}
 
         {tab === "band" ? (
-          <Panel title="UPS-LEIPS graph">
+          <Panel title="Band Diagram">
             <label className="mb-2 grid grid-cols-[118px_1fr_34px] items-center gap-2">
               <span className="font-semibold text-slate-600">
-                EVB<sub>M</sub>
+                E<sub>VBM</sub>
               </span>
               <input
                 className="min-w-0 rounded border border-slate-300 bg-white px-2 py-1"
@@ -255,6 +287,58 @@ function ResultGrid({ rows }: { rows: Array<[ReactNode, string, string]> }) {
         </div>
       ))}
     </div>
+  );
+}
+
+function SampleInfoFieldRow({
+  definition,
+  value,
+  onChange,
+}: {
+  definition: SampleInfoFieldDefinition;
+  value: string;
+  onChange: (value: string) => void;
+}) {
+  const commonClass = "min-w-0 rounded border border-slate-300 bg-white px-2 py-1";
+  return (
+    <label
+      className={
+        definition.kind === "textarea"
+          ? "grid grid-cols-[118px_1fr] items-start gap-2"
+          : "grid grid-cols-[118px_1fr] items-center gap-2"
+      }
+    >
+      <span className="font-semibold text-slate-600">{definition.label}</span>
+      {definition.kind === "select" ? (
+        <select
+          className={commonClass}
+          value={value}
+          onChange={(event) => onChange(event.currentTarget.value)}
+        >
+          <option value="">{definition.placeholder ? `例: ${definition.placeholder}` : "-"}</option>
+          {definition.options?.map((option) => (
+            <option key={option} value={option}>
+              {option}
+            </option>
+          ))}
+        </select>
+      ) : definition.kind === "textarea" ? (
+        <textarea
+          className={`${commonClass} min-h-20 resize-y`}
+          value={value}
+          placeholder={definition.placeholder}
+          onChange={(event) => onChange(event.currentTarget.value)}
+        />
+      ) : (
+        <input
+          className={commonClass}
+          type={definition.kind === "date" ? "date" : "text"}
+          value={value}
+          placeholder={definition.placeholder}
+          onChange={(event) => onChange(event.currentTarget.value)}
+        />
+      )}
+    </label>
   );
 }
 

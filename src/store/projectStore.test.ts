@@ -129,6 +129,23 @@ describe("project store", () => {
     expect(useProjectStore.getState().project.ui?.leipsEvacPlotViewport).toEqual(viewport);
   });
 
+  test("persists per-plot cursor styles and sample info", () => {
+    useProjectStore.getState().setPlotCursorStyle("upsIp", "range");
+    useProjectStore.getState().setSampleInfoField("nominalComposition", "Li6PS5Cl");
+    useProjectStore.getState().setSampleInfoField("sampleName", "sample-a");
+
+    const project = useProjectStore.getState().project;
+    expect(project.ui?.cursorStyles?.upsIp).toBe("range");
+    expect(project.ui?.cursorStyles?.leips).toBeUndefined();
+    expect(project.ui?.sampleInfo?.nominalComposition).toBe("Li6PS5Cl");
+
+    useProjectStore
+      .getState()
+      .importProject(exportProjectJson({ ...project, id: "sample-info", name: "Sample Info" }));
+    expect(useProjectStore.getState().project.ui?.cursorStyles?.upsIp).toBe("range");
+    expect(useProjectStore.getState().project.ui?.sampleInfo?.sampleName).toBe("sample-a");
+  });
+
   test("resets individual and all window geometry to defaults", () => {
     const state = useProjectStore.getState();
     state.updateWindow("ups-vb", { x: 999, y: 888, width: 333, height: 222 });

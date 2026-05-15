@@ -23,6 +23,7 @@ export function LEIPSPlotWindow() {
   const setBandpassType = useProjectStore((state) => state.setBandpassType);
   const setCustomBandpassEnergy = useProjectStore((state) => state.setCustomBandpassEnergy);
   const setLeipsPlotViewport = useProjectStore((state) => state.setLeipsPlotViewport);
+  const setPlotCursorStyle = useProjectStore((state) => state.setPlotCursorStyle);
   const activeFitTarget = useProjectStore((state) => state.activeFitTarget);
   const [customOpen, setCustomOpen] = useState(false);
   const [customValue, setCustomValue] = useState("");
@@ -177,6 +178,8 @@ export function LEIPSPlotWindow() {
         }}
         extraContextMenuItems={contextItems}
         onViewportChange={setLeipsPlotViewport}
+        cursorStyle={project.ui?.cursorStyles?.leips ?? "point"}
+        onCursorStyleChange={(style) => setPlotCursorStyle("leips", style)}
         onSelectRange={(range) => setFitRange("leet-der-peak", range)}
         onRangeBandChange={(target, range) => setFitRange(target as FitTarget, range)}
       />
@@ -225,6 +228,7 @@ export function LEIPSEvacPlotWindow() {
   const activeFitTarget = useProjectStore((state) => state.activeFitTarget);
   const setFitRange = useProjectStore((state) => state.setFitRange);
   const setLeipsEvacPlotViewport = useProjectStore((state) => state.setLeipsEvacPlotViewport);
+  const setPlotCursorStyle = useProjectStore((state) => state.setPlotCursorStyle);
   const leipsDataset = project.datasets.find(
     (dataset) => dataset.id === project.analysis.selection.leipsDatasetId,
   );
@@ -325,6 +329,8 @@ export function LEIPSEvacPlotWindow() {
         viewport: persistedViewport,
       }}
       onViewportChange={setLeipsEvacPlotViewport}
+      cursorStyle={project.ui?.cursorStyles?.leipsEvac ?? "point"}
+      onCursorStyleChange={(style) => setPlotCursorStyle("leipsEvac", style)}
       onSelectRange={(range) => {
         if (activeFitTarget === "leips-bg" || activeFitTarget === "leips-edge") {
           setFitRange(activeFitTarget, range);

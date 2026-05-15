@@ -1,4 +1,5 @@
 import type { AnalysisState, SpectrumDataset } from "../domain/types";
+import type { SampleInfoState } from "../domain/sampleInfo";
 
 export interface WindowLayout {
   id: string;
@@ -29,6 +30,10 @@ export interface UiScaleRange {
   min: number;
   max: number;
 }
+
+export type CursorStyle = "point" | "range";
+
+export type PlotCursorStyleKey = "upsVb" | "upsIp" | "leips" | "leipsEvac" | "reels";
 
 export interface ProjectUiState {
   bandDiagramViewport?: {
@@ -62,6 +67,8 @@ export interface ProjectUiState {
     y2?: UiScaleRange;
   };
   reelsBackgroundMode?: "fit-range" | "single-point";
+  cursorStyles?: Partial<Record<PlotCursorStyleKey, CursorStyle>>;
+  sampleInfo?: SampleInfoState;
 }
 
 export interface ProjectSnapshot {

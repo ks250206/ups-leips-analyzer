@@ -94,7 +94,7 @@ export function LoadProjectModal({
   onLoad: (id: string) => void;
 }) {
   return (
-    <Modal title="Load Project" widthClass="w-[620px]">
+    <Modal title="Load Project" widthClass="w-[620px]" onBackdropClick={onCancel}>
       <div className="h-[360px] overflow-hidden rounded border border-slate-200">
         <ProjectTable projects={projects} onLoad={onLoad} />
       </div>
@@ -115,14 +115,23 @@ function Modal({
   title,
   children,
   widthClass = "w-[360px]",
+  onBackdropClick,
 }: {
   title: string;
   children: ReactNode;
   widthClass?: string;
+  onBackdropClick?: () => void;
 }) {
   return (
-    <div className="fixed inset-0 z-[11000] flex items-center justify-center bg-slate-950/30">
-      <div className={`${widthClass} rounded border border-slate-300 bg-white p-4 shadow-2xl`}>
+    <div
+      data-testid={onBackdropClick ? "modal-backdrop" : undefined}
+      className="fixed inset-0 z-[11000] flex items-center justify-center bg-slate-950/30"
+      onPointerDown={onBackdropClick}
+    >
+      <div
+        className={`${widthClass} rounded border border-slate-300 bg-white p-4 shadow-2xl`}
+        onPointerDown={(event) => event.stopPropagation()}
+      >
         <h2 className="mb-3 text-sm font-semibold text-slate-900">{title}</h2>
         {children}
       </div>

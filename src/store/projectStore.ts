@@ -1,5 +1,6 @@
 import { create } from "zustand";
 import { CUSTOM_BANDPASS_TYPE } from "../domain/constants";
+import type { SampleInfoField } from "../domain/sampleInfo";
 import type { AnalysisState, FitRange, FitTarget, SpectrumDataset } from "../domain/types";
 import {
   autoFitRanges,
@@ -20,7 +21,14 @@ import {
   loadProject,
   saveProject,
 } from "./projectDb";
-import type { ProjectRecord, ProjectSnapshot, ProjectUiState, WindowLayout } from "./projectTypes";
+import type {
+  CursorStyle,
+  PlotCursorStyleKey,
+  ProjectRecord,
+  ProjectSnapshot,
+  ProjectUiState,
+  WindowLayout,
+} from "./projectTypes";
 import { toggleUtilityWindow } from "./windowModel";
 
 export { createInitialProject } from "./projectFactory";
@@ -47,6 +55,8 @@ interface ProjectStore {
   setLeipsPlotViewport: (viewport: ProjectUiState["leipsPlotViewport"]) => void;
   setLeipsEvacPlotViewport: (viewport: ProjectUiState["leipsEvacPlotViewport"]) => void;
   setReelsBackgroundMode: (mode: NonNullable<ProjectUiState["reelsBackgroundMode"]>) => void;
+  setPlotCursorStyle: (plot: PlotCursorStyleKey, style: CursorStyle) => void;
+  setSampleInfoField: (field: SampleInfoField, value: string) => void;
   updateWindow: (id: string, patch: Partial<WindowLayout>) => void;
   focusWindow: (id: string) => void;
   resetWindowPosition: (id: string) => void;
@@ -259,6 +269,28 @@ export const useProjectStore = create<ProjectStore>((set, get) => ({
       project: touchProject({
         ...state.project,
         ui: { ...state.project.ui, reelsBackgroundMode: mode },
+      }),
+    }));
+  },
+  setPlotCursorStyle: (plot, style) => {
+    set((state) => ({
+      project: touchProject({
+        ...state.project,
+        ui: {
+          ...state.project.ui,
+          cursorStyles: { ...state.project.ui?.cursorStyles, [plot]: style },
+        },
+      }),
+    }));
+  },
+  setSampleInfoField: (field, value) => {
+    set((state) => ({
+      project: touchProject({
+        ...state.project,
+        ui: {
+          ...state.project.ui,
+          sampleInfo: { ...state.project.ui?.sampleInfo, [field]: value },
+        },
       }),
     }));
   },

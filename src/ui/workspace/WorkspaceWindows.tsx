@@ -20,7 +20,7 @@ import { ProjectListWindow } from "../windows/ProjectListWindow";
 import { REELSPlotWindow } from "../windows/REELSPlotWindow";
 import { UPSIPPlotWindow, UPSVBPlotWindow } from "../windows/UPSPlotWindow";
 
-export type AnalysisControlTab = "data" | "ups" | "leips" | "reels" | "band" | "fit";
+export type AnalysisControlTab = "data" | "sample" | "ups" | "leips" | "reels" | "band" | "fit";
 
 export function renderWindow(window: WindowLayout, analysisTab: AnalysisControlTab = "data") {
   switch (window.kind) {

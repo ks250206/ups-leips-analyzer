@@ -2,7 +2,7 @@
 
 ## Layers
 
-- `src/domain`: スペクトル型、線形fit、ガウスfit、UPS/LEIPS/REELS/バンド図計算。
+- `src/domain`: スペクトル型、線形fit、ガウスfit、UPS/LEIPS/REELS/バンド図計算、Sample Info helper。
 - `src/io`: MultiPak CSV parserとdataset kind推定。
 - `src/store`: Zustand store、Dexie database、Project JSON import/export。
 - `src/ui`: Workspace window、Data Browser、Table、D3/SVG plot wrapper、解析パネル。
@@ -13,7 +13,7 @@
 - `src/store/projectFactory.ts`: 空Project、demo Project、初期dataset/window生成。
 - `src/store/projectModel.ts`: 解析再計算、dataset auto selection、fit range migration、Project JSON変換。
 - `src/store/windowModel.ts`: workspace window生成とdefault layout。
-- `ProjectSnapshot.ui`: UPS/LEIPS/REELS/Band Diagram plot viewport、cursor表示設定、Help window状態などProjectと一緒に復元したいUI state。
+- `ProjectSnapshot.ui`: UPS/LEIPS/REELS/Band Diagram plot viewport、plot別cursor表示設定、Sample Info、Help window状態などProjectと一緒に復元したいUI state。
 - `src/ui/Workspace.tsx`: workspace viewport、background pan/context menu、window frame配置、modal open state。
 - `src/ui/workspace/WorkspaceMenu.tsx`: TopBar/background context menuの共通menu definition。
 - `src/ui/workspace/WorkspaceWindows.tsx`: window kindごとのtitle/icon/render/context menu/help window。
