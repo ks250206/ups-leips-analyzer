@@ -24,6 +24,7 @@ export function BandDiagramWindow() {
   const [leipsOffset, setLeipsOffset] = useState(0);
   const [indicatorFontSize, setIndicatorFontSize] = useState(34);
   const [indicatorArrowScale, setIndicatorArrowScale] = useState(1);
+  const lastBandDataSignature = useRef<string | undefined>(undefined);
   const bandXDomain = useMemo(() => {
     const points = band ? [...band.upsPoints, ...band.leipsPoints] : [];
     if (points.length === 0) {
@@ -34,23 +35,10 @@ export function BandDiagramWindow() {
       max: Math.max(...points.map((point) => point.x)),
     };
   }, [band]);
+  const bandDataSignature = useMemo(() => (band ? bandPlotDataSignature(band) : undefined), [band]);
   const [xMin, setXMin] = useState(bandXDomain.min);
   const [xMax, setXMax] = useState(bandXDomain.max);
   const [viewport, setViewport] = useState<BandViewport>({});
-  const initialViewport = useMemo(
-    () =>
-      band
-        ? createBandAutoViewport({
-            band,
-            xDomain: bandXDomain,
-            upsScale: 1,
-            upsOffset: 0,
-            leipsScale: 1,
-            leipsOffset: 0,
-          })
-        : undefined,
-    [band, bandXDomain],
-  );
   const applyAutoScale = useCallback(() => {
     if (!band) {
       setViewport({});
@@ -70,10 +58,29 @@ export function BandDiagramWindow() {
   }, [band, bandXDomain, leipsOffset, leipsScale, upsOffset, upsScale]);
 
   useEffect(() => {
+    if (!band || !bandDataSignature) {
+      lastBandDataSignature.current = undefined;
+      setXMin(bandXDomain.min);
+      setXMax(bandXDomain.max);
+      setViewport({});
+      return;
+    }
+    if (lastBandDataSignature.current === bandDataSignature) {
+      return;
+    }
+    lastBandDataSignature.current = bandDataSignature;
+    const next = createBandAutoViewport({
+      band,
+      xDomain: bandXDomain,
+      upsScale: 1,
+      upsOffset: 0,
+      leipsScale: 1,
+      leipsOffset: 0,
+    });
     setXMin(bandXDomain.min);
     setXMax(bandXDomain.max);
-    setViewport(initialViewport ?? {});
-  }, [initialViewport, bandXDomain.min, bandXDomain.max]);
+    setViewport(next);
+  }, [band, bandDataSignature, bandXDomain]);
   const handleViewportChange = (next: BandViewport) => {
     setViewport(next);
     if (next.x) {
@@ -407,13 +414,27 @@ function IgorBandDiagramPlot({
         >
           Intensity / a.u.
         </text>
-        <text fill="#004cff" fontSize={38} fontWeight={700} x={plot.left + 34} y={plot.top + 66}>
+        <text
+          fill="#004cff"
+          fontSize={38}
+          fontWeight={700}
+          paintOrder="stroke fill"
+          stroke="white"
+          strokeLinejoin="round"
+          strokeWidth={9}
+          x={plot.left + 34}
+          y={plot.top + 66}
+        >
           UPS
         </text>
         <text
           fill="#ff0000"
           fontSize={38}
           fontWeight={700}
+          paintOrder="stroke fill"
+          stroke="white"
+          strokeLinejoin="round"
+          strokeWidth={9}
           textAnchor="end"
           x={plotRight - 46}
           y={plot.top + 66}
@@ -601,6 +622,25 @@ export function createBandAutoViewport(input: {
     y: domainForY(upsPoints),
     y2: domainForY(leipsPoints),
   };
+}
+
+export function bandPlotDataSignature(band: BandDiagramResult): string {
+  return `${pointSeriesSignature(band.upsPoints)}|${pointSeriesSignature(band.leipsPoints)}`;
+}
+
+function pointSeriesSignature(points: readonly Point[]): string {
+  if (points.length === 0) {
+    return "0";
+  }
+  let min = Number.POSITIVE_INFINITY;
+  let max = Number.NEGATIVE_INFINITY;
+  let sum = 0;
+  for (const point of points) {
+    min = Math.min(min, point.x);
+    max = Math.max(max, point.x);
+    sum += point.x;
+  }
+  return `${points.length}:${min.toFixed(6)}:${max.toFixed(6)}:${sum.toFixed(6)}`;
 }
 
 function transformBandPoints(

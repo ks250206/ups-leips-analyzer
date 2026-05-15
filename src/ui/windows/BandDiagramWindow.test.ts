@@ -1,5 +1,6 @@
 import { describe, expect, test } from "vite-plus/test";
 import {
+  bandPlotDataSignature,
   createBandAutoViewport,
   createIgorBandModel,
   nextIgorBandViewportAfterDrag,
@@ -82,6 +83,23 @@ describe("Igor-style band diagram plot model", () => {
 
     expect(shifted.yDomain).toEqual(auto.y);
     expect(shifted.yRightDomain).toEqual(auto.y2);
+  });
+
+  test("keeps the band data signature stable across recalculated annotation values", () => {
+    const recalculated = {
+      ...BAND,
+      ip: 3.2,
+      ea: 1.1,
+      eg: 2.1,
+      cbmRelativeToEf: -0.9,
+    };
+    const changedData = {
+      ...BAND,
+      leipsPoints: BAND.leipsPoints.map((point) => ({ ...point, x: point.x + 0.2 })),
+    };
+
+    expect(bandPlotDataSignature(recalculated)).toBe(bandPlotDataSignature(BAND));
+    expect(bandPlotDataSignature(changedData)).not.toBe(bandPlotDataSignature(BAND));
   });
 
   test("zooms x with shift wheel and y axes with normal wheel", () => {
