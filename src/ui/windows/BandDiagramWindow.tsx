@@ -1,6 +1,7 @@
 import { scaleLinear, type ScaleLinear } from "d3-scale";
 import { line } from "d3-shape";
 import {
+  useCallback,
   useEffect,
   useId,
   useMemo,
@@ -36,20 +37,6 @@ export function BandDiagramWindow() {
   const [xMin, setXMin] = useState(bandXDomain.min);
   const [xMax, setXMax] = useState(bandXDomain.max);
   const [viewport, setViewport] = useState<BandViewport>({});
-  const autoViewport = useMemo(
-    () =>
-      band
-        ? createBandAutoViewport({
-            band,
-            xDomain: bandXDomain,
-            upsScale,
-            upsOffset,
-            leipsScale,
-            leipsOffset,
-          })
-        : undefined,
-    [band, bandXDomain, leipsOffset, leipsScale, upsOffset, upsScale],
-  );
   const initialViewport = useMemo(
     () =>
       band
@@ -64,6 +51,23 @@ export function BandDiagramWindow() {
         : undefined,
     [band, bandXDomain],
   );
+  const applyAutoScale = useCallback(() => {
+    if (!band) {
+      setViewport({});
+      return;
+    }
+    const next = createBandAutoViewport({
+      band,
+      xDomain: bandXDomain,
+      upsScale,
+      upsOffset,
+      leipsScale,
+      leipsOffset,
+    });
+    setXMin(Number(next.x.min.toFixed(3)));
+    setXMax(Number(next.x.max.toFixed(3)));
+    setViewport(next);
+  }, [band, bandXDomain, leipsOffset, leipsScale, upsOffset, upsScale]);
 
   useEffect(() => {
     setXMin(bandXDomain.min);
@@ -94,13 +98,13 @@ export function BandDiagramWindow() {
           indicatorFontSize={indicatorFontSize}
           indicatorArrowScale={indicatorArrowScale}
           viewport={viewport}
-          resetViewport={autoViewport ?? {}}
+          onResetView={applyAutoScale}
           onViewportChange={handleViewportChange}
         />
       </div>
       {band ? (
         <div className="border-t border-slate-200 bg-slate-50 px-2 py-1 text-[11px]">
-          <div className="flex flex-wrap gap-1">
+          <div className="flex flex-wrap items-center gap-1">
             <SmallNumber label="UPS×" value={upsScale} onChange={setUpsScale} />
             <SmallNumber label="UPS+%" value={upsOffset} onChange={setUpsOffset} />
             <SmallNumber label="LEIPS×" value={leipsScale} onChange={setLeipsScale} />
@@ -111,7 +115,7 @@ export function BandDiagramWindow() {
               value={indicatorArrowScale}
               onChange={setIndicatorArrowScale}
             />
-            <span className="grid min-w-[160px] flex-1 grid-cols-[1fr_1fr_auto] gap-1">
+            <span className="grid w-[190px] grid-cols-[1fr_1fr_auto] gap-1">
               <input
                 className="min-w-0 rounded border border-slate-200 bg-white px-1 py-0.5 font-mono"
                 value={xMin}
@@ -140,9 +144,7 @@ export function BandDiagramWindow() {
                 className="rounded border border-slate-300 bg-white px-1 py-0.5 font-semibold hover:bg-cyan-50"
                 type="button"
                 onClick={() => {
-                  setXMin(bandXDomain.min);
-                  setXMax(bandXDomain.max);
-                  setViewport(autoViewport ?? {});
+                  applyAutoScale();
                 }}
               >
                 Auto
@@ -165,7 +167,7 @@ function IgorBandDiagramPlot({
   indicatorFontSize,
   indicatorArrowScale,
   viewport,
-  resetViewport,
+  onResetView,
   onViewportChange,
 }: {
   band: BandDiagramResult | undefined;
@@ -177,7 +179,7 @@ function IgorBandDiagramPlot({
   indicatorFontSize: number;
   indicatorArrowScale: number;
   viewport: BandViewport;
-  resetViewport: BandViewport;
+  onResetView: () => void;
   onViewportChange: (viewport: BandViewport) => void;
 }) {
   const containerRef = useRef<HTMLDivElement>(null);
@@ -225,7 +227,7 @@ function IgorBandDiagramPlot({
       {
         type: "item",
         label: "Reset view",
-        action: () => updateViewport(resetViewport),
+        action: onResetView,
       },
       {
         type: "item",
@@ -282,7 +284,7 @@ function IgorBandDiagramPlot({
         width={size.width}
         onDoubleClick={(event) => {
           event.preventDefault();
-          updateViewport(resetViewport);
+          onResetView();
         }}
         onPointerDown={(event) => {
           if (event.button === 2) {
@@ -539,14 +541,12 @@ export function createIgorBandModel(input: {
     plotWidth: input.geometry.plotRight - input.geometry.left,
     plotHeight: input.geometry.plotBottom - input.geometry.top,
   };
-  const upsPoints = input.band.upsPoints.map((point) => ({
-    x: point.x,
-    y: point.y * input.upsScale + offsetFromPercent(input.band.upsPoints, input.upsOffset),
-  }));
-  const leipsPoints = input.band.leipsPoints.map((point) => ({
-    x: point.x,
-    y: point.y * input.leipsScale + offsetFromPercent(input.band.leipsPoints, input.leipsOffset),
-  }));
+  const upsPoints = transformBandPoints(input.band.upsPoints, input.upsScale, input.upsOffset);
+  const leipsPoints = transformBandPoints(
+    input.band.leipsPoints,
+    input.leipsScale,
+    input.leipsOffset,
+  );
   const xDomain = input.viewport?.x ?? input.xDomain;
   const yDomain = input.viewport?.y ?? domainForY(upsPoints);
   const yRightDomain = input.viewport?.y2 ?? domainForY(leipsPoints);
@@ -590,15 +590,29 @@ export function createBandAutoViewport(input: {
   leipsScale: number;
   leipsOffset: number;
 }): Required<BandViewport> {
-  const model = createIgorBandModel({
-    ...input,
-    geometry: { left: 0, top: 0, plotRight: 1, plotBottom: 1 },
-  });
+  const upsPoints = transformBandPoints(input.band.upsPoints, input.upsScale, input.upsOffset);
+  const leipsPoints = transformBandPoints(
+    input.band.leipsPoints,
+    input.leipsScale,
+    input.leipsOffset,
+  );
   return {
     x: { min: input.xDomain.min, max: input.xDomain.max },
-    y: model.yDomain,
-    y2: model.yRightDomain,
+    y: domainForY(upsPoints),
+    y2: domainForY(leipsPoints),
   };
+}
+
+function transformBandPoints(
+  points: readonly Point[],
+  scale: number,
+  offsetPercent: number,
+): Point[] {
+  const offset = offsetFromPercent(points, offsetPercent);
+  return points.map((point) => ({
+    x: point.x,
+    y: point.y * scale + offset,
+  }));
 }
 
 function domainForY(points: readonly Point[]): BandScaleRange {
@@ -1011,7 +1025,7 @@ function SmallNumber({
 }) {
   return (
     <label
-      className="grid min-w-[104px] grid-cols-[50px_1fr] items-center gap-1 rounded border border-slate-200 bg-white px-1 py-0.5"
+      className="grid w-[92px] grid-cols-[48px_1fr] items-center gap-1 rounded border border-slate-200 bg-white px-1 py-0.5"
       onWheel={(event) => {
         event.preventDefault();
         event.stopPropagation();
