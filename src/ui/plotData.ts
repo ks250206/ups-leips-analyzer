@@ -18,7 +18,7 @@ export interface PlotSeries {
   yAxis?: "left" | "right";
   affectsScale?: boolean;
   fitRange?: FitRange;
-  fitLabel?: string;
+  fitLabel?: ReactNode;
   pointRadius?: number;
 }
 

@@ -131,8 +131,8 @@ export function PlotAxes({
         fontSize={labelSize}
         fontWeight={labelWeight}
         textAnchor="middle"
-        transform={`rotate(-90 ${largeAxisLabels ? 28 : 22} ${geometry.top + geometry.plotHeight / 2})`}
-        x={largeAxisLabels ? 28 : 22}
+        transform={`rotate(-90 ${largeAxisLabels ? 28 : 18} ${geometry.top + geometry.plotHeight / 2})`}
+        x={largeAxisLabels ? 28 : 18}
         y={geometry.top + geometry.plotHeight / 2}
       >
         {yLabel}
@@ -161,6 +161,28 @@ function AxisLabelText({ label, largeAxisLabels }: { label: string; largeAxisLab
         Energy from E
         <tspan baselineShift="sub" fontSize={largeAxisLabels ? 16 : 10}>
           vac.
+        </tspan>{" "}
+        / eV
+      </>
+    );
+  }
+  if (label === "Binding energy of Ecut-off / eV") {
+    return (
+      <>
+        Binding energy of E
+        <tspan baselineShift="sub" fontSize={largeAxisLabels ? 16 : 10}>
+          cut-off
+        </tspan>{" "}
+        / eV
+      </>
+    );
+  }
+  if (label === "Binding energy of EVBM / eV") {
+    return (
+      <>
+        Binding energy of E
+        <tspan baselineShift="sub" fontSize={largeAxisLabels ? 16 : 10}>
+          VBM
         </tspan>{" "}
         / eV
       </>
@@ -260,7 +282,10 @@ export function fitLabelPointForSeries(
     return undefined;
   }
   const targetY = interpolateY(points, targetX);
-  const textHalfWidth = Math.max(24, (series.fitLabel?.length ?? 0) * 3.6);
+  const textHalfWidth = Math.max(
+    24,
+    (typeof series.fitLabel === "string" ? series.fitLabel.length : 8) * 3.6,
+  );
   return {
     x: clamp(xScale(targetX), geometry.left + textHalfWidth, geometry.plotRight - textHalfWidth),
     y: clamp(yScale(targetY) - 6, geometry.top + 14, geometry.plotBottom - 8),

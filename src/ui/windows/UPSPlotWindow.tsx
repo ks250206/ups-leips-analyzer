@@ -370,7 +370,7 @@ export function UPSBiasDependenceWindow() {
 const BIAS_PLOTS = [
   {
     id: "ecutoff",
-    label: "Binding energy of Ecutoff / eV",
+    label: "Binding energy of Ecut-off / eV",
     field: "ecutoff",
     color: "#ef4444",
   },
@@ -429,31 +429,15 @@ function BiasDependencePlot({
         dash: [5, 3],
         width: 1.5,
         affectsScale: false,
+        fitLabel: (
+          <>
+            y = {formatNumber(dependence.slope, 3)}x + {formatNumber(dependence.intercept, 3)} eV
+          </>
+        ),
       });
     }
     return items;
   }, [config.color, config.label, dependence, points]);
-  const annotations = useMemo(
-    () =>
-      dependence
-        ? [
-            {
-              type: "text" as const,
-              label: `y = ${formatNumber(dependence.slope, 3)}x + ${formatNumber(
-                dependence.intercept,
-                3,
-              )} eV`,
-              color: "#111827",
-              xFraction: 0.55,
-              yFraction: 0.2,
-              fontSize: 13,
-              anchor: "middle" as const,
-            },
-          ]
-        : [],
-    [dependence],
-  );
-
   const viewportKey = JSON.stringify(viewport);
   return (
     <div className="min-w-0">
@@ -463,7 +447,6 @@ function BiasDependencePlot({
           xLabel="Applied Bias / V"
           yLabel={config.label}
           series={series}
-          annotations={annotations}
           viewportRequest={{ id: `${config.id}-${viewportKey}`, viewport }}
           onViewportChange={onViewportChange}
         />

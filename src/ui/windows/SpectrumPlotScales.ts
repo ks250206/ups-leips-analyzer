@@ -62,7 +62,7 @@ export function createPlotGeometry(
 ): PlotGeometry {
   const width = Math.max(MIN_PLOT_SIZE.width, Math.floor(size.width));
   const height = Math.max(MIN_PLOT_SIZE.height, Math.floor(size.height));
-  const top = largeAxisLabels ? 44 : 32;
+  const top = largeAxisLabels ? 44 : 20;
   const right = largeAxisLabels
     ? 78
     : marginVariant === "leips"
@@ -73,7 +73,7 @@ export function createPlotGeometry(
         ? 50
         : 30;
   const bottom = largeAxisLabels ? 62 : 44;
-  const left = largeAxisLabels ? 96 : marginVariant === "leips" ? 76 : 92;
+  const left = largeAxisLabels ? 96 : marginVariant === "leips" ? 76 : 78;
   const plotWidth = Math.max(40, width - left - right);
   const plotHeight = Math.max(40, height - top - bottom);
   return {

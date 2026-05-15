@@ -388,7 +388,7 @@ export function Workspace() {
         onContextMenu={handleContextMenu}
       >
         <div
-          className="absolute left-0 top-0 h-full w-full"
+          className="absolute left-0 top-0 h-[2400px] w-[2400px]"
           data-workspace-plane="true"
           style={{
             transform: `translate(${viewport.x}px, ${viewport.y}px) scale(${viewport.scale})`,

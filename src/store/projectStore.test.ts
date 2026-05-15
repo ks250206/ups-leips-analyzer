@@ -165,6 +165,7 @@ describe("project store", () => {
     });
 
     expect(normalized.windows.find((window) => window.id === "ups-bias")?.width).toBe(1130);
+    expect(normalized.windows.find((window) => window.id === "ups-bias")?.y).toBe(366);
   });
 
   test("stores per-IP applied voltage and fit ranges", () => {
