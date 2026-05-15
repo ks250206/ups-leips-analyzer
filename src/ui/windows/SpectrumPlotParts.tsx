@@ -34,7 +34,7 @@ export function PlotAxes({
   const xTicks = scales.xScale.ticks(7);
   const yTicks = scales.yScale.ticks(5);
   const yRightTicks = scales.yRightScale?.ticks(5) ?? [];
-  const axisColor = "#334155";
+  const axisColor = "#000000";
   const labelSize = largeAxisLabels ? 24 : 15;
   const labelWeight = largeAxisLabels ? 800 : 700;
   return (

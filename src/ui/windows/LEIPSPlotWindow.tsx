@@ -122,7 +122,7 @@ export function LEIPSPlotWindow() {
         color: "#2563eb",
         xFraction: 0.19,
         yFraction: 0.17,
-        fontSize: 22,
+        fontSize: 16,
       },
       {
         type: "text",
@@ -130,7 +130,7 @@ export function LEIPSPlotWindow() {
         color: "#16a34a",
         xFraction: 0.52,
         yFraction: 0.17,
-        fontSize: 22,
+        fontSize: 16,
       },
       {
         type: "text",
@@ -138,7 +138,7 @@ export function LEIPSPlotWindow() {
         color: "#dc2626",
         xFraction: 0.84,
         yFraction: 0.17,
-        fontSize: 22,
+        fontSize: 16,
       },
     ];
     if (leips) {
@@ -149,8 +149,8 @@ export function LEIPSPlotWindow() {
         x1: leips.ePeak,
         x2: leips.vacuumLevel,
         yFraction: 0.43,
-        fontSize: 18,
-        strokeWidth: 1.8,
+        fontSize: 14,
+        strokeWidth: 1.2,
       });
     }
     return items;

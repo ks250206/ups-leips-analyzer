@@ -330,15 +330,17 @@ export function SpectrumPlot({
             />
           ))}
         </g>
-        {rangeBands.map((band) => (
-          <CursorHandles
-            key={band.id ?? `${band.label}-${band.min}-${band.max}`}
-            band={band}
-            geometry={geometry}
-            xScale={xScale}
-            onRangeBandChange={onRangeBandChange}
-          />
-        ))}
+        {showCursorRanges
+          ? rangeBands.map((band) => (
+              <CursorHandles
+                key={band.id ?? `${band.label}-${band.min}-${band.max}`}
+                band={band}
+                geometry={geometry}
+                xScale={xScale}
+                onRangeBandChange={onRangeBandChange}
+              />
+            ))
+          : null}
         <PlotAnnotations annotations={annotations} geometry={geometry} xScale={xScale} />
         <SelectionOverlay drag={drag} geometry={geometry} selection={selection} />
       </svg>
