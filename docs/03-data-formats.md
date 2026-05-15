@@ -32,3 +32,9 @@ x,y1,y2,...
 ## SPE
 
 `.spe` はバイナリ本体を含むためv1では正式対応しない。CSV出力済みファイルを読み込む。
+
+## Project Export
+
+- Project共有用の標準exportは、Project JSONをgzip圧縮した `.upsleips.gz` とする。
+- importはgzip版と従来の生JSON版 `.json` の両方を受け付ける。
+- gzipの圧縮/展開はブラウザ内で `fflate` を使い、Project JSONのスキーマ自体は変更しない。

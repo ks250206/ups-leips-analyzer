@@ -1,7 +1,7 @@
 import { Download, FileUp, RefreshCcw, Upload } from "lucide-react";
 import { useState } from "react";
 import { parseMultiPakCsv } from "../../io/multipakCsv";
-import { exportProjectJson } from "../../store/projectDb";
+import { exportProjectGzip, exportProjectJson, importProjectBytes } from "../../store/projectDb";
 import { useProjectStore } from "../../store/projectStore";
 
 export function DataBrowser() {
@@ -35,18 +35,19 @@ export function DataBrowser() {
     }
     setError(undefined);
     try {
-      importProject(await file.text());
+      importProject(exportProjectJson(importProjectBytes(await file.arrayBuffer())));
     } catch (caught) {
       setError(caught instanceof Error ? caught.message : String(caught));
     }
   }
 
   function exportProject() {
-    const blob = new Blob([exportProjectJson(project)], { type: "application/json" });
+    const compressed = exportProjectGzip(project);
+    const blob = new Blob([compressed.slice().buffer as ArrayBuffer], { type: "application/gzip" });
     const url = URL.createObjectURL(blob);
     const anchor = document.createElement("a");
     anchor.href = url;
-    anchor.download = `${project.name.replace(/[^a-z0-9]+/gi, "-").toLowerCase()}.upsleips.json`;
+    anchor.download = `${project.name.replace(/[^a-z0-9]+/gi, "-").toLowerCase()}.upsleips.gz`;
     anchor.click();
     URL.revokeObjectURL(url);
   }
@@ -86,13 +87,13 @@ export function DataBrowser() {
           onClick={exportProject}
         >
           <Download size={14} />
-          JSON
+          GZIP
         </button>
         <input
           id="project-json-input"
           className="sr-only"
           type="file"
-          accept=".json,application/json"
+          accept=".upsleips,.gz,.json,application/json,application/gzip"
           onChange={(event) => {
             void handleProjectFile(event.currentTarget.files);
             event.currentTarget.value = "";

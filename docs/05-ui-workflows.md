@@ -8,7 +8,7 @@ IGOR Proの複数グラフ/操作パネル画面とSciSpace風ワークベンチ
 - Table: 選択datasetをTanStack Table + Virtualで表示。
 - UPS Plot: VB/IPスペクトル、fit line、VBM/cut-off marker。
 - LEIPS Plot: LEET、LEET(der)、LEIPS、ガウスfit、真空準位marker、EA marker。
-- Band Diagram: UPSとLEIPSをEnergy relative to Ef/eVで重ね、IP/EA/Egを表示。
+- Band Diagram: UPSとLEIPSをEnergy relative to Ef/eVで重ね、IGOR Pro風の大きいUPS/LEIPSラベル、VBM/CBM/Vacuum levelの縦線、IP/EA/Egの両矢印を表示。
 - Analysis Controls: dataset割当、fit範囲、bandpass、計算結果。
 
 ## Cursor / Range Selection
@@ -17,4 +17,4 @@ plot上でドラッグ選択したx範囲を、現在アクティブなfit範囲
 
 ## Persistence
 
-作業状態はIndexedDBへ保存する。Project JSON export/importで別環境へ渡せる。
+作業状態はIndexedDBへ保存する。Project exportはgzip圧縮したProject JSONを標準にし、別環境へ渡せる。従来の生JSON importも互換として残す。
