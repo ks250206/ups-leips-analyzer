@@ -52,6 +52,7 @@ export type PlotAnnotation =
       x2: number;
       yFraction: number;
       fontSize?: number;
+      strokeWidth?: number;
     };
 
 export function lineFitSeries(

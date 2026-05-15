@@ -286,7 +286,7 @@ export function SpectrumPlot({
             refY="4"
             viewBox="0 0 8 8"
           >
-            <path d="M 0 0 L 8 4 L 0 8 z" fill="black" />
+            <path d="M 0 1 L 7 4 L 0 7 z" fill="black" />
           </marker>
         </defs>
         <PlotAxes

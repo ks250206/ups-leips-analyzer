@@ -116,9 +116,30 @@ export function LEIPSPlotWindow() {
 
   const annotations = useMemo<PlotAnnotation[]>(() => {
     const items: PlotAnnotation[] = [
-      { type: "text", label: "LEET(der)", color: "#2563eb", xFraction: 0.18, yFraction: 0.16 },
-      { type: "text", label: "LEET", color: "#16a34a", xFraction: 0.52, yFraction: 0.16 },
-      { type: "text", label: "LEIPS", color: "#dc2626", xFraction: 0.86, yFraction: 0.16 },
+      {
+        type: "text",
+        label: "LEET(der)",
+        color: "#2563eb",
+        xFraction: 0.19,
+        yFraction: 0.17,
+        fontSize: 22,
+      },
+      {
+        type: "text",
+        label: "LEET",
+        color: "#16a34a",
+        xFraction: 0.52,
+        yFraction: 0.17,
+        fontSize: 22,
+      },
+      {
+        type: "text",
+        label: "LEIPS",
+        color: "#dc2626",
+        xFraction: 0.84,
+        yFraction: 0.17,
+        fontSize: 22,
+      },
     ];
     if (leips) {
       items.push({
@@ -127,8 +148,9 @@ export function LEIPSPlotWindow() {
         color: "#111827",
         x1: leips.ePeak,
         x2: leips.vacuumLevel,
-        yFraction: 0.42,
-        fontSize: 24,
+        yFraction: 0.43,
+        fontSize: 18,
+        strokeWidth: 1.8,
       });
     }
     return items;

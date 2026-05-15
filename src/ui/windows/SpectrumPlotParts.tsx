@@ -357,7 +357,7 @@ export function PlotAnnotations({
             <line
               markerEnd="url(#plot-arrow)"
               stroke={annotation.color}
-              strokeWidth={2.5}
+              strokeWidth={annotation.strokeWidth ?? 1.8}
               x1={x1}
               x2={x2}
               y1={y}
