@@ -15,10 +15,13 @@
 - `src/store/projectDb.ts`: Catalog registry DB、Catalog別Project DB生成、legacy Project DB migration、Project/Catalog gzip import/export。
 - `src/store/lastOpenedWorkspace.ts`: 前回最後に開いたCatalog/Project IDを`localStorage`へ保存するユーザー環境state。Project/Catalog archiveには含めない。
 - `src/store/windowModel.ts`: workspace window生成とdefault layout。
-- `ProjectSnapshot.ui`: UPS/LEIPS/REELS/Band Diagram plot viewport、plot別cursor表示設定、Sample Info、Help window状態などProjectと一緒に復元したいUI state。Sample Infoのmulti-select値はProject JSON import時に旧string値から配列へ軽量migrationする。
+- `ProjectSnapshot.ui`: UPS/LEIPS/REELS/Band Diagram plot viewport、UPS IP dataset別plot viewport、plot別cursor表示設定、Sample Info、Help window状態などProjectと一緒に復元したいUI state。Sample Infoのmulti-select値はProject JSON import時に旧string値から配列へ軽量migrationする。
 - `src/ui/Workspace.tsx`: workspace viewport、background pan/context menu、window frame配置、modal open state。
 - `src/ui/workspace/WorkspaceMenu.tsx`: TopBar/background context menuの共通menu definition。
 - `src/ui/workspace/WorkspaceWindows.tsx`: window kindごとのtitle/icon/render/context menu/help window。
+- `AnalysisState.upsIpDatasetIds`: 複数UPS IP dataset選択。旧`upsIpDatasetId`はProject import時に配列へmigrationする。
+- `AnalysisState.upsIpFitRangesByDatasetId` / `upsIpConfigsByDatasetId`: UPS IP datasetごとのfit rangeと印加電圧設定。CSV推定値で初期化し、UPS tabで手動編集する。
+- `AnalysisState.bandIpSource`: Band Diagramに渡すIP値のsource。特定dataset、平均、0 V外挿を選ぶ。
 - `src/ui/workspace/WorkspaceModals.tsx`: Save as、Delete、Load Project modal。
 - `src/ui/Settings.ts`: Project/Catalogに含めないユーザー個人設定。表示localeを`localStorage`へ保存し、Sample Infoの表示ラベルを切り替える。
 - `src/ui/windows/SpectrumPlot.tsx`: D3/SVG plot container、viewport state、public props compatibility。

@@ -31,6 +31,13 @@ x,y1,y2,...
 - REELS: filenameまたはkindに `REELS` を含む。raw x軸はKinetic Energy / eVとして扱う。
 - 判定はcase insensitiveで、区切り文字の違いは無視する。1つのCSV内で列ごとに異なる測定種別が混在する場合の列別推定は未対応で、Data Browserの`Change role`で手動補正する。
 
+## UPS IP Applied Bias
+
+- UPS IP datasetは印加電圧`appliedVoltage`を持つ。
+- 推定順は、CSVのseries/header名、metadata行、filename。`IP-5V`、`IP_-5 V`、`IP+3.5V`、`IP_5V`をcase insensitiveに読む。
+- 符号は保持する。推定できない場合は`0 V`を初期値にする。
+- 推定元は`metadata.appliedVoltageSource`に`metadata`、`filename`、`default`として残す。
+
 ## SPE
 
 `.spe` はバイナリ本体を含むためv1では正式対応しない。CSV出力済みファイルを読み込む。

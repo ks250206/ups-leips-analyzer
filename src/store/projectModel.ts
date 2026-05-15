@@ -157,9 +157,13 @@ export function normalizeProject(project: ProjectSnapshot): ProjectSnapshot {
       selection: normalizeSelection(project.analysis.selection),
       upsIpFitRangesByDatasetId: normalizeUpsIpFitRanges(project),
       upsIpConfigsByDatasetId: normalizeUpsIpConfigs(project),
-      bandIpSource: project.analysis.bandIpSource ?? { mode: "dataset" },
+      bandIpSource: project.analysis.bandIpSource ?? defaultBandIpSource(project.analysis),
     },
   };
+}
+
+function defaultBandIpSource(analysis: AnalysisState): BandIpSource {
+  return { mode: "dataset", datasetId: selectedUpsIpDatasetIds(analysis.selection)[0] };
 }
 
 export function mergeDatasets(

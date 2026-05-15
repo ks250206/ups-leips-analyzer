@@ -8,6 +8,8 @@
 - `calc_VBM_or_Ecutoff_or_EA(1)` はedge/BGの交点をVBMにする。
 - `calc_VBM_or_Ecutoff_or_EA(2)` はedge/BGの交点をcut-offにする。
 - `calc_IP_VP` は `IP = 21.22 - (Ecutoff - EVBM)` を使う。
+- IP datasetは複数選択でき、各datasetでEVBM、Ecutoff、IPを独立にfitする。印加電圧依存性の確認では、Ecutoff/EVBM/IPをApplied Biasに対して線形fitする。
+- Band Diagramで使うIPは、選択IP datasetの値、全IP dataset平均、IP vs Applied Biasの0 V外挿値から選ぶ。
 
 ## LEIPS
 

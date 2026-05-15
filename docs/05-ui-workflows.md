@@ -6,13 +6,14 @@ IGOR Proの複数グラフ/操作パネル画面とSciSpace風ワークベンチ
 
 - Data Browser: `Load CSVs`ドロップダウンファイルフィールドからMultiPak CSVを読み込み、読み込んだdatasetを表示する。読み込み済みdatasetは行context menuから削除でき、`Change role`で`ups-vb`/`ups-ip`/`leet`/`leet-der`/`leips`/`reels`/`unknown`へdataset kindだけを変更できる。解析対象への割当はAnalysis ControlsのData tabで手動選択する。現在Data tabで解析対象に割り当てられているdatasetは、Data Browser上でUPS/LEIPS/REELSなどの色付きbadgeとして表示する。Project import/exportとdemo読み込みはData Browserから外し、Projects menuへ集約する。
 - Table: 選択datasetをTanStack Table + Virtualで表示。
-- UPS Plot: VB/IPスペクトル、fit line、VBM/cut-off marker。UPS spectra analysisのVB setはEVBMのみを表示し、EF-EVBMの重複表示はしない。
+- UPS Plot: VB/IPスペクトル、fit line、VBM/cut-off marker。UPS IP windowは選択された複数IP datasetをタブで切り替え、datasetごとにfit cursorとviewportを保存する。UPS spectra analysisのVB setはEVBMのみを表示し、EF-EVBMの重複表示はしない。
+- UPS Bias Dependence: 選択されたUPS IP datasetのApplied Biasに対してEcutoff、EVBM、IPを描画し、2点以上ある場合は線形fitを表示する。帯電影響チェック用のdiagnostic windowとして扱う。
 - LEIPS Plot: LEET、LEET(der)、LEIPS、ガウスfit、真空準位marker、EA marker。Filter menuの固定bandpass候補はエネルギー値だけを表示し、`Band pass` prefixは付けない。
 - REELS Plot: Kinetic Energy datasetをElectron loss energyへ変換し、onset edge/BG fit、Eg markerを表示する。横軸は左が+側、右が-側になるよう反転表示する。plot viewportとcursor位置はProject stateに保存し、Project save/load/import/exportで復元する。
 - UPS VB、UPS IP、LEIPS Plot、LEIPS vs Energy from Evac.、REELS Plotのwindow titleには現在割当中の主dataset名を表示する。window titlebar/context menuからAnalysis Controls Data tabと同じdataset割当を変更できる。
 - Band Diagram: UPSとLEIPSをEnergy relative to Ef/eVで重ね、IGOR Pro風の大きいUPS/LEIPSラベル、VBM/CBM/Vacuum levelの縦線、IP/EA/Egの両矢印を表示する。調整欄はplot下に固定幅のcompact controlとして置き、UPS+/LEIPS+は各スペクトル強度レンジに対するpercent offsetとして扱う。IP/EA/Eg indicatorのfont sizeとarrow scaleは数値入力で調整できる。
 - Band DiagramのUPS/LEIPS annotationはseriesより上に描画し、曲線と重なる部分を白いhaloで隠して読めるようにする。VBM/CBM/Vacuum levelとEgのsubscriptもFont入力に追従する。
-- Analysis Controls: Sample tabを初期表示にし、Sample/Data/UPS/LEIPS/REELS/Band/Fitの順で並べる。Data tabでdataset割当、Sample tabで試料情報、各解析tabでfit範囲、bandpass、REELS incident energy、計算結果を扱う。bandpassは固定候補に加えてcustom値を入力できる。
+- Analysis Controls: Sample tabを初期表示にし、Sample/Data/UPS/LEIPS/REELS/Band/Fitの順で並べる。Data tabでdataset割当、Sample tabで試料情報、各解析tabでfit範囲、bandpass、REELS incident energy、計算結果を扱う。UPS IPはData tabで複数選択でき、UPS tabで各IP datasetの印加電圧とIP/EVBM/Ecutoffを編集・確認する。bandpassは固定候補に加えてcustom値を入力できる。
 - Sample InfoはProject stateに保存し、Project JSON/GZIP export/importとCatalog export/importに含める。保存キーは`sampleName`、`sampleState`、`nominalComposition`など英語名で持ち、Project本体の`createdAt`/`updatedAt`とは衝突させない。初期値は空で、Excelテンプレート由来の例値はplaceholderとしてだけ表示する。選択式項目は自前dropdownで表示し、placeholderは選択肢に含めない。複数選択が自然な項目だけcustom multi-selectを使う。含有元素は組成文字列から自動抽出し、組成入力の直下に表示する。`試料状態表記`は自由記述欄として保存し、placeholderは`initial, 1st charge, Ar etched`のような状態例にする。到達真空度(Pa)は空または正の有限数値だけ有効とする。
 - Display language is a per-user setting stored in `localStorage`, not in Project or Catalog state. `Setting > Language` supports `ja-JP` and `en-US`, defaults to `ja-JP`, and currently localizes Sample Info labels/placeholders only.
 - Last opened Catalog/Project is also a per-user `localStorage` setting. On app start, the workspace restores that Catalog and Project when both still exist. If either was deleted, the app shows an error toast and opens an empty Project in the Default Catalog.
@@ -21,6 +22,7 @@ IGOR Proの複数グラフ/操作パネル画面とSciSpace風ワークベンチ
 - Window context menuとWindows menuからwindow position/sizeをdefault layoutへ戻せる。Windows menuには全window position/size resetも置く。
 - UPS VB、UPS IP、LEIPS Plot、LEIPS vs Energy from Evac.、REELS Plot、Band Diagramのplot viewportはProject stateに保存し、Project save/load/import/exportで復元する。fit cursor位置はfit range stateとして同じProject JSON/import/exportに含める。
 - Band DiagramのX range controlは左入力を高エネルギー側、右入力を低エネルギー側として並べ、defaultは`8`から`-5`にする。
+- Band DiagramのIP sourceは、0 V外挿、特定UPS IP dataset、全UPS IP平均から選ぶ。0 V外挿は有効なIP datasetが2点以上ある場合だけ使える。
 - Band DiagramのCBM点線はEA annotationと干渉しないよう、上端を短くする。
 - Top menu: Catalogs/Projects/View/Windows/Setting/Helpを配置し、背景右クリックでも同じメニュー構成を表示する。現在のCatalog/Projectは高コントラストのラベル付きbadgeで表示し、Sample Infoに試料名、試料状態表記、組成(仕込)が入力されている場合はTopBarにも表示する。ひとつのmenuを開いた状態で別menuにhoverした場合は、その列のmenuへ切り替える。Recent projectなどのsubmenuは対象行へhoverしたときだけ展開する。
 - Plot context menuはplot固有項目を先に出し、Reset view / Export PNG / Export SVGは末尾に配置する。

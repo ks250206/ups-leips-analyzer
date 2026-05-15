@@ -17,6 +17,10 @@ IP = photonEnergy - (Ecutoff - EVBM)
 photonEnergy = 21.22 eV
 ```
 
+UPS IPは複数datasetを選択できる。VB set由来の`EF-EVBM`は共通で、各IP datasetごとにIP set内のEVBM、Ecutoff、IPを計算する。
+
+印加電圧依存性は各IP datasetの`appliedVoltage`をx、Ecutoff/EVBM/IPをyとして線形fitする。Band DiagramのIP sourceが`0 V extrapolated`の場合は、IP vs applied voltageのfit切片をIPとして使う。`average`の場合は有効なIP値の算術平均、`dataset`の場合は指定datasetのIP値を使う。
+
 ## Gaussian Fit
 
 LEET(der)の選択範囲に対して、offset、amplitude、center、sigmaを推定する。v1では初期推定を重心から作り、Gauss-Newton反復で改善する。
