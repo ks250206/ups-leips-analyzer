@@ -8,12 +8,13 @@ import {
 import { bandpassEnergy } from "../domain/constants";
 import { createDemoDatasets, createInitialAnalysis, DEFAULT_FIT_RANGES } from "../domain/demoData";
 import type { AnalysisState, FitRange, FitTarget, Point, SpectrumDataset } from "../domain/types";
-import { importProjectJson, saveProject } from "./projectDb";
-import type { ProjectSnapshot, WindowLayout } from "./projectTypes";
+import { importProjectJson, listProjects, loadProject, saveProject } from "./projectDb";
+import type { ProjectRecord, ProjectSnapshot, WindowLayout } from "./projectTypes";
 
 interface ProjectStore {
   project: ProjectSnapshot;
   activeFitTarget: FitTarget;
+  newProject: () => void;
   loadDemo: () => void;
   addDatasets: (datasets: SpectrumDataset[]) => void;
   selectDataset: (datasetId: string) => void;
@@ -26,12 +27,18 @@ interface ProjectStore {
   focusWindow: (id: string) => void;
   recalculate: () => void;
   saveCurrentProject: () => Promise<void>;
+  saveProjectAs: (name: string) => Promise<void>;
+  loadSavedProject: (id: string) => Promise<void>;
+  listRecentProjects: () => Promise<ProjectRecord[]>;
   importProject: (json: string) => void;
 }
 
 export const useProjectStore = create<ProjectStore>((set, get) => ({
   project: createEmptyProject(),
   activeFitTarget: "ups-vb-edge",
+  newProject: () => {
+    set({ activeFitTarget: "ups-vb-edge", project: createEmptyProject() });
+  },
   loadDemo: () => {
     set({ project: createDemoProject() });
   },
@@ -152,6 +159,28 @@ export const useProjectStore = create<ProjectStore>((set, get) => ({
   saveCurrentProject: async () => {
     await saveProject(get().project);
   },
+  saveProjectAs: async (name) => {
+    const trimmed = name.trim();
+    if (!trimmed) {
+      return;
+    }
+    const now = new Date().toISOString();
+    const project = touchProject({
+      ...get().project,
+      id: `project-${Date.now()}`,
+      name: trimmed,
+      createdAt: now,
+    });
+    set({ project });
+    await saveProject(project);
+  },
+  loadSavedProject: async (id) => {
+    const project = await loadProject(id);
+    if (project) {
+      set({ project: recalculateProject(normalizeProject(project)) });
+    }
+  },
+  listRecentProjects: () => listProjects(),
   importProject: (json) => {
     set({ project: recalculateProject(normalizeProject(importProjectJson(json))) });
   },

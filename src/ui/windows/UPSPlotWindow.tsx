@@ -1,6 +1,7 @@
 import { useMemo, useState } from "react";
 import type { FitRange, FitTarget } from "../../domain/types";
 import { useProjectStore } from "../../store/projectStore";
+import type { ContextMenuItem } from "../ContextMenu";
 import { formatNumber } from "../format";
 import {
   datasetSeries,
@@ -224,6 +225,40 @@ export function UPSIPPlotWindow() {
       ]),
     [project.analysis.fitRanges.upsIpBackground, project.analysis.fitRanges.upsIpEdge],
   );
+  const contextItems = useMemo<ContextMenuItem[]>(
+    () => [
+      {
+        type: "item",
+        label: "Save VBM view",
+        action: () => setSnapshots((current) => ({ ...current, evbm: viewport })),
+      },
+      {
+        type: "item",
+        label: "Recall VBM view",
+        action: () =>
+          setViewportRequest({
+            id: Date.now(),
+            viewport: snapshots.evbm ?? evbmFallbackViewport,
+          }),
+      },
+      { type: "separator" },
+      {
+        type: "item",
+        label: "Save Cut-off view",
+        action: () => setSnapshots((current) => ({ ...current, cutoff: viewport })),
+      },
+      {
+        type: "item",
+        label: "Recall Cut-off view",
+        action: () =>
+          setViewportRequest({
+            id: Date.now(),
+            viewport: snapshots.cutoff ?? cutoffFallbackViewport,
+          }),
+      },
+    ],
+    [cutoffFallbackViewport, evbmFallbackViewport, snapshots.cutoff, snapshots.evbm, viewport],
+  );
 
   return (
     <SpectrumPlot
@@ -236,48 +271,7 @@ export function UPSIPPlotWindow() {
       xDirection="reverse"
       viewportRequest={viewportRequest}
       onViewportChange={setViewport}
-      extraControls={
-        <>
-          <button
-            className="rounded border border-slate-300 bg-white/90 px-1 py-0.5 text-[9px] font-semibold text-slate-700 shadow-sm hover:bg-cyan-50"
-            type="button"
-            onClick={() => setSnapshots((current) => ({ ...current, evbm: viewport }))}
-          >
-            Save V
-          </button>
-          <button
-            className="rounded border border-slate-300 bg-white/90 px-1 py-0.5 text-[9px] font-semibold text-slate-700 shadow-sm hover:bg-cyan-50"
-            type="button"
-            onClick={() =>
-              setViewportRequest({
-                id: Date.now(),
-                viewport: snapshots.evbm ?? evbmFallbackViewport,
-              })
-            }
-          >
-            VBM
-          </button>
-          <button
-            className="rounded border border-slate-300 bg-white/90 px-1 py-0.5 text-[9px] font-semibold text-slate-700 shadow-sm hover:bg-cyan-50"
-            type="button"
-            onClick={() => setSnapshots((current) => ({ ...current, cutoff: viewport }))}
-          >
-            Save C
-          </button>
-          <button
-            className="rounded border border-slate-300 bg-white/90 px-1 py-0.5 text-[9px] font-semibold text-slate-700 shadow-sm hover:bg-cyan-50"
-            type="button"
-            onClick={() =>
-              setViewportRequest({
-                id: Date.now(),
-                viewport: snapshots.cutoff ?? cutoffFallbackViewport,
-              })
-            }
-          >
-            Cut
-          </button>
-        </>
-      }
+      extraContextMenuItems={contextItems}
       onSelectRange={(range) => setFitRange(ipTarget(activeFitTarget), range)}
       onRangeBandChange={(target, range) => setFitRange(target as FitTarget, range)}
     />

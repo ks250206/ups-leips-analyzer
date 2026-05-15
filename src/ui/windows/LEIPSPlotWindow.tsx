@@ -3,6 +3,7 @@ import { convertBiasToVacuumEnergy } from "../../domain/analysis";
 import { bandpassEnergy } from "../../domain/constants";
 import type { FitTarget, Point, SpectrumDataset } from "../../domain/types";
 import { useProjectStore } from "../../store/projectStore";
+import type { ContextMenuItem } from "../ContextMenu";
 import { formatNumber } from "../format";
 import {
   datasetSeries,
@@ -74,6 +75,27 @@ export function LEIPSPlotWindow() {
     ],
     [activeFitTarget, project.analysis.fitRanges.leetDerPeak],
   );
+  const contextItems = useMemo<ContextMenuItem[]>(
+    () => [
+      {
+        type: "submenu",
+        label: "Filter",
+        items: [
+          {
+            type: "item",
+            label: "Set peak range from current max",
+            action: () => {
+              const peak = maxPoint(leetDerDataset?.points ?? []);
+              if (peak) {
+                setFitRange("leet-der-peak", { min: peak.x - 0.5, max: peak.x + 0.5 });
+              }
+            },
+          },
+        ],
+      },
+    ],
+    [leetDerDataset, setFitRange],
+  );
 
   return (
     <SpectrumPlot
@@ -85,9 +107,17 @@ export function LEIPSPlotWindow() {
       markers={markers}
       rangeBands={rangeBands}
       xDirection="normal"
+      extraContextMenuItems={contextItems}
       onSelectRange={(range) => setFitRange("leet-der-peak", range)}
       onRangeBandChange={(target, range) => setFitRange(target as FitTarget, range)}
     />
+  );
+}
+
+function maxPoint(points: readonly Point[]): Point | undefined {
+  return points.reduce<Point | undefined>(
+    (current, point) => (!current || point.y > current.y ? point : current),
+    undefined,
   );
 }
 

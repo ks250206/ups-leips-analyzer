@@ -6,9 +6,11 @@ import {
   SlidersHorizontal,
   Table2,
 } from "lucide-react";
-import { useMemo, useRef, useState, type PointerEvent, type WheelEvent } from "react";
+import { useEffect, useMemo, useRef, useState, type PointerEvent, type WheelEvent } from "react";
+import { exportProjectJson } from "../store/projectDb";
 import { useProjectStore } from "../store/projectStore";
-import type { WindowLayout } from "../store/projectTypes";
+import type { ProjectRecord, WindowLayout } from "../store/projectTypes";
+import type { ContextMenuItem } from "./ContextMenu";
 import { AnalysisControls } from "./windows/AnalysisControls";
 import { BandDiagramWindow } from "./windows/BandDiagramWindow";
 import { DataBrowser } from "./windows/DataBrowser";
@@ -21,6 +23,8 @@ export function Workspace() {
   const project = useProjectStore((state) => state.project);
   const updateWindow = useProjectStore((state) => state.updateWindow);
   const focusWindow = useProjectStore((state) => state.focusWindow);
+  const loadDemo = useProjectStore((state) => state.loadDemo);
+  const recalculate = useProjectStore((state) => state.recalculate);
   const [viewport, setViewport] = useState({ x: 0, y: 0, scale: 1 });
   const panStart = useRef<{ x: number; y: number; originX: number; originY: number } | undefined>(
     undefined,
@@ -91,9 +95,9 @@ export function Workspace() {
   };
 
   return (
-    <main className="h-screen w-screen overflow-hidden bg-[#d9e4e7] text-slate-900">
+    <main className="h-screen w-screen overflow-hidden bg-[#eef4f6] text-slate-900">
       <div
-        className="absolute inset-0 bg-[radial-gradient(circle_at_1px_1px,rgba(20,47,61,0.16)_1px,transparent_0)] bg-[length:18px_18px]"
+        className="absolute inset-0 bg-[radial-gradient(circle_at_1px_1px,rgba(20,47,61,0.10)_1px,transparent_0)] bg-[length:18px_18px]"
         style={{
           backgroundPosition: `${viewport.x}px ${viewport.y}px`,
           backgroundSize: `${18 * viewport.scale}px ${18 * viewport.scale}px`,
@@ -125,6 +129,7 @@ export function Workspace() {
               window={window}
               onFocus={() => focusWindow(window.id)}
               onChange={(patch) => updateWindow(window.id, patch)}
+              contextMenuItems={windowContextItems(window, { loadDemo, recalculate })}
             >
               {renderWindow(window)}
             </WindowFrame>
@@ -138,13 +143,13 @@ export function Workspace() {
 function TopBar() {
   const project = useProjectStore((state) => state.project);
   const recalculate = useProjectStore((state) => state.recalculate);
-  const saveCurrentProject = useProjectStore((state) => state.saveCurrentProject);
 
   return (
     <header className="absolute inset-x-0 top-0 z-50 flex h-10 items-center justify-between border-b border-slate-300 bg-slate-950 px-3 text-sm text-slate-100">
-      <div className="flex items-center gap-2">
+      <div className="flex items-center gap-3">
         <Activity size={16} className="text-cyan-300" />
-        <span className="font-semibold">UPS-LEIPS Analyzer</span>
+        <h1 className="font-semibold">UPS-LEIPS Analyzer</h1>
+        <ProjectMenu />
         <span className="rounded bg-slate-800 px-2 py-0.5 text-xs text-slate-300">
           {project.name}
         </span>
@@ -157,15 +162,180 @@ function TopBar() {
         >
           Recalculate
         </button>
-        <button
-          className="rounded border border-cyan-500 bg-cyan-500 px-2 py-1 text-xs font-semibold text-slate-950 hover:bg-cyan-400"
-          type="button"
-          onClick={() => void saveCurrentProject()}
-        >
-          Save Project
-        </button>
       </div>
     </header>
+  );
+}
+
+function ProjectMenu() {
+  const project = useProjectStore((state) => state.project);
+  const newProject = useProjectStore((state) => state.newProject);
+  const saveCurrentProject = useProjectStore((state) => state.saveCurrentProject);
+  const saveProjectAs = useProjectStore((state) => state.saveProjectAs);
+  const loadSavedProject = useProjectStore((state) => state.loadSavedProject);
+  const listRecentProjects = useProjectStore((state) => state.listRecentProjects);
+  const importProject = useProjectStore((state) => state.importProject);
+  const menuRef = useRef<HTMLDivElement>(null);
+  const inputRef = useRef<HTMLInputElement>(null);
+  const [open, setOpen] = useState(false);
+  const [saveAsOpen, setSaveAsOpen] = useState(false);
+  const [draftName, setDraftName] = useState(project.name);
+  const [recentProjects, setRecentProjects] = useState<ProjectRecord[]>([]);
+
+  useEffect(() => {
+    if (!open) {
+      return undefined;
+    }
+    void listRecentProjects().then(setRecentProjects);
+    const handlePointerDown = (event: globalThis.PointerEvent) => {
+      if (!menuRef.current?.contains(event.target as Node)) {
+        setOpen(false);
+      }
+    };
+    const handleKeyDown = (event: KeyboardEvent) => {
+      if (event.key === "Escape") {
+        setOpen(false);
+      }
+    };
+    window.addEventListener("pointerdown", handlePointerDown);
+    window.addEventListener("keydown", handleKeyDown);
+    return () => {
+      window.removeEventListener("pointerdown", handlePointerDown);
+      window.removeEventListener("keydown", handleKeyDown);
+    };
+  }, [listRecentProjects, open]);
+
+  function exportProject() {
+    const blob = new Blob([exportProjectJson(project)], { type: "application/json" });
+    const url = URL.createObjectURL(blob);
+    const anchor = document.createElement("a");
+    anchor.href = url;
+    anchor.download = `${project.name.replace(/[^a-z0-9]+/gi, "-").toLowerCase()}.upsleips.json`;
+    anchor.click();
+    URL.revokeObjectURL(url);
+  }
+
+  async function importProjectFile(files: FileList | null) {
+    const file = files?.[0];
+    if (!file) {
+      return;
+    }
+    importProject(await file.text());
+  }
+
+  return (
+    <div ref={menuRef} className="relative">
+      <button
+        className="rounded px-2 py-1 text-xs font-semibold text-slate-200 hover:bg-slate-800"
+        type="button"
+        onClick={() => setOpen((current) => !current)}
+      >
+        Project
+      </button>
+      <input
+        ref={inputRef}
+        className="sr-only"
+        type="file"
+        accept=".json,application/json"
+        onChange={(event) => {
+          void importProjectFile(event.currentTarget.files);
+          event.currentTarget.value = "";
+          setOpen(false);
+        }}
+      />
+      {open ? (
+        <div className="absolute left-0 top-full z-[1000] mt-1 min-w-48 rounded border border-slate-700 bg-slate-900 py-1 text-xs text-slate-100 shadow-xl">
+          <TopMenuItem
+            label="New Project"
+            onClick={() => {
+              newProject();
+              setOpen(false);
+            }}
+          />
+          <TopMenuItem
+            label="Save Project"
+            onClick={() => {
+              void saveCurrentProject();
+              setOpen(false);
+            }}
+          />
+          <TopMenuItem
+            label="Save as"
+            onClick={() => {
+              setDraftName(project.name);
+              setSaveAsOpen(true);
+            }}
+          />
+          {saveAsOpen ? (
+            <form
+              className="mx-2 my-1 grid grid-cols-[1fr_auto] gap-1"
+              onSubmit={(event) => {
+                event.preventDefault();
+                void saveProjectAs(draftName);
+                setSaveAsOpen(false);
+                setOpen(false);
+              }}
+            >
+              <input
+                className="min-w-0 rounded border border-slate-700 bg-slate-950 px-2 py-1 text-slate-100 outline-none focus:border-cyan-500"
+                aria-label="Save as project name"
+                value={draftName}
+                onChange={(event) => setDraftName(event.currentTarget.value)}
+              />
+              <button
+                className="rounded border border-cyan-600 px-2 py-1 font-semibold text-cyan-200 hover:bg-slate-800"
+                type="submit"
+              >
+                Save
+              </button>
+            </form>
+          ) : null}
+          <div className="group relative">
+            <div className="flex cursor-default items-center justify-between px-3 py-1.5 hover:bg-slate-800">
+              <span>Recent project</span>
+              <span className="text-slate-400">›</span>
+            </div>
+            <div className="invisible absolute left-full top-0 min-w-56 rounded border border-slate-700 bg-slate-900 py-1 shadow-xl group-hover:visible">
+              {recentProjects.length > 0 ? (
+                recentProjects.map((record) => (
+                  <TopMenuItem
+                    key={record.id}
+                    label={record.name}
+                    onClick={() => {
+                      void loadSavedProject(record.id);
+                      setOpen(false);
+                    }}
+                  />
+                ))
+              ) : (
+                <div className="px-3 py-1.5 text-slate-400">No recent projects</div>
+              )}
+            </div>
+          </div>
+          <div className="my-1 border-t border-slate-700" />
+          <TopMenuItem
+            label="Export"
+            onClick={() => {
+              exportProject();
+              setOpen(false);
+            }}
+          />
+          <TopMenuItem label="Import" onClick={() => inputRef.current?.click()} />
+        </div>
+      ) : null}
+    </div>
+  );
+}
+
+function TopMenuItem({ label, onClick }: { label: string; onClick: () => void }) {
+  return (
+    <button
+      className="block w-full px-3 py-1.5 text-left hover:bg-slate-800"
+      type="button"
+      onClick={onClick}
+    >
+      {label}
+    </button>
   );
 }
 
@@ -207,5 +377,24 @@ function iconForWindow(kind: WindowLayout["kind"]) {
       return <BarChart3 size={14} />;
     case "controls":
       return <SlidersHorizontal size={14} />;
+  }
+}
+
+function windowContextItems(
+  window: WindowLayout,
+  actions: { loadDemo: () => void; recalculate: () => void },
+): ContextMenuItem[] {
+  switch (window.kind) {
+    case "browser":
+      return [
+        { type: "item", label: "Load Demo", action: actions.loadDemo },
+        { type: "item", label: "Recalculate", action: actions.recalculate },
+      ];
+    case "controls":
+      return [{ type: "item", label: "Recalculate", action: actions.recalculate }];
+    case "table":
+      return [{ type: "item", label: "Recalculate", action: actions.recalculate }];
+    default:
+      return [];
   }
 }

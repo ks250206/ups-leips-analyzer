@@ -7,11 +7,11 @@ import {
   useMemo,
   useRef,
   useState,
-  type ReactNode,
   type PointerEvent as ReactPointerEvent,
   type WheelEvent as ReactWheelEvent,
 } from "react";
 import type { FitRange, Point } from "../../domain/types";
+import { ContextMenu, type ContextMenuItem, useContextMenu } from "../ContextMenu";
 import type { PlotMarker, PlotRangeBand, PlotSeries } from "../plotData";
 
 interface SpectrumPlotProps {
@@ -26,7 +26,7 @@ interface SpectrumPlotProps {
   rangeBands?: PlotRangeBand[];
   xDirection?: "normal" | "reverse";
   viewportRequest?: { id: number; viewport: PlotViewport };
-  extraControls?: ReactNode;
+  extraContextMenuItems?: ContextMenuItem[];
   onSelectRange?: (range: FitRange) => void;
   onRangeBandChange?: (bandId: string, range: FitRange) => void;
   onViewportChange?: (viewport: PlotViewport) => void;
@@ -97,7 +97,7 @@ export function SpectrumPlot({
   rangeBands = EMPTY_RANGE_BANDS,
   xDirection = "normal",
   viewportRequest,
-  extraControls,
+  extraContextMenuItems = [],
   onSelectRange,
   onRangeBandChange,
   onViewportChange,
@@ -110,6 +110,7 @@ export function SpectrumPlot({
   const [size, setSize] = useState(DEFAULT_SIZE);
   const [viewport, setViewport] = useState<PlotViewport>({});
   const [drag, setDrag] = useState<DragState | undefined>();
+  const { menu, openMenu, closeMenu } = useContextMenu();
   const hasData = series.some((item) => item.points.length > 0);
 
   const updateViewport = (next: PlotViewport | ((current: PlotViewport) => PlotViewport)) => {
@@ -119,6 +120,15 @@ export function SpectrumPlot({
       return resolved;
     });
   };
+  const openPlotContextMenu = (x: number, y: number) =>
+    openMenu(x, y, [
+      { type: "item", label: "Reset view", action: () => updateViewport({}) },
+      { type: "item", label: "Export PNG", action: () => exportPng(svgRef.current, title) },
+      { type: "item", label: "Export SVG", action: () => exportSvg(svgRef.current, title) },
+      ...(extraContextMenuItems.length > 0
+        ? ([{ type: "separator" }, ...extraContextMenuItems] as ContextMenuItem[])
+        : []),
+    ]);
 
   useEffect(() => {
     const container = containerRef.current;
@@ -215,6 +225,10 @@ export function SpectrumPlot({
       data-x-direction={xDirection}
       data-large-axis-labels={largeAxisLabels ? "true" : "false"}
       style={{ contain: "layout paint size" }}
+      onContextMenu={(event) => {
+        event.preventDefault();
+        openPlotContextMenu(event.clientX, event.clientY);
+      }}
     >
       <svg
         ref={svgRef}
@@ -228,6 +242,11 @@ export function SpectrumPlot({
           setViewport({});
         }}
         onPointerDown={(event) => {
+          if (event.button === 2) {
+            event.preventDefault();
+            openPlotContextMenu(event.clientX, event.clientY);
+            return;
+          }
           if (event.altKey) {
             startPlotPan(event, geometry, scales, updateViewport);
             return;
@@ -317,30 +336,7 @@ export function SpectrumPlot({
           />
         ) : null}
       </svg>
-      <div className="absolute right-2 top-2 flex gap-1">
-        <button
-          className="rounded border border-slate-300 bg-white/90 px-1.5 py-0.5 text-[9px] font-semibold text-slate-700 shadow-sm hover:bg-cyan-50"
-          type="button"
-          onClick={() => updateViewport({})}
-        >
-          Reset
-        </button>
-        <button
-          className="rounded border border-slate-300 bg-white/90 px-1.5 py-0.5 text-[9px] font-semibold text-slate-700 shadow-sm hover:bg-cyan-50"
-          type="button"
-          onClick={() => exportPng(svgRef.current, title)}
-        >
-          PNG
-        </button>
-        <button
-          className="rounded border border-slate-300 bg-white/90 px-1.5 py-0.5 text-[9px] font-semibold text-slate-700 shadow-sm hover:bg-cyan-50"
-          type="button"
-          onClick={() => exportSvg(svgRef.current, title)}
-        >
-          SVG
-        </button>
-        {extraControls}
-      </div>
+      <ContextMenu menu={menu} onClose={closeMenu} />
     </div>
   );
 }

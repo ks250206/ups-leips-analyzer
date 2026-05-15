@@ -1,4 +1,4 @@
-import { cleanup, render, screen } from "@testing-library/react";
+import { cleanup, fireEvent, render, screen } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { afterEach, beforeEach, describe, expect, test } from "vite-plus/test";
 import App from "./App";
@@ -46,5 +46,35 @@ describe("App", () => {
     await user.click(screen.getByRole("button", { name: "Recalculate" }));
     expect(screen.getByText("0 datasets")).toBeTruthy();
     expect(screen.queryByText("Cannot fit an empty range.")).toBeNull();
+  });
+
+  test("shows project and plot context menus", async () => {
+    const user = userEvent.setup();
+    render(<App />);
+
+    await user.click(screen.getByRole("button", { name: "Project" }));
+    expect(screen.getByText("New Project")).toBeTruthy();
+    expect(screen.getByText("Save Project")).toBeTruthy();
+    expect(screen.getByText("Save as")).toBeTruthy();
+    expect(screen.getByText("Recent project")).toBeTruthy();
+    expect(screen.getByText("Export")).toBeTruthy();
+    expect(screen.getAllByText("Import").length).toBeGreaterThan(0);
+
+    await user.click(screen.getByRole("button", { name: "Demo" }));
+    expect(screen.queryByRole("button", { name: "Reset" })).toBeNull();
+    expect(screen.queryByRole("button", { name: "PNG" })).toBeNull();
+    expect(screen.queryByRole("button", { name: "SVG" })).toBeNull();
+
+    fireEvent.contextMenu(screen.getByLabelText("UPS IP plot"));
+    expect(screen.getByText("Reset view")).toBeTruthy();
+    expect(screen.getByText("Export PNG")).toBeTruthy();
+    expect(screen.getByText("Export SVG")).toBeTruthy();
+    expect(screen.getByText("Save VBM view")).toBeTruthy();
+    expect(screen.getByText("Recall Cut-off view")).toBeTruthy();
+
+    fireEvent.pointerDown(document.body);
+    fireEvent.contextMenu(screen.getByLabelText("LEET / LEET(der) / LEIPS plot"));
+    expect(screen.getByText("Filter")).toBeTruthy();
+    expect(screen.getByText("Set peak range from current max")).toBeTruthy();
   });
 });

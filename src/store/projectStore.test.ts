@@ -92,6 +92,28 @@ describe("project store", () => {
     expect(next.analysis.bandpassType).toBe(2);
     expect(next.analysis.efMinusEvbm).toBe(next.analysis.ups?.efMinusEvbm);
     expect(next.windows.find((window) => window.id === "browser")?.x).toBe(44);
+    expect(next.windows.find((window) => window.id === "browser")?.zIndex).toBe(
+      Math.max(...next.windows.map((window) => window.zIndex)),
+    );
+  });
+
+  test("creates, saves as and loads projects", async () => {
+    const state = useProjectStore.getState();
+    await state.saveProjectAs("Saved Copy");
+    const savedId = useProjectStore.getState().project.id;
+
+    useProjectStore.getState().newProject();
+    expect(useProjectStore.getState().project.datasets).toHaveLength(0);
+    expect(useProjectStore.getState().project.name).toBe("UPS-LEIPS Project");
+
+    const recent = await useProjectStore.getState().listRecentProjects();
+    expect(recent.some((record) => record.id === savedId && record.name === "Saved Copy")).toBe(
+      true,
+    );
+
+    await useProjectStore.getState().loadSavedProject(savedId);
+    expect(useProjectStore.getState().project.name).toBe("Saved Copy");
+    expect(useProjectStore.getState().project.datasets).toHaveLength(5);
   });
 
   test("adds datasets and imports project JSON", () => {
