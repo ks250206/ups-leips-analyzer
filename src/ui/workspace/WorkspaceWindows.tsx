@@ -206,7 +206,10 @@ function HelpWindow() {
     <div className="h-full overflow-auto bg-white p-4 text-sm text-slate-700">
       <h2 className="text-base font-semibold text-slate-900">UPS-LEIPS Analyzer</h2>
       <div className="mt-3 space-y-2 text-xs leading-5">
-        <p>Use the Project menu to create, save, import, export, delete, and list projects.</p>
+        <p>
+          Use the Catalogs menu to switch, import, and export catalogs. Use the Projects menu to
+          create, save, import, export, delete, and list projects.
+        </p>
         <p>View &gt; Reset view restores the workspace pan and zoom to the default state.</p>
         <p>Windows brings an existing window to the front or toggles utility windows.</p>
         <p>On plots, wheel zooms Y, Shift+wheel zooms X, and Alt+drag or Alt+wheel pans.</p>

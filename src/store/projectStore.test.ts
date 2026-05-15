@@ -28,6 +28,7 @@ describe("project store", () => {
         updatedAt: new Date(0).toISOString(),
         lastOpenedAt: new Date(0).toISOString(),
       },
+      isProjectUnsaved: true,
     });
     useProjectStore.getState().loadDemo();
   });

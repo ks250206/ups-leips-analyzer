@@ -9,11 +9,18 @@ import {
 } from "react";
 import { exportProjectGzip, exportProjectJson, importProjectBytes } from "../store/projectDb";
 import { useProjectStore } from "../store/projectStore";
-import type { ProjectRecord, WindowLayout } from "../store/projectTypes";
+import type { CatalogRecord, ProjectRecord, WindowLayout } from "../store/projectTypes";
 import { ContextMenu, useContextMenu } from "./ContextMenu";
 import { ToastViewport, useToastStore } from "./Toast";
 import { buildMenuGroups, TopBar } from "./workspace/WorkspaceMenu";
-import { DeleteProjectModal, LoadProjectModal, SaveAsModal } from "./workspace/WorkspaceModals";
+import {
+  CatalogNameModal,
+  DeleteCatalogModal,
+  DeleteProjectModal,
+  LoadProjectModal,
+  SaveAsModal,
+  SwitchCatalogModal,
+} from "./workspace/WorkspaceModals";
 import {
   type AnalysisControlTab,
   iconForWindow,
@@ -25,6 +32,7 @@ import { WindowFrame } from "./windows/WindowFrame";
 
 export function Workspace() {
   const project = useProjectStore((state) => state.project);
+  const activeCatalog = useProjectStore((state) => state.activeCatalog);
   const updateWindow = useProjectStore((state) => state.updateWindow);
   const focusWindow = useProjectStore((state) => state.focusWindow);
   const resetWindowPosition = useProjectStore((state) => state.resetWindowPosition);
@@ -40,6 +48,13 @@ export function Workspace() {
   const importProject = useProjectStore((state) => state.importProject);
   const assignDataset = useProjectStore((state) => state.assignDataset);
   const deleteCurrentProject = useProjectStore((state) => state.deleteCurrentProject);
+  const createCatalog = useProjectStore((state) => state.createCatalog);
+  const switchCatalog = useProjectStore((state) => state.switchCatalog);
+  const renameCatalog = useProjectStore((state) => state.renameCatalog);
+  const deleteCatalog = useProjectStore((state) => state.deleteCatalog);
+  const listCatalogs = useProjectStore((state) => state.listCatalogs);
+  const exportCatalogBytes = useProjectStore((state) => state.exportCatalog);
+  const importCatalogBytes = useProjectStore((state) => state.importCatalog);
   const toggleHelpWindow = useProjectStore((state) => state.toggleHelpWindow);
   const toggleProjectsWindow = useProjectStore((state) => state.toggleProjectsWindow);
   const { menu, openMenu, closeMenu } = useContextMenu();
@@ -49,8 +64,13 @@ export function Workspace() {
   const [saveAsOpen, setSaveAsOpen] = useState(false);
   const [deleteOpen, setDeleteOpen] = useState(false);
   const [loadProjectOpen, setLoadProjectOpen] = useState(false);
+  const [catalogModal, setCatalogModal] = useState<
+    "new" | "switch" | "rename" | "delete" | undefined
+  >();
   const importInputRef = useRef<HTMLInputElement>(null);
+  const catalogImportInputRef = useRef<HTMLInputElement>(null);
   const [recentProjects, setRecentProjects] = useState<ProjectRecord[]>([]);
+  const [catalogs, setCatalogs] = useState<CatalogRecord[]>([]);
   const pushToast = useToastStore((state) => state.pushToast);
   const panStart = useRef<{ x: number; y: number; originX: number; originY: number } | undefined>(
     undefined,
@@ -68,6 +88,9 @@ export function Workspace() {
   };
   const refreshRecentProjects = () => {
     void listRecentProjects().then(setRecentProjects);
+  };
+  const refreshCatalogs = () => {
+    void listCatalogs().then(setCatalogs);
   };
   const exportProject = () => {
     try {
@@ -100,14 +123,52 @@ export function Workspace() {
       pushToast(errorMessage("Project import failed", caught), "error");
     }
   };
+  const exportActiveCatalog = () => {
+    void exportCatalogBytes(activeCatalog.id)
+      .then((compressed) => {
+        const blob = new Blob([compressed.slice().buffer as ArrayBuffer], {
+          type: "application/gzip",
+        });
+        const url = URL.createObjectURL(blob);
+        const anchor = document.createElement("a");
+        anchor.href = url;
+        anchor.download = `${activeCatalog.name
+          .replace(/[^a-z0-9]+/gi, "-")
+          .toLowerCase()}.upsleips-catalog.json.gz`;
+        anchor.click();
+        URL.revokeObjectURL(url);
+        pushToast("Catalog exported.", "success");
+      })
+      .catch((caught: unknown) => {
+        pushToast(errorMessage("Catalog export failed", caught), "error");
+      });
+  };
+  const importCatalogFile = async (files: FileList | null) => {
+    const file = files?.[0];
+    if (!file) {
+      return;
+    }
+    try {
+      const catalog = await importCatalogBytes(await file.arrayBuffer());
+      refreshCatalogs();
+      refreshRecentProjects();
+      pushToast(`Catalog imported: ${catalog.name}.`, "success");
+    } catch (caught) {
+      pushToast(errorMessage("Catalog import failed", caught), "error");
+    }
+  };
   const menuGroups = buildMenuGroups({
     project,
     windows,
     recentProjects,
     actions: {
+      createCatalog: () => setCatalogModal("new"),
+      deleteCatalog: () => setCatalogModal("delete"),
       deleteProject: () => setDeleteOpen(true),
+      exportCatalog: exportActiveCatalog,
       exportProject,
       focusWindow: focusAndActivateWindow,
+      importCatalog: () => catalogImportInputRef.current?.click(),
       importProject: () => importInputRef.current?.click(),
       loadProject: () => setLoadProjectOpen(true),
       loadSavedProject: (id) => {
@@ -120,6 +181,7 @@ export function Workspace() {
           });
       },
       newProject,
+      renameCatalog: () => setCatalogModal("rename"),
       resetWorkspaceView,
       resetAllWindowPositions,
       resetAllWindowSizes,
@@ -128,13 +190,21 @@ export function Workspace() {
       saveAsProject: () => setSaveAsOpen(true),
       saveCurrentProject: () => {
         void saveCurrentProject()
-          .then(() => {
+          .then((result) => {
+            if (result === "needs-name") {
+              setSaveAsOpen(true);
+              return;
+            }
             refreshRecentProjects();
             pushToast("Project saved.", "success");
           })
           .catch((caught: unknown) => {
             pushToast(errorMessage("Project save failed", caught), "error");
           });
+      },
+      switchCatalog: () => {
+        refreshCatalogs();
+        setCatalogModal("switch");
       },
       toggleHelpWindow,
       toggleProjectsWindow,
@@ -241,6 +311,16 @@ export function Workspace() {
           event.currentTarget.value = "";
         }}
       />
+      <input
+        ref={catalogImportInputRef}
+        className="sr-only"
+        type="file"
+        accept=".upsleips-catalog,.gz,.json,application/json,application/gzip"
+        onChange={(event: ChangeEvent<HTMLInputElement>) => {
+          void importCatalogFile(event.currentTarget.files);
+          event.currentTarget.value = "";
+        }}
+      />
       <TopBar
         menuGroups={menuGroups}
         onMenuOpen={refreshRecentProjects}
@@ -333,6 +413,82 @@ export function Workspace() {
               })
               .catch((caught: unknown) => {
                 pushToast(errorMessage("Project load failed", caught), "error");
+              });
+          }}
+        />
+      ) : null}
+      {catalogModal === "new" ? (
+        <CatalogNameModal
+          actionLabel="Create"
+          defaultName="New Catalog"
+          title="New Catalog"
+          onCancel={() => setCatalogModal(undefined)}
+          onSave={(name) => {
+            void createCatalog(name)
+              .then(() => {
+                refreshCatalogs();
+                refreshRecentProjects();
+                setCatalogModal(undefined);
+                pushToast("Catalog created.", "success");
+              })
+              .catch((caught: unknown) => {
+                pushToast(errorMessage("Catalog create failed", caught), "error");
+              });
+          }}
+        />
+      ) : null}
+      {catalogModal === "rename" ? (
+        <CatalogNameModal
+          actionLabel="Save"
+          defaultName={activeCatalog.name}
+          title="Rename Catalog"
+          onCancel={() => setCatalogModal(undefined)}
+          onSave={(name) => {
+            void renameCatalog(activeCatalog.id, name)
+              .then(() => {
+                refreshCatalogs();
+                setCatalogModal(undefined);
+                pushToast("Catalog renamed.", "success");
+              })
+              .catch((caught: unknown) => {
+                pushToast(errorMessage("Catalog rename failed", caught), "error");
+              });
+          }}
+        />
+      ) : null}
+      {catalogModal === "delete" ? (
+        <DeleteCatalogModal
+          catalogName={activeCatalog.name}
+          onCancel={() => setCatalogModal(undefined)}
+          onDelete={() => {
+            void deleteCatalog(activeCatalog.id)
+              .then(() => {
+                refreshCatalogs();
+                refreshRecentProjects();
+                setCatalogModal(undefined);
+                pushToast("Catalog deleted.", "success");
+              })
+              .catch((caught: unknown) => {
+                pushToast(errorMessage("Catalog delete failed", caught), "error");
+              });
+          }}
+        />
+      ) : null}
+      {catalogModal === "switch" ? (
+        <SwitchCatalogModal
+          activeCatalogId={activeCatalog.id}
+          catalogs={catalogs}
+          onCancel={() => setCatalogModal(undefined)}
+          onSwitch={(id) => {
+            void switchCatalog(id)
+              .then(() => {
+                refreshCatalogs();
+                refreshRecentProjects();
+                setCatalogModal(undefined);
+                pushToast("Catalog switched.", "success");
+              })
+              .catch((caught: unknown) => {
+                pushToast(errorMessage("Catalog switch failed", caught), "error");
               });
           }}
         />

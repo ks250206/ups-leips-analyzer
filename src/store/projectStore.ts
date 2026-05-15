@@ -51,6 +51,7 @@ export { fitRangeKey, resolvedBandpassEnergy } from "./projectModel";
 interface ProjectStore {
   activeCatalog: CatalogRecord;
   project: ProjectSnapshot;
+  isProjectUnsaved: boolean;
   activeFitTarget: FitTarget;
   newProject: () => void;
   loadDemo: () => void;
@@ -109,12 +110,13 @@ const DEFAULT_CATALOG: CatalogRecord = {
 export const useProjectStore = create<ProjectStore>((set, get) => ({
   activeCatalog: DEFAULT_CATALOG,
   project: createEmptyProject(),
+  isProjectUnsaved: true,
   activeFitTarget: "ups-vb-edge",
   newProject: () => {
-    set({ activeFitTarget: "ups-vb-edge", project: createEmptyProject() });
+    set({ activeFitTarget: "ups-vb-edge", isProjectUnsaved: true, project: createEmptyProject() });
   },
   loadDemo: () => {
-    set({ project: createDemoProject() });
+    set({ isProjectUnsaved: true, project: createDemoProject() });
   },
   addDatasets: (datasets) => {
     set((state) => {
@@ -520,7 +522,7 @@ export const useProjectStore = create<ProjectStore>((set, get) => ({
   saveCurrentProject: async () => {
     const db = await activeProjectDb(get().activeCatalog.id);
     const existing = await loadProject(get().project.id, db);
-    if (!existing) {
+    if (get().isProjectUnsaved || !existing) {
       return "needs-name";
     }
     await saveProject(get().project, db);
@@ -540,19 +542,19 @@ export const useProjectStore = create<ProjectStore>((set, get) => ({
       name: trimmed,
       createdAt: existing?.createdAt ?? now,
     });
-    set({ project });
+    set({ isProjectUnsaved: false, project });
     await saveProject(project, db);
   },
   deleteCurrentProject: async () => {
     const db = await activeProjectDb(get().activeCatalog.id);
     await deleteProject(get().project.id, db);
-    set({ activeFitTarget: "ups-vb-edge", project: createEmptyProject() });
+    set({ activeFitTarget: "ups-vb-edge", isProjectUnsaved: true, project: createEmptyProject() });
   },
   loadSavedProject: async (id) => {
     const db = await activeProjectDb(get().activeCatalog.id);
     const project = await loadProject(id, db);
     if (project) {
-      set({ project: recalculateProject(normalizeProject(project)) });
+      set({ isProjectUnsaved: false, project: recalculateProject(normalizeProject(project)) });
     }
   },
   listRecentProjects: async () => {
@@ -560,11 +562,19 @@ export const useProjectStore = create<ProjectStore>((set, get) => ({
     return listProjects(db);
   },
   importProject: (json) => {
-    set({ project: recalculateProject(normalizeProject(importProjectJson(json))) });
+    set({
+      isProjectUnsaved: true,
+      project: recalculateProject(normalizeProject(importProjectJson(json))),
+    });
   },
   createCatalog: async (name) => {
     const catalog = await createCatalogRecord(name);
-    set({ activeCatalog: catalog, activeFitTarget: "ups-vb-edge", project: createEmptyProject() });
+    set({
+      activeCatalog: catalog,
+      activeFitTarget: "ups-vb-edge",
+      isProjectUnsaved: true,
+      project: createEmptyProject(),
+    });
   },
   switchCatalog: async (id) => {
     const catalog = await touchCatalog(id);
@@ -575,6 +585,7 @@ export const useProjectStore = create<ProjectStore>((set, get) => ({
     set({
       activeCatalog: catalog,
       activeFitTarget: "ups-vb-edge",
+      isProjectUnsaved: project ? false : true,
       project: project ? recalculateProject(normalizeProject(project)) : createEmptyProject(),
     });
   },
@@ -595,6 +606,7 @@ export const useProjectStore = create<ProjectStore>((set, get) => ({
     set({
       activeCatalog: nextCatalog,
       activeFitTarget: "ups-vb-edge",
+      isProjectUnsaved: project ? false : true,
       project: project ? recalculateProject(normalizeProject(project)) : createEmptyProject(),
     });
   },
@@ -606,6 +618,7 @@ export const useProjectStore = create<ProjectStore>((set, get) => ({
     set({
       activeCatalog: catalog,
       activeFitTarget: "ups-vb-edge",
+      isProjectUnsaved: project ? false : true,
       project: project ? recalculateProject(normalizeProject(project)) : createEmptyProject(),
     });
     return catalog;

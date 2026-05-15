@@ -2,6 +2,7 @@ import { cleanup, fireEvent, render, screen } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { afterEach, beforeEach, describe, expect, test } from "vite-plus/test";
 import App from "./App";
+import { DEFAULT_CATALOG_ID, DEFAULT_CATALOG_NAME } from "./store/projectDb";
 import { createInitialProject, useProjectStore } from "./store/projectStore";
 import { useToastStore } from "./ui/Toast";
 
@@ -20,6 +21,14 @@ describe("App", () => {
     localStorage.clear();
     useProjectStore.setState({
       activeFitTarget: "ups-vb-edge",
+      activeCatalog: {
+        id: DEFAULT_CATALOG_ID,
+        name: DEFAULT_CATALOG_NAME,
+        createdAt: new Date(0).toISOString(),
+        updatedAt: new Date(0).toISOString(),
+        lastOpenedAt: new Date(0).toISOString(),
+      },
+      isProjectUnsaved: true,
       project: createInitialProject(),
     });
     useToastStore.setState({ messages: [] });
@@ -92,7 +101,43 @@ describe("App", () => {
     useProjectStore.getState().loadDemo();
     render(<App />);
 
-    await user.click(screen.getByRole("button", { name: "Project" }));
+    expect(screen.getByRole("button", { name: "Catalogs" })).toBeTruthy();
+    expect(screen.getByRole("button", { name: "Projects" })).toBeTruthy();
+    expect(screen.queryByRole("button", { name: "Project" })).toBeNull();
+    expect(screen.getByText("Default Catalog")).toBeTruthy();
+
+    await user.click(screen.getByRole("button", { name: "Catalogs" }));
+    expect(screen.getByText("New Catalog")).toBeTruthy();
+    expect(screen.getByText("Switch Catalog")).toBeTruthy();
+    expect(screen.getByText("Rename Catalog")).toBeTruthy();
+    expect(screen.getByText("Export Catalog")).toBeTruthy();
+    expect(screen.getByText("Import Catalog")).toBeTruthy();
+    expect(screen.getByText("Delete Catalog")).toBeTruthy();
+    await user.click(screen.getByText("Switch Catalog"));
+    expect(screen.getByRole("heading", { name: "Switch Catalog" })).toBeTruthy();
+    expect(await screen.findByText("Default Catalog")).toBeTruthy();
+    await user.click(screen.getByRole("button", { name: "Cancel" }));
+
+    fireEvent.pointerDown(document.body);
+    await user.click(screen.getByRole("button", { name: "Catalogs" }));
+    await user.click(screen.getByText("Rename Catalog"));
+    expect(screen.getByRole("heading", { name: "Rename Catalog" })).toBeTruthy();
+    await user.click(screen.getByRole("button", { name: "Cancel" }));
+
+    fireEvent.pointerDown(document.body);
+    await user.click(screen.getByRole("button", { name: "Catalogs" }));
+    await user.click(screen.getByText("Delete Catalog"));
+    expect(screen.getByRole("heading", { name: "Delete Catalog" })).toBeTruthy();
+    await user.click(screen.getByRole("button", { name: "Cancel" }));
+
+    fireEvent.pointerDown(document.body);
+    await user.click(screen.getByRole("button", { name: "Catalogs" }));
+    await user.click(screen.getByText("New Catalog"));
+    expect(screen.getByRole("heading", { name: "New Catalog" })).toBeTruthy();
+    await user.click(screen.getByRole("button", { name: "Cancel" }));
+
+    fireEvent.pointerDown(document.body);
+    await user.click(screen.getByRole("button", { name: "Projects" }));
     expect(screen.getByText("New Project")).toBeTruthy();
     expect(screen.getByText("Save Project")).toBeTruthy();
     expect(screen.getByText("Save as ...")).toBeTruthy();
@@ -108,27 +153,37 @@ describe("App", () => {
     await user.click(screen.getByRole("button", { name: "Cancel" }));
 
     fireEvent.pointerDown(document.body);
-    await user.click(screen.getByRole("button", { name: "Project" }));
+    await user.click(screen.getByRole("button", { name: "Projects" }));
+    await user.click(screen.getByText("New Project"));
+    fireEvent.pointerDown(document.body);
+    await user.click(screen.getByRole("button", { name: "Projects" }));
+    await user.click(screen.getByText("Save Project"));
+    expect(screen.getByRole("heading", { name: "Save as ..." })).toBeTruthy();
+    await user.click(screen.getByRole("button", { name: "Cancel" }));
+    useProjectStore.getState().loadDemo();
+
+    fireEvent.pointerDown(document.body);
+    await user.click(screen.getByRole("button", { name: "Projects" }));
     await user.click(screen.getByText("Delete project"));
     expect(screen.getByRole("heading", { name: "Delete project" })).toBeTruthy();
     expect(screen.getByText(/return to an empty project/)).toBeTruthy();
     await user.click(screen.getByRole("button", { name: "Cancel" }));
 
     fireEvent.pointerDown(document.body);
-    await user.click(screen.getByRole("button", { name: "Project" }));
+    await user.click(screen.getByRole("button", { name: "Projects" }));
     await user.click(screen.getByText("Project list"));
     expect(screen.getAllByText("Project List").length).toBeGreaterThan(0);
     expect(screen.getByText("Project name")).toBeTruthy();
 
     fireEvent.pointerDown(document.body);
-    await user.click(screen.getByRole("button", { name: "Project" }));
+    await user.click(screen.getByRole("button", { name: "Projects" }));
     await user.click(screen.getByText("Load Project"));
     expect(screen.getByRole("heading", { name: "Load Project" })).toBeTruthy();
     expect(screen.getAllByText("Project name").length).toBeGreaterThan(0);
     await user.click(screen.getByRole("button", { name: "Cancel" }));
 
     fireEvent.pointerDown(document.body);
-    await user.click(screen.getByRole("button", { name: "Project" }));
+    await user.click(screen.getByRole("button", { name: "Projects" }));
     fireEvent.mouseEnter(screen.getByRole("button", { name: "View" }));
     expect(screen.getByText("Reset view")).toBeTruthy();
     expect(screen.queryByText("Save Project")).toBeNull();
@@ -143,7 +198,7 @@ describe("App", () => {
     expect(screen.getByText("About UPS-LEIPS Analyzer")).toBeTruthy();
     await user.click(screen.getByText("About UPS-LEIPS Analyzer"));
     expect(screen.getAllByText("UPS-LEIPS Analyzer").length).toBeGreaterThan(1);
-    expect(screen.getByText(/Use the Project menu/)).toBeTruthy();
+    expect(screen.getByText(/Use the Catalogs menu/)).toBeTruthy();
 
     expect(screen.queryByRole("button", { name: "Reset" })).toBeNull();
     expect(screen.queryByRole("button", { name: "PNG" })).toBeNull();
@@ -206,7 +261,8 @@ describe("App", () => {
 
     const plane = document.querySelector("[data-workspace-plane='true']") as HTMLElement;
     fireEvent.contextMenu(plane);
-    expect(screen.getAllByText("Project").length).toBeGreaterThan(1);
+    expect(screen.getAllByText("Catalogs").length).toBeGreaterThan(1);
+    expect(screen.getAllByText("Projects").length).toBeGreaterThan(1);
     expect(screen.getAllByText("View").length).toBeGreaterThan(1);
     expect(screen.getAllByText("Windows").length).toBeGreaterThan(1);
     expect(screen.queryByText("Setting")).toBeNull();
@@ -241,7 +297,7 @@ describe("App", () => {
     await user.click(screen.getByLabelText("試料台"));
     expect(screen.getAllByText("LEIPS測定対応傾斜試料ホルダ_MOD201").length).toBeGreaterThan(1);
 
-    await user.click(screen.getByRole("button", { name: "Project" }));
+    await user.click(screen.getByRole("button", { name: "Projects" }));
     await user.click(screen.getByText("Load Project"));
     expect(screen.getByRole("heading", { name: "Load Project" })).toBeTruthy();
     fireEvent.pointerDown(screen.getByTestId("modal-backdrop"));

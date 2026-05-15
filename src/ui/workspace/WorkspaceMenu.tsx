@@ -19,6 +19,7 @@ export function TopBar({
   zoomScale?: number;
 }) {
   const project = useProjectStore((state) => state.project);
+  const activeCatalog = useProjectStore((state) => state.activeCatalog);
   const { menu, openMenu, closeMenu } = useContextMenu();
   const [activeMenu, setActiveMenu] = useState<string>();
   const buttonRefs = useRef(new Map<string, HTMLButtonElement>());
@@ -65,6 +66,9 @@ export function TopBar({
           </button>
         ))}
         <span className="rounded bg-slate-800 px-2 py-0.5 text-xs text-slate-300">
+          {activeCatalog.name}
+        </span>
+        <span className="rounded bg-slate-800 px-2 py-0.5 text-xs text-slate-300">
           {project.name}
         </span>
       </div>
@@ -83,13 +87,18 @@ export function buildMenuGroups(input: {
   windows: WindowLayout[];
   recentProjects: ProjectRecord[];
   actions: {
+    createCatalog: () => void;
     deleteProject: () => void;
+    deleteCatalog: () => void;
+    exportCatalog: () => void;
     exportProject: () => void;
     focusWindow: (id: string) => void;
+    importCatalog: () => void;
     importProject: () => void;
     loadProject: () => void;
     loadSavedProject: (id: string) => void;
     newProject: () => void;
+    renameCatalog: () => void;
     resetAllWindowPositions: () => void;
     resetAllWindowSizes: () => void;
     resetWindowPosition: (id: string) => void;
@@ -97,6 +106,7 @@ export function buildMenuGroups(input: {
     resetWorkspaceView: () => void;
     saveAsProject: () => void;
     saveCurrentProject: () => void;
+    switchCatalog: () => void;
     toggleHelpWindow: () => void;
     toggleProjectsWindow: () => void;
   };
@@ -140,7 +150,20 @@ export function buildMenuGroups(input: {
   }
   return [
     {
-      label: "Project",
+      label: "Catalogs",
+      items: [
+        { type: "item", label: "New Catalog", action: input.actions.createCatalog },
+        { type: "item", label: "Switch Catalog", action: input.actions.switchCatalog },
+        { type: "item", label: "Rename Catalog", action: input.actions.renameCatalog },
+        { type: "separator" },
+        { type: "item", label: "Export Catalog", action: input.actions.exportCatalog },
+        { type: "item", label: "Import Catalog", action: input.actions.importCatalog },
+        { type: "separator" },
+        { type: "item", label: "Delete Catalog", action: input.actions.deleteCatalog },
+      ],
+    },
+    {
+      label: "Projects",
       items: [
         { type: "item", label: "New Project", action: input.actions.newProject },
         { type: "item", label: "Save Project", action: input.actions.saveCurrentProject },
