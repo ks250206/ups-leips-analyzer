@@ -45,10 +45,13 @@ export function DataBrowser() {
         >
           <span className="flex items-center gap-1.5">
             <FileUp size={14} />
-            CSV
+            Load CSVs
           </span>
           <ChevronDown size={14} className="text-slate-500" />
         </label>
+        <div className="mt-1 text-[10px] text-slate-500">
+          Dropdown file field for MultiPak CSVs.
+        </div>
       </div>
       {error ? (
         <div className="border-b border-red-200 bg-red-50 p-2 text-red-700">{error}</div>

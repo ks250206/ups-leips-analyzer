@@ -648,8 +648,8 @@ function defaultWindows(): WindowLayout[] {
       kind: "band",
       x: 878,
       y: 728,
-      width: 560,
-      height: 430,
+      width: 680,
+      height: 520,
       zIndex: 10,
     },
   ];

@@ -34,6 +34,8 @@ describe("App", () => {
     expect(screen.queryByRole("button", { name: "Demo" })).toBeNull();
     expect(screen.queryByText("GZIP")).toBeNull();
     expect(screen.queryByText("Import")).toBeNull();
+    expect(screen.getByText("Load CSVs")).toBeTruthy();
+    expect(screen.getByText("Dropdown file field for MultiPak CSVs.")).toBeTruthy();
     expect(screen.getAllByText("Load CSV data to render this plot.").length).toBeGreaterThan(0);
   });
 
@@ -61,6 +63,7 @@ describe("App", () => {
     expect(screen.getByText("New Project")).toBeTruthy();
     expect(screen.getByText("Save Project")).toBeTruthy();
     expect(screen.getByText("Save as ...")).toBeTruthy();
+    expect(screen.getByText("Load Project")).toBeTruthy();
     expect(screen.getByText("Recent project")).toBeTruthy();
     expect(screen.getByText("Export")).toBeTruthy();
     expect(screen.getAllByText("Import").length).toBeGreaterThan(0);
@@ -83,6 +86,13 @@ describe("App", () => {
     await user.click(screen.getByText("Project list"));
     expect(screen.getAllByText("Project List").length).toBeGreaterThan(0);
     expect(screen.getByText("Project name")).toBeTruthy();
+
+    fireEvent.pointerDown(document.body);
+    await user.click(screen.getByRole("button", { name: "Project" }));
+    await user.click(screen.getByText("Load Project"));
+    expect(screen.getByRole("heading", { name: "Load Project" })).toBeTruthy();
+    expect(screen.getAllByText("Project name").length).toBeGreaterThan(0);
+    await user.click(screen.getByRole("button", { name: "Cancel" }));
 
     fireEvent.pointerDown(document.body);
     await user.click(screen.getByRole("button", { name: "Project" }));
@@ -114,6 +124,7 @@ describe("App", () => {
     fireEvent.pointerDown(document.body);
     fireEvent.contextMenu(screen.getByLabelText("LEET / LEET(der) / LEIPS plot"));
     expect(screen.getByText("Filter")).toBeTruthy();
+    fireEvent.mouseEnter(screen.getByText("Filter"));
     expect(screen.getByText("Band pass 1_4.77 eV ✓")).toBeTruthy();
   });
 

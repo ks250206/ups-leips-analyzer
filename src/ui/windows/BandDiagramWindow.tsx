@@ -71,7 +71,7 @@ export function BandDiagramWindow() {
       </div>
       {band ? (
         <div className="border-t border-slate-200 bg-slate-50 px-2 py-1 text-[11px]">
-          <div className="grid grid-cols-7 gap-1">
+          <div className="flex flex-wrap gap-1">
             <SmallNumber label="UPS×" value={upsScale} onChange={setUpsScale} />
             <SmallNumber label="UPS+%" value={upsOffset} onChange={setUpsOffset} />
             <SmallNumber label="LEIPS×" value={leipsScale} onChange={setLeipsScale} />
@@ -82,7 +82,7 @@ export function BandDiagramWindow() {
               value={indicatorArrowScale}
               onChange={setIndicatorArrowScale}
             />
-            <span className="grid grid-cols-[1fr_1fr_auto] gap-1">
+            <span className="grid min-w-[160px] flex-1 grid-cols-[1fr_1fr_auto] gap-1">
               <input
                 className="min-w-0 rounded border border-slate-200 bg-white px-1 py-0.5 font-mono"
                 value={xMin}
@@ -961,7 +961,7 @@ function SmallNumber({
 }) {
   return (
     <label
-      className="grid grid-cols-[42px_1fr] items-center gap-1 rounded border border-slate-200 bg-white px-1 py-0.5"
+      className="grid min-w-[104px] grid-cols-[50px_1fr] items-center gap-1 rounded border border-slate-200 bg-white px-1 py-0.5"
       onWheel={(event) => {
         event.preventDefault();
         event.stopPropagation();

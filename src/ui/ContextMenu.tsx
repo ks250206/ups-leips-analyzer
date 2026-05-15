@@ -65,20 +65,29 @@ export function ContextMenu({
 }
 
 function MenuItems({ items, onClose }: { items: ContextMenuItem[]; onClose: () => void }) {
+  const [openSubmenu, setOpenSubmenu] = useState<string>();
   return items.map((item, index) => {
     if (item.type === "separator") {
       return <div key={`separator-${index}`} className="my-1 border-t border-slate-200" />;
     }
     if (item.type === "submenu") {
+      const isOpen = openSubmenu === item.label;
       return (
-        <div key={item.label} className="group relative">
+        <div
+          key={item.label}
+          className="relative"
+          onMouseEnter={() => setOpenSubmenu(item.label)}
+          onMouseLeave={() => setOpenSubmenu(undefined)}
+        >
           <MenuButton>
             <span>{item.label}</span>
             <span className="text-slate-400">›</span>
           </MenuButton>
-          <div className="invisible absolute left-full top-0 min-w-52 rounded border border-slate-300 bg-white py-1 shadow-xl group-hover:visible">
-            <MenuItems items={item.items} onClose={onClose} />
-          </div>
+          {isOpen ? (
+            <div className="absolute left-full top-0 min-w-52 rounded border border-slate-300 bg-white py-1 shadow-xl">
+              <MenuItems items={item.items} onClose={onClose} />
+            </div>
+          ) : null}
         </div>
       );
     }

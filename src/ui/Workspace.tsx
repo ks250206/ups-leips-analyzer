@@ -27,7 +27,7 @@ import { BandDiagramWindow } from "./windows/BandDiagramWindow";
 import { DataBrowser } from "./windows/DataBrowser";
 import { DataTable } from "./windows/DataTable";
 import { LEIPSEvacPlotWindow, LEIPSPlotWindow } from "./windows/LEIPSPlotWindow";
-import { ProjectListWindow } from "./windows/ProjectListWindow";
+import { ProjectListWindow, ProjectTable } from "./windows/ProjectListWindow";
 import { UPSIPPlotWindow, UPSVBPlotWindow } from "./windows/UPSPlotWindow";
 import { WindowFrame } from "./windows/WindowFrame";
 
@@ -49,6 +49,7 @@ export function Workspace() {
   const [viewport, setViewport] = useState({ x: 0, y: 0, scale: 1 });
   const [saveAsOpen, setSaveAsOpen] = useState(false);
   const [deleteOpen, setDeleteOpen] = useState(false);
+  const [loadProjectOpen, setLoadProjectOpen] = useState(false);
   const importInputRef = useRef<HTMLInputElement>(null);
   const [recentProjects, setRecentProjects] = useState<ProjectRecord[]>([]);
   const panStart = useRef<{ x: number; y: number; originX: number; originY: number } | undefined>(
@@ -85,6 +86,7 @@ export function Workspace() {
       exportProject,
       focusWindow,
       importProject: () => importInputRef.current?.click(),
+      loadProject: () => setLoadProjectOpen(true),
       loadSavedProject: (id) => {
         void loadSavedProject(id);
       },
@@ -253,6 +255,18 @@ export function Workspace() {
           }}
         />
       ) : null}
+      {loadProjectOpen ? (
+        <LoadProjectModal
+          projects={recentProjects}
+          onCancel={() => setLoadProjectOpen(false)}
+          onLoad={(id) => {
+            void loadSavedProject(id).then(() => {
+              refreshRecentProjects();
+              setLoadProjectOpen(false);
+            });
+          }}
+        />
+      ) : null}
     </main>
   );
 }
@@ -337,6 +351,7 @@ function buildMenuGroups(input: {
     exportProject: () => void;
     focusWindow: (id: string) => void;
     importProject: () => void;
+    loadProject: () => void;
     loadSavedProject: (id: string) => void;
     newProject: () => void;
     resetWorkspaceView: () => void;
@@ -365,6 +380,7 @@ function buildMenuGroups(input: {
         { type: "item", label: "New Project", action: input.actions.newProject },
         { type: "item", label: "Save Project", action: input.actions.saveCurrentProject },
         { type: "item", label: "Save as ...", action: input.actions.saveAsProject },
+        { type: "item", label: "Load Project", action: input.actions.loadProject },
         { type: "item", label: "Delete project", action: input.actions.deleteProject },
         { type: "separator" },
         { type: "item", label: "Export", action: input.actions.exportProject },
@@ -564,10 +580,45 @@ function DeleteProjectModal({
   );
 }
 
-function Modal({ title, children }: { title: string; children: ReactNode }) {
+function LoadProjectModal({
+  projects,
+  onCancel,
+  onLoad,
+}: {
+  projects: ProjectRecord[];
+  onCancel: () => void;
+  onLoad: (id: string) => void;
+}) {
+  return (
+    <Modal title="Load Project" widthClass="w-[620px]">
+      <div className="h-[360px] overflow-hidden rounded border border-slate-200">
+        <ProjectTable projects={projects} onLoad={onLoad} />
+      </div>
+      <div className="mt-4 flex justify-end">
+        <button
+          className="rounded border border-slate-300 px-3 py-1 text-xs"
+          type="button"
+          onClick={onCancel}
+        >
+          Cancel
+        </button>
+      </div>
+    </Modal>
+  );
+}
+
+function Modal({
+  title,
+  children,
+  widthClass = "w-[360px]",
+}: {
+  title: string;
+  children: ReactNode;
+  widthClass?: string;
+}) {
   return (
     <div className="fixed inset-0 z-[11000] flex items-center justify-center bg-slate-950/30">
-      <div className="w-[360px] rounded border border-slate-300 bg-white p-4 shadow-2xl">
+      <div className={`${widthClass} rounded border border-slate-300 bg-white p-4 shadow-2xl`}>
         <h2 className="mb-3 text-sm font-semibold text-slate-900">{title}</h2>
         {children}
       </div>

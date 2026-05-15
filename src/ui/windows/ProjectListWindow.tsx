@@ -20,7 +20,7 @@ export function ProjectListWindow() {
   );
 }
 
-function ProjectTable({
+export function ProjectTable({
   projects,
   onLoad,
 }: {
