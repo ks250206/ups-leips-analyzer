@@ -2,6 +2,7 @@ import { beforeEach, describe, expect, test } from "vite-plus/test";
 import { createDemoDatasets } from "../domain/demoData";
 import type { FitTarget } from "../domain/types";
 import { DEFAULT_CATALOG_ID, DEFAULT_CATALOG_NAME, exportProjectJson } from "./projectDb";
+import { readLastOpenedWorkspace, writeLastOpenedWorkspace } from "./lastOpenedWorkspace";
 import { fitRangeKey, useProjectStore } from "./projectStore";
 
 const TARGETS: FitTarget[] = [
@@ -289,6 +290,34 @@ describe("project store", () => {
     expect(imported.name).toBe(`${catalogName} 2`);
     expect(useProjectStore.getState().project.name).toBe("Stored In Catalog");
     expect(useProjectStore.getState().project.ui?.cursorStyles?.upsIp).toBe("range");
+  });
+
+  test("restores a last-opened catalog and project reference", async () => {
+    const catalogName = `Last Opened ${crypto.randomUUID()}`;
+    await useProjectStore.getState().createCatalog(catalogName);
+    await useProjectStore.getState().saveProjectAs("Restored Project");
+    const ref = {
+      catalogId: useProjectStore.getState().activeCatalog.id,
+      projectId: useProjectStore.getState().project.id,
+    };
+
+    writeLastOpenedWorkspace(ref);
+    useProjectStore.setState({
+      activeCatalog: {
+        id: DEFAULT_CATALOG_ID,
+        name: DEFAULT_CATALOG_NAME,
+        createdAt: new Date(0).toISOString(),
+        updatedAt: new Date(0).toISOString(),
+        lastOpenedAt: new Date(0).toISOString(),
+      },
+      isProjectUnsaved: true,
+      project: useProjectStore.getInitialState().project,
+    });
+    await useProjectStore.getState().restoreLastOpenedWorkspace(readLastOpenedWorkspace()!);
+
+    expect(useProjectStore.getState().activeCatalog.name).toBe(catalogName);
+    expect(useProjectStore.getState().project.name).toBe("Restored Project");
+    expect(useProjectStore.getState().isProjectUnsaved).toBe(false);
   });
 
   test("save as overwrites a saved project with the same name", async () => {

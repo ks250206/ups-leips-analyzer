@@ -3,6 +3,7 @@ import userEvent from "@testing-library/user-event";
 import { afterEach, beforeEach, describe, expect, test } from "vite-plus/test";
 import App from "./App";
 import { DEFAULT_CATALOG_ID, DEFAULT_CATALOG_NAME } from "./store/projectDb";
+import { LAST_OPENED_WORKSPACE_KEY } from "./store/lastOpenedWorkspace";
 import { createInitialProject, useProjectStore } from "./store/projectStore";
 import { USER_LOCALE_STORAGE_KEY, useUserSettingsStore } from "./ui/Settings";
 import { useToastStore } from "./ui/Toast";
@@ -98,6 +99,20 @@ describe("App", () => {
     expect(screen.queryByText("Cannot fit an empty range.")).toBeNull();
   });
 
+  test("falls back to an empty default project when last opened workspace is missing", async () => {
+    localStorage.setItem(
+      LAST_OPENED_WORKSPACE_KEY,
+      JSON.stringify({ catalogId: "deleted-catalog", projectId: "deleted-project" }),
+    );
+
+    render(<App />);
+
+    expect(await screen.findByText(/Last opened workspace restore failed/)).toBeTruthy();
+    expect(screen.getByText("Default Catalog")).toBeTruthy();
+    expect(screen.getByText("UPS-LEIPS Project")).toBeTruthy();
+    expect(screen.getByText("0 datasets")).toBeTruthy();
+  });
+
   test("shows project and plot context menus", async () => {
     const user = userEvent.setup();
     useProjectStore.getState().loadDemo();
@@ -119,7 +134,7 @@ describe("App", () => {
     expect(screen.getByText("Delete Catalog")).toBeTruthy();
     await user.click(screen.getByText("Switch Catalog"));
     expect(screen.getByRole("heading", { name: "Switch Catalog" })).toBeTruthy();
-    expect(await screen.findByText("Default Catalog")).toBeTruthy();
+    expect((await screen.findAllByText("Default Catalog")).length).toBeGreaterThan(0);
     await user.click(screen.getByRole("button", { name: "Cancel" }));
 
     fireEvent.pointerDown(document.body);

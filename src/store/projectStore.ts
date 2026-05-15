@@ -44,6 +44,7 @@ import type {
   WindowLayout,
 } from "./projectTypes";
 import { toggleUtilityWindow } from "./windowModel";
+import type { LastOpenedWorkspaceRef } from "./lastOpenedWorkspace";
 
 export { createInitialProject } from "./projectFactory";
 export { fitRangeKey, resolvedBandpassEnergy } from "./projectModel";
@@ -98,6 +99,8 @@ interface ProjectStore {
   listCatalogs: () => Promise<CatalogRecord[]>;
   exportCatalog: (id: string) => Promise<Uint8Array>;
   importCatalog: (bytes: ArrayBuffer | Uint8Array) => Promise<CatalogRecord>;
+  restoreLastOpenedWorkspace: (ref: LastOpenedWorkspaceRef) => Promise<void>;
+  resetToDefaultEmptyWorkspace: () => Promise<void>;
 }
 
 const DEFAULT_CATALOG: CatalogRecord = {
@@ -641,6 +644,32 @@ export const useProjectStore = create<ProjectStore>((set, get) => ({
       project: project ? recalculateProject(normalizeProject(project)) : createEmptyProject(),
     });
     return catalog;
+  },
+  restoreLastOpenedWorkspace: async (ref) => {
+    const catalog = await getCatalog(ref.catalogId);
+    if (!catalog) {
+      throw new Error("Last opened Catalog was not found.");
+    }
+    const db = await activeProjectDb(catalog.id);
+    const project = ref.projectId ? await loadProject(ref.projectId, db) : undefined;
+    if (ref.projectId && !project) {
+      throw new Error("Last opened Project was not found.");
+    }
+    set({
+      activeCatalog: catalog,
+      activeFitTarget: "ups-vb-edge",
+      isProjectUnsaved: project ? false : true,
+      project: project ? recalculateProject(normalizeProject(project)) : createEmptyProject(),
+    });
+  },
+  resetToDefaultEmptyWorkspace: async () => {
+    const catalog = await ensureDefaultCatalog();
+    set({
+      activeCatalog: catalog,
+      activeFitTarget: "ups-vb-edge",
+      isProjectUnsaved: true,
+      project: createEmptyProject(),
+    });
   },
 }));
 

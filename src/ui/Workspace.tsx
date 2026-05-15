@@ -1,5 +1,6 @@
 import {
   useMemo,
+  useEffect,
   useRef,
   useState,
   type ChangeEvent,
@@ -8,6 +9,7 @@ import {
   type WheelEvent,
 } from "react";
 import { exportProjectGzip, exportProjectJson, importProjectBytes } from "../store/projectDb";
+import { readLastOpenedWorkspace, writeLastOpenedWorkspace } from "../store/lastOpenedWorkspace";
 import { useProjectStore } from "../store/projectStore";
 import type { CatalogRecord, ProjectRecord, WindowLayout } from "../store/projectTypes";
 import { ContextMenu, useContextMenu } from "./ContextMenu";
@@ -57,6 +59,11 @@ export function Workspace() {
   const listCatalogs = useProjectStore((state) => state.listCatalogs);
   const exportCatalogBytes = useProjectStore((state) => state.exportCatalog);
   const importCatalogBytes = useProjectStore((state) => state.importCatalog);
+  const isProjectUnsaved = useProjectStore((state) => state.isProjectUnsaved);
+  const restoreLastOpenedWorkspace = useProjectStore((state) => state.restoreLastOpenedWorkspace);
+  const resetToDefaultEmptyWorkspace = useProjectStore(
+    (state) => state.resetToDefaultEmptyWorkspace,
+  );
   const toggleHelpWindow = useProjectStore((state) => state.toggleHelpWindow);
   const locale = useUserSettingsStore((state) => state.locale);
   const setLocale = useUserSettingsStore((state) => state.setLocale);
@@ -72,6 +79,7 @@ export function Workspace() {
   const [catalogModal, setCatalogModal] = useState<
     "new" | "switch" | "rename" | "delete" | undefined
   >();
+  const [lastOpenedRestored, setLastOpenedRestored] = useState(false);
   const importInputRef = useRef<HTMLInputElement>(null);
   const catalogImportInputRef = useRef<HTMLInputElement>(null);
   const [recentProjects, setRecentProjects] = useState<ProjectRecord[]>([]);
@@ -81,6 +89,29 @@ export function Workspace() {
     undefined,
   );
   const windows = useMemo(() => project.windows, [project.windows]);
+  useEffect(() => {
+    const ref = readLastOpenedWorkspace();
+    if (!ref) {
+      setLastOpenedRestored(true);
+      return;
+    }
+    void restoreLastOpenedWorkspace(ref)
+      .catch((caught: unknown) => {
+        return resetToDefaultEmptyWorkspace().then(() => {
+          pushToast(errorMessage("Last opened workspace restore failed", caught), "error");
+        });
+      })
+      .finally(() => setLastOpenedRestored(true));
+  }, [pushToast, resetToDefaultEmptyWorkspace, restoreLastOpenedWorkspace]);
+  useEffect(() => {
+    if (!lastOpenedRestored) {
+      return;
+    }
+    writeLastOpenedWorkspace({
+      catalogId: activeCatalog.id,
+      projectId: isProjectUnsaved ? undefined : project.id,
+    });
+  }, [activeCatalog.id, isProjectUnsaved, lastOpenedRestored, project.id]);
   const resetWorkspaceView = () => setViewport({ x: 0, y: 0, scale: 1 });
   const focusAndActivateWindow = (id: string) => {
     const window = project.windows.find((item) => item.id === id);

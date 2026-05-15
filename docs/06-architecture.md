@@ -13,6 +13,7 @@
 - `src/store/projectFactory.ts`: 空Project、demo Project、初期dataset/window生成。
 - `src/store/projectModel.ts`: 解析再計算、dataset auto selection、dataset role変更時のaxis label補正、fit range migration、Project JSON変換。
 - `src/store/projectDb.ts`: Catalog registry DB、Catalog別Project DB生成、legacy Project DB migration、Project/Catalog gzip import/export。
+- `src/store/lastOpenedWorkspace.ts`: 前回最後に開いたCatalog/Project IDを`localStorage`へ保存するユーザー環境state。Project/Catalog archiveには含めない。
 - `src/store/windowModel.ts`: workspace window生成とdefault layout。
 - `ProjectSnapshot.ui`: UPS/LEIPS/REELS/Band Diagram plot viewport、plot別cursor表示設定、Sample Info、Help window状態などProjectと一緒に復元したいUI state。Sample Infoのmulti-select値はProject JSON import時に旧string値から配列へ軽量migrationする。
 - `src/ui/Workspace.tsx`: workspace viewport、background pan/context menu、window frame配置、modal open state。
@@ -35,7 +36,7 @@
 
 ## State
 
-Zustandは現在のCatalog recordとProject snapshotを保持する。DexieはCatalog registry DBとCatalog別Project DBに分かれる。Catalog registryはCatalog metadataだけを持ち、Project情報は参照しない。Project JSONは単一Project共有用、Catalog archiveはCatalog専用DB全体の共有用に使う。表示localeなど各ユーザーの環境設定は`localStorage`に保存し、Project/Catalog import/exportには含めない。
+Zustandは現在のCatalog recordとProject snapshotを保持する。DexieはCatalog registry DBとCatalog別Project DBに分かれる。Catalog registryはCatalog metadataだけを持ち、Project情報は参照しない。Project JSONは単一Project共有用、Catalog archiveはCatalog専用DB全体の共有用に使う。表示localeや前回開いていたCatalog/Project IDなど各ユーザーの環境設定は`localStorage`に保存し、Project/Catalog import/exportには含めない。前回IDが削除済みの場合はtoastで通知し、Default Catalogの空Projectへfallbackする。
 
 ## Build
 
