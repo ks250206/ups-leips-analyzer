@@ -103,6 +103,7 @@ export function SpectrumPlot({
   const svgRef = useRef<SVGSVGElement>(null);
   const scalesRef = useRef<PlotScales | undefined>(undefined);
   const onViewportChangeRef = useRef(onViewportChange);
+  const applyingViewportRequestRef = useRef(false);
   const xDirectionRef = useRef<"normal" | "reverse">(xDirection);
   const clipId = useId();
   const [size, setSize] = useState(DEFAULT_SIZE);
@@ -115,6 +116,9 @@ export function SpectrumPlot({
   const updateViewport = (next: PlotViewport | ((current: PlotViewport) => PlotViewport)) => {
     setViewport((current) => {
       const resolved = typeof next === "function" ? next(current) : next;
+      if (!isValidPlotViewport(resolved)) {
+        return current;
+      }
       return plotViewportEquals(current, resolved) ? current : resolved;
     });
   };
@@ -179,7 +183,16 @@ export function SpectrumPlot({
     if (!viewportRequest) {
       return;
     }
-    updateViewport(viewportRequest.viewport);
+    setViewport((current) => {
+      if (
+        !isValidPlotViewport(viewportRequest.viewport) ||
+        plotViewportEquals(current, viewportRequest.viewport)
+      ) {
+        return current;
+      }
+      applyingViewportRequestRef.current = true;
+      return viewportRequest.viewport;
+    });
   }, [viewportRequest?.id]);
 
   useEffect(() => {
@@ -187,6 +200,10 @@ export function SpectrumPlot({
   }, [onViewportChange]);
 
   useEffect(() => {
+    if (applyingViewportRequestRef.current) {
+      applyingViewportRequestRef.current = false;
+      return;
+    }
     onViewportChangeRef.current?.(viewport);
   }, [viewport]);
 
@@ -423,6 +440,21 @@ const cursorStyles: readonly CursorStyle[] = ["point", "range"];
 function plotViewportEquals(left: PlotViewport, right: PlotViewport): boolean {
   return (
     rangeEquals(left.x, right.x) && rangeEquals(left.y, right.y) && rangeEquals(left.y2, right.y2)
+  );
+}
+
+function isValidPlotViewport(viewport: PlotViewport): boolean {
+  return rangeIsValid(viewport.x) && rangeIsValid(viewport.y) && rangeIsValid(viewport.y2);
+}
+
+function rangeIsValid(range: PlotViewport["x"] | undefined): boolean {
+  if (!range) {
+    return true;
+  }
+  return (
+    Number.isFinite(range.min) &&
+    Number.isFinite(range.max) &&
+    Math.abs(range.max - range.min) > 1e-12
   );
 }
 

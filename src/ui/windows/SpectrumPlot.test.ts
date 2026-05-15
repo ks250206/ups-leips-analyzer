@@ -1,4 +1,6 @@
-import { describe, expect, test } from "vite-plus/test";
+import { cleanup, render } from "@testing-library/react";
+import { createElement } from "react";
+import { afterEach, describe, expect, test } from "vite-plus/test";
 import {
   createPlotGeometry,
   createPlotScales,
@@ -12,8 +14,12 @@ import {
   selectionRectForMode,
   shouldRenderSeriesInXDomain,
   shiftRangeByDelta,
+  SpectrumPlot,
+  type PlotViewport,
   zoomRangeAt,
 } from "./SpectrumPlot";
+
+afterEach(() => cleanup());
 
 describe("SpectrumPlot D3 scales", () => {
   test("sets reversed x scale range", () => {
@@ -78,6 +84,48 @@ describe("SpectrumPlot D3 scales", () => {
     expect(geometry.bottom).toBe(64);
     expect(geometry.left).toBe(78);
     expect(geometry.plotHeight).toBe(164);
+  });
+
+  test("does not echo externally requested viewport changes", async () => {
+    const calls: PlotViewport[] = [];
+    const series = [
+      {
+        name: "s",
+        color: "#000000",
+        points: [
+          { x: 0, y: 0 },
+          { x: 4, y: 4 },
+        ],
+      },
+    ];
+    const firstViewport = { x: { min: 0, max: 2 }, y: { min: 0, max: 2 } };
+    const secondViewport = { x: { min: 1, max: 3 }, y: { min: 1, max: 3 } };
+    const rendered = render(
+      createElement(SpectrumPlot, {
+        title: "Echo guard",
+        xLabel: "x",
+        yLabel: "y",
+        series,
+        viewportRequest: { id: 1, viewport: firstViewport },
+        onViewportChange: (viewport) => calls.push(viewport),
+      }),
+    );
+    await Promise.resolve();
+    const callCountAfterMount = calls.length;
+
+    rendered.rerender(
+      createElement(SpectrumPlot, {
+        title: "Echo guard",
+        xLabel: "x",
+        yLabel: "y",
+        series,
+        viewportRequest: { id: 2, viewport: secondViewport },
+        onViewportChange: (viewport) => calls.push(viewport),
+      }),
+    );
+    await Promise.resolve();
+
+    expect(calls).toHaveLength(callCountAfterMount);
   });
 
   test("creates a right y scale for dual-axis plots", () => {

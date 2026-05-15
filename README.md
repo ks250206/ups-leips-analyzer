@@ -49,3 +49,7 @@ podman compose up
 ```
 
 コンテナはCloud Run向けにCaddyで静的配信します。ローカルでは `http://127.0.0.1:4173/`、Cloud Runでは `$PORT` で待ち受けます。
+
+## License
+
+MIT License. Copyright (c) 2026 ks25026.

@@ -2,6 +2,7 @@
   "name": "ups-leips-analyzer",
   "version": "0.1.0",
   "private": true,
+  "license": "MIT",
   "type": "module",
   "scripts": {
     "dev": "vp dev --host 127.0.0.1",
