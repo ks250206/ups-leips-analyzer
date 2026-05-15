@@ -17,12 +17,13 @@ IGOR Proの複数グラフ/操作パネル画面とSciSpace風ワークベンチ
 - 各plotのcontext menuにはcursor range表示のtoggle、Reset view、Export PNG/SVGを置く。LEIPS PlotのFilter > Custom band passはmodalで任意値を入力する。REELS Plotだけ`REELS BG mode`を表示し、BG single point horizontal modeを選べる。
 - Window context menuとWindows menuからwindow position/sizeをdefault layoutへ戻せる。Windows menuには全window position/size resetも置く。
 - Band Diagramのplot viewportはProject stateに保存し、Project save/load/import/exportで復元する。
+- Band DiagramのX range controlは左入力を高エネルギー側、右入力を低エネルギー側として並べ、defaultは`8`から`-5`にする。
 - Top menu: Project/View/Windows/Helpを配置し、背景右クリックでも同じメニュー構成を表示する。ひとつのmenuを開いた状態で別menuにhoverした場合は、その列のmenuへ切り替える。Recent projectなどのsubmenuは対象行へhoverしたときだけ展開する。
 - Plot context menuはplot固有項目を先に出し、Reset view / Export PNG / Export SVGは末尾に配置する。
 
 ## Cursor / Range Selection
 
-plot上でドラッグ選択したx範囲を、現在アクティブなfit範囲に反映する。数値入力での調整も可能にする。cursor表示はSetting menuまたはcontext menuから全plot共通で切り替える。defaultはIgorPro風point marker表示で、A/B/C/Dなどのcursor indicatorを表示する。range band表示では用途名だけを表示する。REELS BG single point modeはglobal cursor表示とは別のREELS専用Project stateとして扱い、REELSのBGだけ単点cursorにし、その点を通る水平線`y=y0`を表示する。
+plot上でドラッグ選択したx範囲を、現在アクティブなfit範囲に反映する。数値入力での調整も可能にする。cursor表示はSetting menuまたはcontext menuから全plot共通で切り替える。defaultはIgorPro風point marker表示で、A/B/C/Dなどのcursor indicatorを表示する。range band表示では範囲の塗りと用途名だけを表示し、境界線は出さない。REELS BG single point modeはglobal cursor表示とは別のREELS専用Project stateとして扱い、REELSのBGだけ単点cursorにし、その点を通る水平線`y=y0`を表示する。
 
 CSV読み込み、Project保存/読み込み、Project import/exportはtoastで成功/失敗を通知する。
 

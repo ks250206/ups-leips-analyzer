@@ -13,6 +13,7 @@ import {
   DEFAULT_BAND_INDICATOR_ARROW_SCALE,
   DEFAULT_BAND_INDICATOR_FONT_SIZE,
   DEFAULT_BAND_SIGNIFICANT_DIGITS,
+  DEFAULT_BAND_X_RANGE,
   clampSignificantDigits,
 } from "./BandDiagramWindow";
 import { formatSignificant } from "../format";
@@ -51,6 +52,7 @@ describe("Igor-style band diagram plot model", () => {
     expect(DEFAULT_BAND_INDICATOR_FONT_SIZE).toBe(30);
     expect(DEFAULT_BAND_INDICATOR_ARROW_SCALE).toBe(0.7);
     expect(DEFAULT_BAND_SIGNIFICANT_DIGITS).toBe(3);
+    expect(DEFAULT_BAND_X_RANGE).toEqual({ min: -5, max: 8 });
     expect(clampSignificantDigits(2.2)).toBe(2);
     expect(clampSignificantDigits(99)).toBe(8);
     expect(formatSignificant(5.1, 3)).toBe("5.10");

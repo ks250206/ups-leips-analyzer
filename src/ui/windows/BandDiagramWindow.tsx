@@ -11,6 +11,7 @@ import {
 export const DEFAULT_BAND_INDICATOR_FONT_SIZE = 30;
 export const DEFAULT_BAND_INDICATOR_ARROW_SCALE = 0.7;
 export const DEFAULT_BAND_SIGNIFICANT_DIGITS = 3;
+export const DEFAULT_BAND_X_RANGE = { min: -5, max: 8 } as const;
 
 export function BandDiagramWindow() {
   const band = useProjectStore((state) => state.project.analysis.band);
@@ -26,19 +27,9 @@ export function BandDiagramWindow() {
   );
   const [significantDigits, setSignificantDigits] = useState(DEFAULT_BAND_SIGNIFICANT_DIGITS);
   const lastBandDataSignature = useRef<string | undefined>(undefined);
-  const bandXDomain = useMemo(() => {
-    const points = band ? [...band.upsPoints, ...band.leipsPoints] : [];
-    if (points.length === 0) {
-      return { min: -10, max: 6 };
-    }
-    return {
-      min: Math.min(...points.map((point) => point.x)),
-      max: Math.max(...points.map((point) => point.x)),
-    };
-  }, [band]);
   const bandDataSignature = useMemo(() => (band ? bandPlotDataSignature(band) : undefined), [band]);
-  const [xMin, setXMin] = useState(bandXDomain.min);
-  const [xMax, setXMax] = useState(bandXDomain.max);
+  const [xMin, setXMin] = useState<number>(DEFAULT_BAND_X_RANGE.min);
+  const [xMax, setXMax] = useState<number>(DEFAULT_BAND_X_RANGE.max);
   const [viewport, setViewport] = useState<BandViewport>(persistedViewport ?? {});
   const applyAutoScale = useCallback(() => {
     if (!band) {
@@ -47,7 +38,7 @@ export function BandDiagramWindow() {
     }
     const next = createBandAutoViewport({
       band,
-      xDomain: bandXDomain,
+      xDomain: DEFAULT_BAND_X_RANGE,
       upsScale: 1,
       upsOffset: 0,
       leipsScale: 1,
@@ -57,13 +48,13 @@ export function BandDiagramWindow() {
     setXMax(Number(next.x.max.toFixed(2)));
     setViewport(next);
     setBandDiagramViewport(next);
-  }, [band, bandXDomain, setBandDiagramViewport]);
+  }, [band, setBandDiagramViewport]);
 
   useEffect(() => {
     if (!band || !bandDataSignature) {
       lastBandDataSignature.current = undefined;
-      setXMin(bandXDomain.min);
-      setXMax(bandXDomain.max);
+      setXMin(DEFAULT_BAND_X_RANGE.min);
+      setXMax(DEFAULT_BAND_X_RANGE.max);
       setViewport({});
       setBandDiagramViewport(undefined);
       return;
@@ -76,17 +67,17 @@ export function BandDiagramWindow() {
       persistedViewport ??
       createBandAutoViewport({
         band,
-        xDomain: bandXDomain,
+        xDomain: DEFAULT_BAND_X_RANGE,
         upsScale: 1,
         upsOffset: 0,
         leipsScale: 1,
         leipsOffset: 0,
       });
-    setXMin(next.x?.min ?? bandXDomain.min);
-    setXMax(next.x?.max ?? bandXDomain.max);
+    setXMin(next.x?.min ?? DEFAULT_BAND_X_RANGE.min);
+    setXMax(next.x?.max ?? DEFAULT_BAND_X_RANGE.max);
     setViewport(next);
     setBandDiagramViewport(next);
-  }, [band, bandDataSignature, bandXDomain, persistedViewport, setBandDiagramViewport]);
+  }, [band, bandDataSignature, persistedViewport, setBandDiagramViewport]);
 
   const handleViewportChange = (next: BandViewport) => {
     setViewport(next);
@@ -95,8 +86,8 @@ export function BandDiagramWindow() {
       setXMin(Number(next.x.min.toFixed(2)));
       setXMax(Number(next.x.max.toFixed(2)));
     } else if (!next.y && !next.y2) {
-      setXMin(bandXDomain.min);
-      setXMax(bandXDomain.max);
+      setXMin(DEFAULT_BAND_X_RANGE.min);
+      setXMax(DEFAULT_BAND_X_RANGE.max);
     }
   };
 
@@ -208,8 +199,8 @@ function BandDiagramControlStrip({
           onChange={setters.setSignificantDigits}
         />
         <span className="grid w-[190px] grid-cols-[1fr_1fr_auto] gap-1">
-          <BandDomainInput value={xMin} onChange={(value) => setXDomainMin(value)} />
           <BandDomainInput value={xMax} onChange={(value) => setXDomainMax(value)} />
+          <BandDomainInput value={xMin} onChange={(value) => setXDomainMin(value)} />
           <button
             className="rounded border border-slate-300 bg-white px-1 py-0.5 font-semibold hover:bg-cyan-50"
             type="button"

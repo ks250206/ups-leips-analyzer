@@ -387,14 +387,6 @@ export function CursorHandles({
         const x = xScale(handle.value);
         return (
           <g key={`${band.id}-${handle.side}`}>
-            <line
-              stroke={band.color}
-              strokeWidth={1.5}
-              x1={x}
-              x2={x}
-              y1={geometry.top}
-              y2={geometry.plotBottom}
-            />
             <rect
               aria-label={`${band.label} ${handle.side} cursor`}
               className="cursor-ew-resize"
