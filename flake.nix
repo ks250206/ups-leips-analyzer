@@ -23,12 +23,12 @@
             pkgs.git
             pkgs.podman
             pkgs.podman-compose
-            pkgs.docker-compose
           ];
 
           shellHook = ''
             export PATH="$PWD/node_modules/.bin:$PATH"
             export COREPACK_ENABLE_DOWNLOAD_PROMPT=0
+            export PODMAN_COMPOSE_PROVIDER=podman-compose
             corepack enable >/dev/null 2>&1 || true
             echo "UPS-LEIPS Analyzer dev shell"
             echo "Run once: pnpm install"

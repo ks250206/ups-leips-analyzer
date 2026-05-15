@@ -44,8 +44,8 @@ vp install
 ```
 
 ```sh
-docker compose build
-docker compose up
+podman compose build
+podman compose up
 ```
 
 コンテナはCloud Run向けにCaddyで静的配信します。ローカルでは `http://127.0.0.1:4173/`、Cloud Runでは `$PORT` で待ち受けます。
