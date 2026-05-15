@@ -37,6 +37,7 @@ interface ProjectStore {
   setFitRange: (target: FitTarget, range: FitRange) => void;
   setBandpassType: (type: number) => void;
   setCustomBandpassEnergy: (energy: number) => void;
+  setReelsIncidentEnergy: (energy: number) => void;
   setEfMinusEvbm: (value: number) => void;
   setActiveFitTarget: (target: FitTarget) => void;
   setBandDiagramViewport: (viewport: ProjectUiState["bandDiagramViewport"]) => void;
@@ -78,6 +79,7 @@ export const useProjectStore = create<ProjectStore>((set, get) => ({
         datasets,
         state.project.analysis.bandpassType,
         state.project.analysis.customBandpassEnergy,
+        state.project.analysis.reelsIncidentEnergy,
       );
       const project = touchProject({
         ...state.project,
@@ -101,6 +103,7 @@ export const useProjectStore = create<ProjectStore>((set, get) => ({
         [],
         state.project.analysis.bandpassType,
         state.project.analysis.customBandpassEnergy,
+        state.project.analysis.reelsIncidentEnergy,
       );
       const project = touchProject({
         ...state.project,
@@ -133,6 +136,7 @@ export const useProjectStore = create<ProjectStore>((set, get) => ({
         [],
         type,
         state.project.analysis.customBandpassEnergy,
+        state.project.analysis.reelsIncidentEnergy,
       );
       const project = touchProject({
         ...state.project,
@@ -151,6 +155,7 @@ export const useProjectStore = create<ProjectStore>((set, get) => ({
         [],
         CUSTOM_BANDPASS_TYPE,
         customBandpassEnergy,
+        state.project.analysis.reelsIncidentEnergy,
       );
       const project = touchProject({
         ...state.project,
@@ -160,6 +165,25 @@ export const useProjectStore = create<ProjectStore>((set, get) => ({
           customBandpassEnergy,
           fitRanges,
         },
+      });
+      return { project: recalculateProject(project) };
+    });
+  },
+  setReelsIncidentEnergy: (energy) => {
+    set((state) => {
+      const reelsIncidentEnergy = Number.isFinite(energy) ? energy : 1000;
+      const fitRanges = autoFitRanges(
+        state.project.datasets,
+        state.project.analysis.selection,
+        state.project.analysis.fitRanges,
+        [],
+        state.project.analysis.bandpassType,
+        state.project.analysis.customBandpassEnergy,
+        reelsIncidentEnergy,
+      );
+      const project = touchProject({
+        ...state.project,
+        analysis: { ...state.project.analysis, reelsIncidentEnergy, fitRanges },
       });
       return { project: recalculateProject(project) };
     });

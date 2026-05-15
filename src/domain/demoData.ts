@@ -1,4 +1,9 @@
-import { calculateLEIPSResult, calculateUPSResult, createBandDiagram } from "./analysis";
+import {
+  calculateLEIPSResult,
+  calculateREELSResult,
+  calculateUPSResult,
+  createBandDiagram,
+} from "./analysis";
 import type { AnalysisState, FitRanges, Point, SpectrumDataset } from "./types";
 
 export const DEFAULT_FIT_RANGES: FitRanges = {
@@ -11,6 +16,8 @@ export const DEFAULT_FIT_RANGES: FitRanges = {
   leetDerPeak: { min: -6.9, max: -5.7 },
   leipsEdge: { min: 1.0, max: 2.4 },
   leipsBackground: { min: 3.0, max: 4.6 },
+  reelsEdge: { min: 2.8, max: 3.6 },
+  reelsBackground: { min: 0.5, max: 1.8 },
 };
 
 export function createDemoDatasets(): SpectrumDataset[] {
@@ -20,6 +27,7 @@ export function createDemoDatasets(): SpectrumDataset[] {
     createLeetDataset(),
     createLeetDerDataset(),
     createLeipsDataset(),
+    createReelsDataset(),
   ];
 }
 
@@ -30,6 +38,7 @@ export function createInitialAnalysis(datasets: readonly SpectrumDataset[]): Ana
     leetDatasetId: findByKind(datasets, "leet")?.id,
     leetDerDatasetId: findByKind(datasets, "leet-der")?.id,
     leipsDatasetId: findByKind(datasets, "leips")?.id,
+    reelsDatasetId: findByKind(datasets, "reels")?.id,
   };
 
   const base = {
@@ -38,6 +47,7 @@ export function createInitialAnalysis(datasets: readonly SpectrumDataset[]): Ana
     bandpassType: 1,
     customBandpassEnergy: 4.77,
     photonEnergy: 21.22,
+    reelsIncidentEnergy: 1000,
     efMinusEvbm: 0.56,
   };
 
@@ -45,6 +55,7 @@ export function createInitialAnalysis(datasets: readonly SpectrumDataset[]): Ana
   const ipDataset = findById(datasets, selection.upsIpDatasetId);
   const leetDerDataset = findById(datasets, selection.leetDerDatasetId);
   const leipsDataset = findById(datasets, selection.leipsDatasetId);
+  const reelsDataset = findById(datasets, selection.reelsDatasetId);
   if (!vbDataset || !ipDataset || !leetDerDataset || !leipsDataset) {
     return base;
   }
@@ -76,8 +87,16 @@ export function createInitialAnalysis(datasets: readonly SpectrumDataset[]): Ana
     ip: ups.ip,
     ea: leips.ea,
   });
+  const reels = reelsDataset
+    ? calculateREELSResult({
+        dataset: reelsDataset,
+        edgeRange: DEFAULT_FIT_RANGES.reelsEdge,
+        backgroundRange: DEFAULT_FIT_RANGES.reelsBackground,
+        incidentEnergy: base.reelsIncidentEnergy,
+      })
+    : undefined;
 
-  return { ...base, efMinusEvbm, ups, leips, band };
+  return { ...base, efMinusEvbm, ups, leips, reels, band };
 }
 
 function findByKind(
@@ -160,6 +179,23 @@ function createLeipsDataset(): SpectrumDataset {
   );
 }
 
+function createReelsDataset(): SpectrumDataset {
+  const incidentEnergy = 1000;
+  const bandGap = 2.65;
+  return createDataset(
+    "demo-reels",
+    "Demo REELS",
+    "reels",
+    range(989.8, 1004.8, 0.05).map((kineticEnergy) => {
+      const loss = incidentEnergy - kineticEnergy;
+      const elastic = 260 * Math.exp(-0.5 * ((loss - 0.15) / 0.18) ** 2);
+      const onset = loss > bandGap ? (loss - bandGap) ** 1.7 * 120 : 0;
+      const baseline = 12 + loss * 0.8;
+      return { x: kineticEnergy, y: Math.max(0, elastic + onset + baseline + ripple(loss, 3)) };
+    }),
+  );
+}
+
 function createDataset(
   id: string,
   name: string,
@@ -174,7 +210,9 @@ function createDataset(
     xLabel:
       kind === "leips" || kind === "leet" || kind === "leet-der"
         ? "Applied Bias Vbias / V"
-        : "Binding Energy / eV",
+        : kind === "reels"
+          ? "Kinetic Energy / eV"
+          : "Binding Energy / eV",
     yLabel: "Intensity / a.u.",
     points,
     metadata: { fixture: "synthetic" },

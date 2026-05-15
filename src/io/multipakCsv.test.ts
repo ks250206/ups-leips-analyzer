@@ -25,6 +25,7 @@ describe("parseMultiPakCsv", () => {
     expect(inferSpectrumKind("LEET der 1st.spe.csv")).toBe("leet-der");
     expect(inferSpectrumKind("LEET 1st.spe.csv")).toBe("leet");
     expect(inferSpectrumKind("LEIPS 2nd.spe.csv")).toBe("leips");
+    expect(inferSpectrumKind("No.23_Li-rich_REELS.csv")).toBe("reels");
     expect(inferSpectrumKind("unknown.txt")).toBe("unknown");
   });
 

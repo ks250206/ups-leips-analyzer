@@ -14,6 +14,8 @@ const TARGETS: FitTarget[] = [
   "leet-der-peak",
   "leips-edge",
   "leips-bg",
+  "reels-edge",
+  "reels-bg",
 ];
 
 describe("project store", () => {
@@ -28,8 +30,9 @@ describe("project store", () => {
 
     useProjectStore.getState().loadDemo();
 
-    expect(useProjectStore.getState().project.datasets).toHaveLength(5);
+    expect(useProjectStore.getState().project.datasets).toHaveLength(6);
     expect(useProjectStore.getState().project.analysis.ups).toBeDefined();
+    expect(useProjectStore.getState().project.analysis.reels).toBeDefined();
   });
 
   test("does not run analysis or set errors for an empty project", () => {
@@ -55,6 +58,8 @@ describe("project store", () => {
       "leetDerPeak",
       "leipsEdge",
       "leipsBackground",
+      "reelsEdge",
+      "reelsBackground",
     ]);
   });
 
@@ -83,6 +88,7 @@ describe("project store", () => {
     state.selectDataset(leips.id);
     state.assignDataset("leipsDatasetId", leips.id);
     state.setBandpassType(2);
+    state.setReelsIncidentEnergy(999);
     state.setEfMinusEvbm(0.7);
     state.updateWindow("browser", { x: 44, y: 55 });
     state.focusWindow("browser");
@@ -90,6 +96,7 @@ describe("project store", () => {
     const next = useProjectStore.getState().project;
     expect(next.selectedDatasetId).toBe(leips.id);
     expect(next.analysis.bandpassType).toBe(2);
+    expect(next.analysis.reelsIncidentEnergy).toBe(999);
     expect(next.analysis.efMinusEvbm).toBe(next.analysis.ups?.efMinusEvbm);
     expect(next.windows.find((window) => window.id === "browser")?.x).toBe(44);
     expect(next.windows.find((window) => window.id === "browser")?.zIndex).toBe(
@@ -165,7 +172,7 @@ describe("project store", () => {
 
     await useProjectStore.getState().loadSavedProject(savedId);
     expect(useProjectStore.getState().project.name).toBe("Saved Copy");
-    expect(useProjectStore.getState().project.datasets).toHaveLength(5);
+    expect(useProjectStore.getState().project.datasets).toHaveLength(6);
   });
 
   test("save as overwrites a saved project with the same name", async () => {
@@ -227,6 +234,7 @@ describe("project store", () => {
     expect(selection.leetDatasetId).toBe("loaded-demo-leet");
     expect(selection.leetDerDatasetId).toBe("loaded-demo-leet-der");
     expect(selection.leipsDatasetId).toBe("loaded-demo-leips");
+    expect(selection.reelsDatasetId).toBe("loaded-demo-reels");
   });
 
   test("initializes LEET derivative peak cursor around the loaded maximum intensity", () => {
@@ -288,6 +296,7 @@ describe("project store", () => {
     useProjectStore.getState().importProject(exportProjectJson(project));
     useProjectStore.getState().addDatasets(createDemoDatasets());
     expect(useProjectStore.getState().project.analysis.selection.upsVbDatasetId).toBeDefined();
+    expect(useProjectStore.getState().project.analysis.selection.reelsDatasetId).toBeDefined();
     useProjectStore.getState().setActiveFitTarget("leips-bg");
     useProjectStore.getState().recalculate();
     expect(useProjectStore.getState().activeFitTarget).toBe("leips-bg");

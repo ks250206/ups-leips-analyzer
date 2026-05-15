@@ -70,6 +70,9 @@ export function parseMultiPakCsv(text: string, options: ParseMultiPakOptions): S
 
 export function inferSpectrumKind(value: string): SpectrumKind {
   const normalized = value.toLowerCase();
+  if (normalized.includes("reels")) {
+    return "reels";
+  }
   if (normalized.includes("leips")) {
     return "leips";
   }
@@ -125,6 +128,9 @@ function stripExtension(sourceName: string): string {
 function axisLabelForKind(kind: SpectrumKind): string {
   if (kind === "leet" || kind === "leet-der" || kind === "leips") {
     return "Applied Bias Vbias / V";
+  }
+  if (kind === "reels") {
+    return "Kinetic Energy / eV";
   }
   return "Binding Energy / eV";
 }

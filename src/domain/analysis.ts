@@ -5,6 +5,7 @@ import type {
   FitRange,
   LEIPSResult,
   Point,
+  REELSResult,
   SpectrumDataset,
   UPSResult,
 } from "./types";
@@ -119,4 +120,31 @@ export function convertLeipsEvacToEfEnergy(
 ): Point[] {
   const vacuumRelativeToEf = input.efMinusEvbm - input.ip;
   return points.map((point) => ({ x: point.x + vacuumRelativeToEf, y: point.y }));
+}
+
+export function convertKineticToLoss(points: readonly Point[], incidentEnergy = 1000): Point[] {
+  return points
+    .map((point) => ({ x: incidentEnergy - point.x, y: point.y }))
+    .sort((left, right) => left.x - right.x);
+}
+
+export function calculateREELSResult(input: {
+  dataset: SpectrumDataset;
+  edgeRange: FitRange;
+  backgroundRange: FitRange;
+  incidentEnergy?: number;
+}): REELSResult {
+  const incidentEnergy = input.incidentEnergy ?? 1000;
+  const lossPoints = convertKineticToLoss(input.dataset.points, incidentEnergy);
+  const edgeFit = linearFit(lossPoints, input.edgeRange);
+  const backgroundFit = linearFit(lossPoints, input.backgroundRange);
+  const bandGap = lineIntersection(edgeFit, backgroundFit);
+
+  return {
+    bandGap,
+    incidentEnergy,
+    edgeFit,
+    backgroundFit,
+    lossPoints,
+  };
 }

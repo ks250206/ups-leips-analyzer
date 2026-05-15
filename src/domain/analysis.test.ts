@@ -3,8 +3,10 @@ import { bandpassEnergy, DEFAULT_PHOTON_ENERGY_EV } from "./constants";
 import {
   calculateIonizationPotential,
   calculateLEIPSResult,
+  calculateREELSResult,
   calculateUPSResult,
   convertBiasToVacuumEnergy,
+  convertKineticToLoss,
   convertLeipsEvacToEfEnergy,
   createBandDiagram,
 } from "./analysis";
@@ -38,6 +40,29 @@ describe("UPS analysis", () => {
     expect(result.ipEvbm).toBeCloseTo(0.56, 1);
     expect(result.ecutoff).toBeCloseTo(11.86, 1);
     expect(result.ip).toBeGreaterThan(8);
+  });
+});
+
+describe("REELS analysis", () => {
+  test("converts kinetic energy to electron loss energy", () => {
+    const point = convertKineticToLoss([{ x: 989.78, y: 1 }], 1000)[0];
+    expect(point?.x).toBeCloseTo(10.22, 6);
+    expect(point?.y).toBe(1);
+  });
+
+  test("calculates REELS band gap from onset and background fits on loss axis", () => {
+    const datasets = createDemoDatasets();
+    const result = calculateREELSResult({
+      dataset: datasets.find((dataset) => dataset.kind === "reels")!,
+      edgeRange: DEFAULT_FIT_RANGES.reelsEdge,
+      backgroundRange: DEFAULT_FIT_RANGES.reelsBackground,
+    });
+
+    expect(result.incidentEnergy).toBe(1000);
+    expect(result.lossPoints[0]?.x).toBeLessThan(result.lossPoints.at(-1)?.x ?? 0);
+    expect(result.edgeFit.pointsUsed).toBeGreaterThanOrEqual(2);
+    expect(result.backgroundFit.pointsUsed).toBeGreaterThanOrEqual(2);
+    expect(result.bandGap).toBeCloseTo(2.65, 1);
   });
 });
 

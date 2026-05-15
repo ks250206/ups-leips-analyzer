@@ -1,7 +1,9 @@
 import {
   calculateLEIPSResult,
+  calculateREELSResult,
   calculateUPSResult,
   convertBiasToVacuumEnergy,
+  convertKineticToLoss,
   createBandDiagram,
 } from "../domain/analysis";
 import { CUSTOM_BANDPASS_TYPE, bandpassEnergy } from "../domain/constants";
@@ -15,6 +17,7 @@ export function recalculateProject(project: ProjectSnapshot): ProjectSnapshot {
   const ipDataset = findDataset(project.datasets, analysis.selection.upsIpDatasetId);
   const leetDerDataset = findDataset(project.datasets, analysis.selection.leetDerDatasetId);
   const leipsDataset = findDataset(project.datasets, analysis.selection.leipsDatasetId);
+  const reelsDataset = findDataset(project.datasets, analysis.selection.reelsDatasetId);
   const errors: string[] = [];
 
   const ups =
@@ -64,6 +67,16 @@ export function recalculateProject(project: ProjectSnapshot): ProjectSnapshot {
           }),
         )
       : undefined;
+  const reels = reelsDataset
+    ? safeCalculate("REELS", errors, () =>
+        calculateREELSResult({
+          dataset: reelsDataset,
+          edgeRange: analysis.fitRanges.reelsEdge,
+          backgroundRange: analysis.fitRanges.reelsBackground,
+          incidentEnergy: analysis.reelsIncidentEnergy,
+        }),
+      )
+    : undefined;
 
   return {
     ...project,
@@ -72,6 +85,7 @@ export function recalculateProject(project: ProjectSnapshot): ProjectSnapshot {
       efMinusEvbm,
       ups,
       leips,
+      reels,
       band,
       error: errors.length > 0 ? errors.join("\n") : undefined,
     },
@@ -98,6 +112,10 @@ export function fitRangeKey(target: FitTarget): keyof AnalysisState["fitRanges"]
       return "leipsBackground";
     case "leet-der-peak":
       return "leetDerPeak";
+    case "reels-edge":
+      return "reelsEdge";
+    case "reels-bg":
+      return "reelsBackground";
   }
 }
 
@@ -108,6 +126,7 @@ export function normalizeProject(project: ProjectSnapshot): ProjectSnapshot {
     analysis: {
       ...project.analysis,
       customBandpassEnergy: project.analysis.customBandpassEnergy ?? 4.77,
+      reelsIncidentEnergy: project.analysis.reelsIncidentEnergy ?? 1000,
       fitRanges: {
         ...DEFAULT_FIT_RANGES,
         ...project.analysis.fitRanges,
@@ -142,6 +161,7 @@ export function autoSelectDatasets(
     leetDatasetId: pickDatasetId("leet", datasets, current.leetDatasetId, preferred),
     leetDerDatasetId: pickDatasetId("leet-der", datasets, current.leetDerDatasetId, preferred),
     leipsDatasetId: pickDatasetId("leips", datasets, current.leipsDatasetId, preferred),
+    reelsDatasetId: pickDatasetId("reels", datasets, current.reelsDatasetId, preferred),
   };
 }
 
@@ -152,6 +172,7 @@ export function autoFitRanges(
   preferred: readonly SpectrumDataset[],
   bandpassType: number,
   customBandpassEnergy?: number,
+  reelsIncidentEnergy = 1000,
 ): AnalysisState["fitRanges"] {
   const leetDerDataset =
     preferred.find((dataset) => dataset.kind === "leet-der") ??
@@ -159,6 +180,9 @@ export function autoFitRanges(
   const leipsDataset =
     preferred.find((dataset) => dataset.kind === "leips") ??
     findDataset(datasets, selection.leipsDatasetId);
+  const reelsDataset =
+    preferred.find((dataset) => dataset.kind === "reels") ??
+    findDataset(datasets, selection.reelsDatasetId);
   const shouldInitializePeak = preferred.some((dataset) => dataset.kind === "leet-der");
   const leetDerPeak =
     leetDerDataset && shouldInitializePeak
@@ -178,6 +202,18 @@ export function autoFitRanges(
     leetDerPeak,
     leipsEdge: rangeWithFallback(leipsEvacPoints, current.leipsEdge, 0.05, 0.22),
     leipsBackground: rangeWithFallback(leipsEvacPoints, current.leipsBackground, 0.34, 0.56),
+    reelsEdge: rangeWithFallback(
+      reelsDataset ? convertKineticToLoss(reelsDataset.points, reelsIncidentEnergy) : [],
+      current.reelsEdge,
+      0.18,
+      0.32,
+    ),
+    reelsBackground: rangeWithFallback(
+      reelsDataset ? convertKineticToLoss(reelsDataset.points, reelsIncidentEnergy) : [],
+      current.reelsBackground,
+      0.02,
+      0.14,
+    ),
   };
 }
 

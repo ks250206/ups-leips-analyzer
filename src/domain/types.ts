@@ -1,4 +1,11 @@
-export type SpectrumKind = "ups-vb" | "ups-ip" | "leet" | "leet-der" | "leips" | "unknown";
+export type SpectrumKind =
+  | "ups-vb"
+  | "ups-ip"
+  | "leet"
+  | "leet-der"
+  | "leips"
+  | "reels"
+  | "unknown";
 
 export type FitTarget =
   | "ups-vb-edge"
@@ -9,7 +16,9 @@ export type FitTarget =
   | "ups-ip-bg"
   | "leips-edge"
   | "leips-bg"
-  | "leet-der-peak";
+  | "leet-der-peak"
+  | "reels-edge"
+  | "reels-bg";
 
 export interface Point {
   x: number;
@@ -76,6 +85,14 @@ export interface LEIPSResult {
   leipsEvacPoints: Point[];
 }
 
+export interface REELSResult {
+  bandGap: number;
+  incidentEnergy: number;
+  edgeFit: LineFitResult;
+  backgroundFit: LineFitResult;
+  lossPoints: Point[];
+}
+
 export interface BandDiagramResult {
   efMinusEvbm: number;
   ip: number;
@@ -97,6 +114,8 @@ export interface FitRanges {
   leetDerPeak: FitRange;
   leipsEdge: FitRange;
   leipsBackground: FitRange;
+  reelsEdge: FitRange;
+  reelsBackground: FitRange;
 }
 
 export interface AnalysisSelection {
@@ -105,6 +124,7 @@ export interface AnalysisSelection {
   leetDatasetId?: string;
   leetDerDatasetId?: string;
   leipsDatasetId?: string;
+  reelsDatasetId?: string;
 }
 
 export interface AnalysisState {
@@ -113,9 +133,11 @@ export interface AnalysisState {
   bandpassType: number;
   customBandpassEnergy?: number;
   photonEnergy: number;
+  reelsIncidentEnergy: number;
   efMinusEvbm: number;
   ups?: UPSResult;
   leips?: LEIPSResult;
+  reels?: REELSResult;
   band?: BandDiagramResult;
   error?: string;
 }
