@@ -71,6 +71,15 @@ describe("SpectrumPlot D3 scales", () => {
     expect(geometry.plotHeight).toBe(170);
   });
 
+  test("uses deeper bottom margin only for bias dependence plots", () => {
+    const geometry = createPlotGeometry({ width: 320, height: 240 }, false, false, "bias");
+
+    expect(geometry.top).toBe(12);
+    expect(geometry.bottom).toBe(64);
+    expect(geometry.left).toBe(78);
+    expect(geometry.plotHeight).toBe(164);
+  });
+
   test("creates a right y scale for dual-axis plots", () => {
     const scales = createPlotScales({
       size: { width: 320, height: 240 },

@@ -61,7 +61,7 @@ interface SpectrumPlotProps {
   yRightLabel?: string;
   hideYTicks?: boolean;
   largeAxisLabels?: boolean;
-  marginVariant?: "normal" | "leips";
+  marginVariant?: "normal" | "leips" | "bias";
   xLabelBottomPadding?: number;
   series: PlotSeries[];
   markers?: PlotMarker[];
@@ -115,7 +115,7 @@ export function SpectrumPlot({
   const updateViewport = (next: PlotViewport | ((current: PlotViewport) => PlotViewport)) => {
     setViewport((current) => {
       const resolved = typeof next === "function" ? next(current) : next;
-      return resolved;
+      return plotViewportEquals(current, resolved) ? current : resolved;
     });
   };
   const openPlotContextMenu = (x: number, y: number) =>
@@ -419,6 +419,22 @@ export function SpectrumPlot({
 }
 
 const cursorStyles: readonly CursorStyle[] = ["point", "range"];
+
+function plotViewportEquals(left: PlotViewport, right: PlotViewport): boolean {
+  return (
+    rangeEquals(left.x, right.x) && rangeEquals(left.y, right.y) && rangeEquals(left.y2, right.y2)
+  );
+}
+
+function rangeEquals(
+  left: PlotViewport["x"] | undefined,
+  right: PlotViewport["x"] | undefined,
+): boolean {
+  if (!left || !right) {
+    return left === right;
+  }
+  return left.min === right.min && left.max === right.max;
+}
 
 function cursorStyleItems(
   cursorStyle: CursorStyle,

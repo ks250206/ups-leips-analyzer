@@ -8,7 +8,7 @@ export interface SpectrumPlotScaleInput {
   series: readonly PlotSeries[];
   xDirection: "normal" | "reverse";
   largeAxisLabels?: boolean;
-  marginVariant?: "normal" | "leips";
+  marginVariant?: "normal" | "leips" | "bias";
   viewport?: PlotViewport;
 }
 
@@ -58,11 +58,17 @@ export function createPlotGeometry(
   size: { width: number; height: number },
   largeAxisLabels = false,
   hasRightAxis = false,
-  marginVariant: "normal" | "leips" = "normal",
+  marginVariant: "normal" | "leips" | "bias" = "normal",
 ): PlotGeometry {
   const width = Math.max(MIN_PLOT_SIZE.width, Math.floor(size.width));
   const height = Math.max(MIN_PLOT_SIZE.height, Math.floor(size.height));
-  const top = largeAxisLabels ? 44 : marginVariant === "leips" ? 16 : 20;
+  const top = largeAxisLabels
+    ? 44
+    : marginVariant === "bias"
+      ? 12
+      : marginVariant === "leips"
+        ? 16
+        : 20;
   const right = largeAxisLabels
     ? 78
     : marginVariant === "leips"
@@ -72,7 +78,13 @@ export function createPlotGeometry(
       : hasRightAxis
         ? 50
         : 30;
-  const bottom = largeAxisLabels ? 62 : marginVariant === "leips" ? 54 : 44;
+  const bottom = largeAxisLabels
+    ? 62
+    : marginVariant === "bias"
+      ? 64
+      : marginVariant === "leips"
+        ? 54
+        : 44;
   const left = largeAxisLabels ? 96 : marginVariant === "leips" ? 76 : 78;
   const plotWidth = Math.max(40, width - left - right);
   const plotHeight = Math.max(40, height - top - bottom);

@@ -280,6 +280,7 @@ describe("App", () => {
     expect(screen.getByText("Band IP source")).toBeTruthy();
     expect(screen.getByText("0 V extrapolated IP")).toBeTruthy();
     expect(screen.getByText("Average IP")).toBeTruthy();
+    expect(document.body.textContent).toMatch(/IP=\d+\.\d+ eV/);
 
     fireEvent.pointerDown(screen.getByText("UPS Bias Dependence"));
     expect(await screen.findByText("UPS spectra analysis")).toBeTruthy();

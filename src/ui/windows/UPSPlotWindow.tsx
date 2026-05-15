@@ -7,6 +7,7 @@ import { formatNumber } from "../format";
 import {
   datasetSeries,
   lineFitSeries,
+  type PlotAnnotation,
   type PlotMarker,
   type PlotRangeBand,
   type PlotSeries,
@@ -211,6 +212,23 @@ export function UPSIPPlotWindow() {
         : [],
     [ipResult],
   );
+  const annotations = useMemo<PlotAnnotation[]>(
+    () =>
+      ipResult
+        ? [
+            {
+              type: "text",
+              label: `IP=${formatNumber(ipResult.ip, 2)} eV`,
+              color: "#dc2626",
+              xFraction: 0.98,
+              yFraction: 0.12,
+              fontSize: 14,
+              anchor: "end",
+            },
+          ]
+        : [],
+    [ipResult],
+  );
   const rangeBands = useMemo<PlotRangeBand[]>(
     () => [
       {
@@ -317,6 +335,7 @@ export function UPSIPPlotWindow() {
       series={series}
       markers={markers}
       rangeBands={rangeBands}
+      annotations={annotations}
       xDirection="reverse"
       viewportRequest={
         viewportRequest ?? {
@@ -429,11 +448,10 @@ function BiasDependencePlot({
         dash: [5, 3],
         width: 1.5,
         affectsScale: false,
-        fitLabel: (
-          <>
-            y = {formatNumber(dependence.slope, 3)}x + {formatNumber(dependence.intercept, 3)} eV
-          </>
-        ),
+        fitLabel: `y = ${formatNumber(dependence.slope, 3)}x + ${formatNumber(
+          dependence.intercept,
+          3,
+        )} eV`,
       });
     }
     return items;
@@ -447,7 +465,8 @@ function BiasDependencePlot({
           xLabel="Applied Bias Vbias / V"
           yLabel={config.label}
           series={series}
-          xLabelBottomPadding={18}
+          marginVariant="bias"
+          xLabelBottomPadding={10}
           viewportRequest={{ id: `${config.id}-${viewportKey}`, viewport }}
           onViewportChange={onViewportChange}
         />
