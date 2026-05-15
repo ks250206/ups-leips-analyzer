@@ -29,22 +29,19 @@ export function DataBrowser() {
   return (
     <div className="flex h-full flex-col bg-slate-100 text-xs">
       <div className="border-b border-slate-300 p-2">
-        <input
-          ref={csvInputRef}
-          id="dataset-csv-input"
-          className="sr-only"
-          type="file"
-          accept=".csv,text/csv"
-          multiple
-          onChange={(event) => {
-            void handleFiles(event.currentTarget.files);
-            event.currentTarget.value = "";
-          }}
-        />
         <div
           role="button"
           tabIndex={0}
-          className="flex cursor-pointer items-center justify-between gap-2 rounded border border-slate-300 bg-white px-2 py-1.5 text-left hover:bg-cyan-50"
+          className="relative flex cursor-pointer items-center justify-between gap-2 rounded border border-slate-300 bg-white px-2 py-1.5 text-left hover:bg-cyan-50"
+          onDragOver={(event) => {
+            event.preventDefault();
+            event.stopPropagation();
+          }}
+          onDrop={(event) => {
+            event.preventDefault();
+            event.stopPropagation();
+            void handleFiles(event.dataTransfer.files);
+          }}
           onClick={() => csvInputRef.current?.click()}
           onKeyDown={(event) => {
             if (event.key === "Enter" || event.key === " ") {
@@ -54,6 +51,29 @@ export function DataBrowser() {
           }}
           onPointerDown={(event) => event.stopPropagation()}
         >
+          <input
+            ref={csvInputRef}
+            aria-label="Load CSV files"
+            className="absolute inset-0 z-10 cursor-pointer opacity-0"
+            type="file"
+            accept=".csv,text/csv"
+            multiple
+            onChange={(event) => {
+              void handleFiles(event.currentTarget.files);
+              event.currentTarget.value = "";
+            }}
+            onDragOver={(event) => {
+              event.preventDefault();
+              event.stopPropagation();
+            }}
+            onDrop={(event) => {
+              event.preventDefault();
+              event.stopPropagation();
+              void handleFiles(event.dataTransfer.files);
+            }}
+            onClick={(event) => event.stopPropagation()}
+            onPointerDown={(event) => event.stopPropagation()}
+          />
           <span className="flex items-center gap-1.5">
             <FileUp size={14} />
             Load CSVs

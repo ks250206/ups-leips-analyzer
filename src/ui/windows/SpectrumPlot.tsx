@@ -21,6 +21,7 @@ import {
 import { NoDataPlot, SelectionOverlay } from "./SpectrumPlotChrome";
 import {
   CursorHandles,
+  CursorPointMarkers,
   MarkerLine,
   PlotAnnotations,
   PlotAxes,
@@ -98,6 +99,7 @@ export function SpectrumPlot({
   const [viewport, setViewport] = useState<PlotViewport>({});
   const [drag, setDrag] = useState<DragState | undefined>();
   const [showCursorRanges, setShowCursorRanges] = useState(true);
+  const [cursorMode, setCursorMode] = useState<"range" | "point">("range");
   const { menu, openMenu, closeMenu } = useContextMenu();
   const hasData = series.some((item) => item.points.length > 0);
 
@@ -118,6 +120,15 @@ export function SpectrumPlot({
         label: showCursorRanges ? "Hide cursor ranges" : "Show cursor ranges",
         action: () => setShowCursorRanges((current) => !current),
       },
+      ...(showCursorRanges
+        ? ([
+            {
+              type: "item",
+              label: cursorMode === "range" ? "Use point cursors" : "Use range cursors",
+              action: () => setCursorMode((current) => (current === "range" ? "point" : "range")),
+            },
+          ] as ContextMenuItem[])
+        : []),
       { type: "item", label: "Reset view", action: () => updateViewport({}) },
       {
         type: "item",
@@ -300,7 +311,7 @@ export function SpectrumPlot({
           yRightLabel={yRightLabel}
         />
         <g clipPath={`url(#${clipId})`}>
-          {showCursorRanges
+          {showCursorRanges && cursorMode === "range"
             ? rangeBands.map((band) => (
                 <RangeBand
                   key={band.id ?? `${band.label}-${band.min}-${band.max}`}
@@ -332,7 +343,7 @@ export function SpectrumPlot({
             />
           ))}
         </g>
-        {showCursorRanges
+        {showCursorRanges && cursorMode === "range"
           ? rangeBands.map((band) => (
               <CursorHandles
                 key={band.id ?? `${band.label}-${band.min}-${band.max}`}
@@ -343,6 +354,17 @@ export function SpectrumPlot({
               />
             ))
           : null}
+        {showCursorRanges && cursorMode === "point" ? (
+          <CursorPointMarkers
+            geometry={geometry}
+            onRangeBandChange={onRangeBandChange}
+            rangeBands={rangeBands}
+            series={series}
+            xScale={xScale}
+            yRightScale={yRightScale}
+            yScale={yScale}
+          />
+        ) : null}
         <PlotAnnotations annotations={annotations} geometry={geometry} xScale={xScale} />
         <SelectionOverlay drag={drag} geometry={geometry} selection={selection} />
       </svg>

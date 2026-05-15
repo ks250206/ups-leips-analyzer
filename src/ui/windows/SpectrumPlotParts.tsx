@@ -416,6 +416,127 @@ export function CursorHandles({
   );
 }
 
+export function CursorPointMarkers({
+  geometry,
+  onRangeBandChange,
+  rangeBands,
+  series,
+  xScale,
+  yScale,
+  yRightScale,
+}: {
+  geometry: PlotGeometry;
+  onRangeBandChange?: (bandId: string, range: FitRange) => void;
+  rangeBands: readonly PlotRangeBand[];
+  series: readonly PlotSeries[];
+  xScale: ScaleLinear<number, number>;
+  yScale: ScaleLinear<number, number>;
+  yRightScale?: ScaleLinear<number, number>;
+}) {
+  const labels = "ABCDEFGHIJKLMNOPQRSTUVWXYZ".split("");
+  let labelIndex = 0;
+  return (
+    <g>
+      {rangeBands.flatMap((band) =>
+        [
+          { value: band.min, side: "min" as const },
+          { value: band.max, side: "max" as const },
+        ].map((handle) => {
+          const label = labels[labelIndex] ?? `${labelIndex + 1}`;
+          labelIndex += 1;
+          const targetSeries = seriesForCursorBand(series, band);
+          const y = cursorYForValue(targetSeries, handle.value);
+          const scale = targetSeries?.yAxis === "right" && yRightScale ? yRightScale : yScale;
+          const xPosition = xScale(handle.value);
+          const yPosition = Math.min(Math.max(scale(y), geometry.top), geometry.plotBottom);
+          return (
+            <g key={`${band.id ?? band.label}-${handle.side}-${label}`}>
+              <line
+                stroke={band.color}
+                strokeWidth={1.2}
+                x1={xPosition - 5}
+                x2={xPosition + 5}
+                y1={yPosition}
+                y2={yPosition}
+              />
+              <line
+                stroke={band.color}
+                strokeWidth={1.2}
+                x1={xPosition}
+                x2={xPosition}
+                y1={yPosition - 5}
+                y2={yPosition + 5}
+              />
+              <rect
+                aria-label={`${label} cursor`}
+                className="cursor-ew-resize"
+                fill={band.color}
+                height={14}
+                rx={3}
+                width={14}
+                x={xPosition - 7}
+                y={Math.max(geometry.top + 2, yPosition - 21)}
+              />
+              <text
+                fill="white"
+                fontSize={10}
+                fontWeight={800}
+                pointerEvents="none"
+                textAnchor="middle"
+                x={xPosition}
+                y={Math.max(geometry.top + 13, yPosition - 10)}
+              >
+                {label}
+              </text>
+              <rect
+                className="cursor-ew-resize"
+                fill="transparent"
+                height={28}
+                role="button"
+                width={28}
+                x={xPosition - 14}
+                y={yPosition - 14}
+                onPointerDown={(event) => {
+                  event.preventDefault();
+                  event.stopPropagation();
+                  startHandleDrag(event, geometry, xScale, band, handle.side, onRangeBandChange);
+                }}
+              />
+            </g>
+          );
+        }),
+      )}
+    </g>
+  );
+}
+
+function seriesForCursorBand(
+  series: readonly PlotSeries[],
+  band: PlotRangeBand,
+): PlotSeries | undefined {
+  const candidates = series.filter((item) => item.affectsScale !== false && item.points.length > 0);
+  if (band.id?.startsWith("leet-der")) {
+    return (
+      candidates.find((item) => item.name.toLowerCase().includes("leet(der)")) ?? candidates[0]
+    );
+  }
+  if (band.id?.startsWith("leips")) {
+    return candidates.find((item) => item.yAxis === "right") ?? candidates[0];
+  }
+  return candidates[0];
+}
+
+function cursorYForValue(series: PlotSeries | undefined, x: number): number {
+  if (!series || series.points.length === 0) {
+    return 0;
+  }
+  return interpolateY(sortedPointsForCursor(series.points), x);
+}
+
+function sortedPointsForCursor(points: readonly Point[]): Point[] {
+  return [...points].sort((left, right) => left.x - right.x);
+}
+
 export function PlotAnnotations({
   annotations,
   geometry,

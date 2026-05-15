@@ -122,6 +122,11 @@ describe("App", () => {
 
     fireEvent.contextMenu(screen.getByLabelText("UPS IP plot"));
     expect(screen.getByText("Hide cursor ranges")).toBeTruthy();
+    expect(screen.getByText("Use point cursors")).toBeTruthy();
+    await user.click(screen.getByText("Use point cursors"));
+    expect(screen.getByLabelText("A cursor")).toBeTruthy();
+    fireEvent.contextMenu(screen.getByLabelText("UPS IP plot"));
+    expect(screen.getByText("Use range cursors")).toBeTruthy();
     expect(screen.getByText("Reset view")).toBeTruthy();
     expect(screen.getByText("Export PNG")).toBeTruthy();
     expect(screen.getByText("Export SVG")).toBeTruthy();

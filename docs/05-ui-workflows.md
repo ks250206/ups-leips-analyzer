@@ -22,7 +22,7 @@ IGOR Proの複数グラフ/操作パネル画面とSciSpace風ワークベンチ
 
 ## Cursor / Range Selection
 
-plot上でドラッグ選択したx範囲を、現在アクティブなfit範囲に反映する。数値入力での調整も可能にする。plot上の範囲ラベルは用途名だけを表示し、`active`文字やA/Bなどのハンドル文字は表示しない。
+plot上でドラッグ選択したx範囲を、現在アクティブなfit範囲に反映する。数値入力での調整も可能にする。cursor表示はcontext menuからrange band表示とIgorPro風point marker表示を切り替えられる。range band表示では用途名だけを表示し、point marker表示ではA/B/C/Dなどのcursor indicatorを表示する。
 
 ## View Controls
 
