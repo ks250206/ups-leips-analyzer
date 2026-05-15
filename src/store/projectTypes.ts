@@ -41,6 +41,26 @@ export interface ProjectUiState {
     y?: UiScaleRange;
     y2?: UiScaleRange;
   };
+  upsVbPlotViewport?: {
+    x?: UiScaleRange;
+    y?: UiScaleRange;
+    y2?: UiScaleRange;
+  };
+  upsIpPlotViewport?: {
+    x?: UiScaleRange;
+    y?: UiScaleRange;
+    y2?: UiScaleRange;
+  };
+  leipsPlotViewport?: {
+    x?: UiScaleRange;
+    y?: UiScaleRange;
+    y2?: UiScaleRange;
+  };
+  leipsEvacPlotViewport?: {
+    x?: UiScaleRange;
+    y?: UiScaleRange;
+    y2?: UiScaleRange;
+  };
   reelsBackgroundMode?: "fit-range" | "single-point";
 }
 

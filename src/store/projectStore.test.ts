@@ -113,12 +113,20 @@ describe("project store", () => {
     expect(analysis.leips?.bandpassEnergy).toBe(5.12);
   });
 
-  test("persists band diagram viewport in project UI state", () => {
+  test("persists plot viewports in project UI state", () => {
     const viewport = { x: { min: -4, max: 2 }, y: { min: 0, max: 10 } };
 
     useProjectStore.getState().setBandDiagramViewport(viewport);
+    useProjectStore.getState().setUpsVbPlotViewport(viewport);
+    useProjectStore.getState().setUpsIpPlotViewport(viewport);
+    useProjectStore.getState().setLeipsPlotViewport(viewport);
+    useProjectStore.getState().setLeipsEvacPlotViewport(viewport);
 
     expect(useProjectStore.getState().project.ui?.bandDiagramViewport).toEqual(viewport);
+    expect(useProjectStore.getState().project.ui?.upsVbPlotViewport).toEqual(viewport);
+    expect(useProjectStore.getState().project.ui?.upsIpPlotViewport).toEqual(viewport);
+    expect(useProjectStore.getState().project.ui?.leipsPlotViewport).toEqual(viewport);
+    expect(useProjectStore.getState().project.ui?.leipsEvacPlotViewport).toEqual(viewport);
   });
 
   test("resets individual and all window geometry to defaults", () => {

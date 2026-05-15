@@ -180,8 +180,8 @@ describe("App", () => {
     fireEvent.contextMenu(screen.getByLabelText("LEET / LEET(der) / LEIPS plot"));
     expect(screen.getByText("Filter")).toBeTruthy();
     fireEvent.mouseEnter(screen.getByText("Filter"));
-    expect(screen.getByText("Band pass 1_4.77 eV ✓")).toBeTruthy();
-    await user.click(screen.getByText("Custom band pass"));
+    expect(screen.getByText("1_4.77 eV ✓")).toBeTruthy();
+    await user.click(screen.getByText("Custom"));
     expect(screen.getByRole("heading", { name: "Custom band pass" })).toBeTruthy();
     expect(screen.getAllByText(/Eg=/).length).toBeGreaterThan(0);
   });

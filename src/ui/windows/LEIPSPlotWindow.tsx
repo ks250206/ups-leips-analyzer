@@ -22,6 +22,7 @@ export function LEIPSPlotWindow() {
   const setFitRange = useProjectStore((state) => state.setFitRange);
   const setBandpassType = useProjectStore((state) => state.setBandpassType);
   const setCustomBandpassEnergy = useProjectStore((state) => state.setCustomBandpassEnergy);
+  const setLeipsPlotViewport = useProjectStore((state) => state.setLeipsPlotViewport);
   const activeFitTarget = useProjectStore((state) => state.activeFitTarget);
   const [customOpen, setCustomOpen] = useState(false);
   const [customValue, setCustomValue] = useState("");
@@ -35,6 +36,8 @@ export function LEIPSPlotWindow() {
     (dataset) => dataset.id === project.analysis.selection.leipsDatasetId,
   );
   const leips = project.analysis.leips;
+  const persistedViewport = project.ui?.leipsPlotViewport ?? {};
+  const persistedViewportKey = JSON.stringify(persistedViewport);
 
   const series = useMemo<PlotSeries[]>(() => {
     const items: PlotSeries[] = [];
@@ -89,9 +92,7 @@ export function LEIPSPlotWindow() {
           ...BANDPASS_OPTIONS.map((option) => ({
             type: "item" as const,
             label:
-              option.type === project.analysis.bandpassType
-                ? `Band pass ${option.label} ✓`
-                : `Band pass ${option.label}`,
+              option.type === project.analysis.bandpassType ? `${option.label} ✓` : option.label,
             action: () => setBandpassType(option.type),
           })),
           {
@@ -99,7 +100,7 @@ export function LEIPSPlotWindow() {
             label:
               project.analysis.bandpassType === CUSTOM_BANDPASS_TYPE
                 ? `Custom ${formatNumber(project.analysis.customBandpassEnergy, 2)} eV ✓`
-                : "Custom band pass",
+                : "Custom",
             action: () => {
               const value =
                 project.analysis.customBandpassEnergy ??
@@ -170,7 +171,12 @@ export function LEIPSPlotWindow() {
         annotations={annotations}
         marginVariant="leips"
         xDirection="normal"
+        viewportRequest={{
+          id: `${project.id}-${project.analysis.selection.leipsDatasetId ?? "none"}-${persistedViewportKey}`,
+          viewport: persistedViewport,
+        }}
         extraContextMenuItems={contextItems}
+        onViewportChange={setLeipsPlotViewport}
         onSelectRange={(range) => setFitRange("leet-der-peak", range)}
         onRangeBandChange={(target, range) => setFitRange(target as FitTarget, range)}
       />
@@ -218,6 +224,7 @@ export function LEIPSEvacPlotWindow() {
   const project = useProjectStore((state) => state.project);
   const activeFitTarget = useProjectStore((state) => state.activeFitTarget);
   const setFitRange = useProjectStore((state) => state.setFitRange);
+  const setLeipsEvacPlotViewport = useProjectStore((state) => state.setLeipsEvacPlotViewport);
   const leipsDataset = project.datasets.find(
     (dataset) => dataset.id === project.analysis.selection.leipsDatasetId,
   );
@@ -225,6 +232,8 @@ export function LEIPSEvacPlotWindow() {
     (dataset) => dataset.id === project.analysis.selection.leetDerDatasetId,
   );
   const leips = project.analysis.leips;
+  const persistedViewport = project.ui?.leipsEvacPlotViewport ?? {};
+  const persistedViewportKey = JSON.stringify(persistedViewport);
   const leipsEvacPoints = useMemo(
     () =>
       leips?.leipsEvacPoints ??
@@ -311,6 +320,11 @@ export function LEIPSEvacPlotWindow() {
       rangeBands={rangeBands}
       marginVariant="leips"
       xDirection="reverse"
+      viewportRequest={{
+        id: `${project.id}-${project.analysis.selection.leipsDatasetId ?? "none"}-${persistedViewportKey}`,
+        viewport: persistedViewport,
+      }}
+      onViewportChange={setLeipsEvacPlotViewport}
       onSelectRange={(range) => {
         if (activeFitTarget === "leips-bg" || activeFitTarget === "leips-edge") {
           setFitRange(activeFitTarget, range);

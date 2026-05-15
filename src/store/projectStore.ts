@@ -42,6 +42,10 @@ interface ProjectStore {
   setActiveFitTarget: (target: FitTarget) => void;
   setBandDiagramViewport: (viewport: ProjectUiState["bandDiagramViewport"]) => void;
   setReelsPlotViewport: (viewport: ProjectUiState["reelsPlotViewport"]) => void;
+  setUpsVbPlotViewport: (viewport: ProjectUiState["upsVbPlotViewport"]) => void;
+  setUpsIpPlotViewport: (viewport: ProjectUiState["upsIpPlotViewport"]) => void;
+  setLeipsPlotViewport: (viewport: ProjectUiState["leipsPlotViewport"]) => void;
+  setLeipsEvacPlotViewport: (viewport: ProjectUiState["leipsEvacPlotViewport"]) => void;
   setReelsBackgroundMode: (mode: NonNullable<ProjectUiState["reelsBackgroundMode"]>) => void;
   updateWindow: (id: string, patch: Partial<WindowLayout>) => void;
   focusWindow: (id: string) => void;
@@ -215,6 +219,38 @@ export const useProjectStore = create<ProjectStore>((set, get) => ({
       project: touchProject({
         ...state.project,
         ui: { ...state.project.ui, reelsPlotViewport: viewport },
+      }),
+    }));
+  },
+  setUpsVbPlotViewport: (viewport) => {
+    set((state) => ({
+      project: touchProject({
+        ...state.project,
+        ui: { ...state.project.ui, upsVbPlotViewport: viewport },
+      }),
+    }));
+  },
+  setUpsIpPlotViewport: (viewport) => {
+    set((state) => ({
+      project: touchProject({
+        ...state.project,
+        ui: { ...state.project.ui, upsIpPlotViewport: viewport },
+      }),
+    }));
+  },
+  setLeipsPlotViewport: (viewport) => {
+    set((state) => ({
+      project: touchProject({
+        ...state.project,
+        ui: { ...state.project.ui, leipsPlotViewport: viewport },
+      }),
+    }));
+  },
+  setLeipsEvacPlotViewport: (viewport) => {
+    set((state) => ({
+      project: touchProject({
+        ...state.project,
+        ui: { ...state.project.ui, leipsEvacPlotViewport: viewport },
       }),
     }));
   },

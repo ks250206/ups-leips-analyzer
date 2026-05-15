@@ -110,12 +110,7 @@ export function AnalysisControls({ activeTab = "data" }: { activeTab?: AnalysisT
         {tab === "ups" ? (
           <Panel title="UPS spectra analysis">
             <h3 className="mb-1 font-bold text-slate-700">VB set</h3>
-            <ResultGrid
-              rows={[
-                ["EVBM", formatNumber(analysis.ups?.vbEvbm), "eV"],
-                ["EF-EVBM", formatNumber(analysis.ups?.efMinusEvbm), "eV"],
-              ]}
-            />
+            <ResultGrid rows={[["EVBM", formatNumber(analysis.ups?.vbEvbm), "eV"]]} />
             <h3 className="mb-1 mt-3 font-bold text-slate-700">IP set</h3>
             <ResultGrid
               rows={[
@@ -129,10 +124,10 @@ export function AnalysisControls({ activeTab = "data" }: { activeTab?: AnalysisT
 
         {tab === "leips" ? (
           <Panel title="LEIPS spectra analysis">
-            <label className="mb-2 grid grid-cols-[110px_1fr] items-center gap-2">
-              <span className="font-semibold text-slate-600">Bandpass</span>
+            <label className="mb-2 grid grid-cols-[118px_1fr_34px] items-center gap-2">
+              <span className="font-semibold text-slate-600">Bandpass Filter</span>
               <select
-                className="rounded border border-slate-300 bg-white px-2 py-1"
+                className="min-w-0 rounded border border-slate-300 bg-white px-2 py-1"
                 value={analysis.bandpassType}
                 onChange={(event) => setBandpassType(Number(event.currentTarget.value))}
               >
@@ -143,12 +138,13 @@ export function AnalysisControls({ activeTab = "data" }: { activeTab?: AnalysisT
                 ))}
                 <option value={CUSTOM_BANDPASS_TYPE}>Custom</option>
               </select>
+              <span className="text-slate-500">eV</span>
             </label>
             {analysis.bandpassType === CUSTOM_BANDPASS_TYPE ? (
-              <label className="mb-2 grid grid-cols-[110px_1fr_34px] items-center gap-2">
+              <label className="mb-2 grid grid-cols-[118px_1fr_34px] items-center gap-2">
                 <span className="font-semibold text-slate-600">Custom</span>
                 <input
-                  className="rounded border border-slate-300 bg-white px-2 py-1"
+                  className="min-w-0 rounded border border-slate-300 bg-white px-2 py-1"
                   inputMode="decimal"
                   value={analysis.customBandpassEnergy ?? ""}
                   onChange={(event) => setCustomBandpassEnergy(Number(event.currentTarget.value))}
@@ -171,7 +167,7 @@ export function AnalysisControls({ activeTab = "data" }: { activeTab?: AnalysisT
             <label className="mb-2 grid grid-cols-[118px_1fr_34px] items-center gap-2">
               <span className="font-semibold text-slate-600">Incident E</span>
               <input
-                className="rounded border border-slate-300 bg-white px-2 py-1"
+                className="min-w-0 rounded border border-slate-300 bg-white px-2 py-1"
                 inputMode="decimal"
                 value={analysis.reelsIncidentEnergy}
                 onChange={(event) => setReelsIncidentEnergy(Number(event.currentTarget.value))}
@@ -184,14 +180,17 @@ export function AnalysisControls({ activeTab = "data" }: { activeTab?: AnalysisT
 
         {tab === "band" ? (
           <Panel title="UPS-LEIPS graph">
-            <label className="mb-2 grid grid-cols-[110px_1fr] items-center gap-2">
-              <span className="font-semibold text-slate-600">EF-EVBM</span>
+            <label className="mb-2 grid grid-cols-[118px_1fr_34px] items-center gap-2">
+              <span className="font-semibold text-slate-600">
+                EVB<sub>M</sub>
+              </span>
               <input
-                className="rounded border border-slate-300 bg-white px-2 py-1"
+                className="min-w-0 rounded border border-slate-300 bg-white px-2 py-1"
                 inputMode="decimal"
                 value={analysis.efMinusEvbm}
                 onChange={(event) => setEfMinusEvbm(Number(event.currentTarget.value))}
               />
+              <span className="text-slate-500">eV</span>
             </label>
             <ResultGrid
               rows={[
@@ -243,11 +242,11 @@ function Panel({ title, children }: { title: string; children: ReactNode }) {
   );
 }
 
-function ResultGrid({ rows }: { rows: Array<[string, string, string]> }) {
+function ResultGrid({ rows }: { rows: Array<[ReactNode, string, string]> }) {
   return (
     <div className="grid gap-1">
-      {rows.map(([label, value, unit]) => (
-        <div key={label} className="grid grid-cols-[84px_1fr_34px] items-center gap-2">
+      {rows.map(([label, value, unit], index) => (
+        <div key={String(index)} className="grid grid-cols-[118px_1fr_34px] items-center gap-2">
           <span className="font-semibold text-slate-600">{label}</span>
           <span className="rounded border border-slate-300 bg-white px-2 py-1 font-mono">
             {value}

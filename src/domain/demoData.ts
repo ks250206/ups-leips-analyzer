@@ -48,7 +48,7 @@ export function createInitialAnalysis(datasets: readonly SpectrumDataset[]): Ana
     customBandpassEnergy: 4.77,
     photonEnergy: 21.22,
     reelsIncidentEnergy: 1000,
-    efMinusEvbm: 0.56,
+    efMinusEvbm: 0,
   };
 
   const vbDataset = findById(datasets, selection.upsVbDatasetId);

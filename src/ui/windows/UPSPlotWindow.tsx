@@ -18,10 +18,13 @@ export function UPSVBPlotWindow() {
   const project = useProjectStore((state) => state.project);
   const activeFitTarget = useProjectStore((state) => state.activeFitTarget);
   const setFitRange = useProjectStore((state) => state.setFitRange);
+  const setUpsVbPlotViewport = useProjectStore((state) => state.setUpsVbPlotViewport);
   const vbDataset = project.datasets.find(
     (dataset) => dataset.id === project.analysis.selection.upsVbDatasetId,
   );
   const ups = project.analysis.ups;
+  const persistedViewport = project.ui?.upsVbPlotViewport ?? {};
+  const persistedViewportKey = JSON.stringify(persistedViewport);
 
   const series = useMemo<PlotSeries[]>(() => {
     const items: PlotSeries[] = [];
@@ -88,6 +91,11 @@ export function UPSVBPlotWindow() {
       markers={markers}
       rangeBands={rangeBands}
       xDirection="reverse"
+      viewportRequest={{
+        id: `${project.id}-${project.analysis.selection.upsVbDatasetId ?? "none"}-${persistedViewportKey}`,
+        viewport: persistedViewport,
+      }}
+      onViewportChange={setUpsVbPlotViewport}
       onSelectRange={(range) => setFitRange(vbTarget(activeFitTarget), range)}
       onRangeBandChange={(target, range) => setFitRange(target as FitTarget, range)}
     />
@@ -98,6 +106,7 @@ export function UPSIPPlotWindow() {
   const project = useProjectStore((state) => state.project);
   const activeFitTarget = useProjectStore((state) => state.activeFitTarget);
   const setFitRange = useProjectStore((state) => state.setFitRange);
+  const setUpsIpPlotViewport = useProjectStore((state) => state.setUpsIpPlotViewport);
   const [viewport, setViewport] = useState<PlotViewport>({});
   const [viewportRequest, setViewportRequest] = useState<
     { id: number; viewport: PlotViewport } | undefined
@@ -110,6 +119,8 @@ export function UPSIPPlotWindow() {
     (dataset) => dataset.id === project.analysis.selection.upsIpDatasetId,
   );
   const ups = project.analysis.ups;
+  const persistedViewport = project.ui?.upsIpPlotViewport ?? {};
+  const persistedViewportKey = JSON.stringify(persistedViewport);
 
   const series = useMemo<PlotSeries[]>(() => {
     const items: PlotSeries[] = [];
@@ -269,8 +280,16 @@ export function UPSIPPlotWindow() {
       markers={markers}
       rangeBands={rangeBands}
       xDirection="reverse"
-      viewportRequest={viewportRequest}
-      onViewportChange={setViewport}
+      viewportRequest={
+        viewportRequest ?? {
+          id: `${project.id}-${project.analysis.selection.upsIpDatasetId ?? "none"}-${persistedViewportKey}`,
+          viewport: persistedViewport,
+        }
+      }
+      onViewportChange={(next) => {
+        setViewport(next);
+        setUpsIpPlotViewport(next);
+      }}
       extraContextMenuItems={contextItems}
       onSelectRange={(range) => setFitRange(ipTarget(activeFitTarget), range)}
       onRangeBandChange={(target, range) => setFitRange(target as FitTarget, range)}
