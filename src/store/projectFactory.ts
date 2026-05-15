@@ -134,7 +134,7 @@ export function defaultWindows(): WindowLayout[] {
       kind: "ups-bias",
       x: 308,
       y: 1200,
-      width: 560,
+      width: 1130,
       height: 340,
       zIndex: 12,
     },

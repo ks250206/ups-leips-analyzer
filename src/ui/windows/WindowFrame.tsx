@@ -7,6 +7,7 @@ interface WindowFrameProps {
   window: WindowLayout;
   icon: ReactNode;
   children: ReactNode;
+  titleBarAccessory?: ReactNode;
   onFocus: () => void;
   onChange: (patch: Partial<WindowLayout>) => void;
   contextMenuItems?: ContextMenuItem[];
@@ -18,6 +19,7 @@ export function WindowFrame({
   window,
   icon,
   children,
+  titleBarAccessory,
   onFocus,
   onChange,
   contextMenuItems = [],
@@ -35,6 +37,7 @@ export function WindowFrame({
         position={{ x: window.x, y: window.y }}
         size={{ width: window.width, height: window.height }}
         scale={scale}
+        cancel=".window-titlebar-control"
         style={{ zIndex: window.zIndex }}
         dragHandleClassName="window-titlebar"
         onDragStart={onFocus}
@@ -74,7 +77,8 @@ export function WindowFrame({
               <span className="text-slate-500">{icon}</span>
               <span className="truncate">{window.title}</span>
             </div>
-            <div className="flex gap-1">
+            <div className="window-titlebar-control flex shrink-0 items-center gap-2">
+              {titleBarAccessory}
               <span className="h-2.5 w-2.5 rounded-full bg-slate-400" />
               <span className="h-2.5 w-2.5 rounded-full bg-slate-400" />
             </div>

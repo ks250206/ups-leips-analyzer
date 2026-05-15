@@ -72,7 +72,6 @@ export function AnalysisControls({ activeTab = "sample" }: { activeTab?: Analysi
   const setReelsIncidentEnergy = useProjectStore((state) => state.setReelsIncidentEnergy);
   const setEfMinusEvbm = useProjectStore((state) => state.setEfMinusEvbm);
   const setSampleInfoField = useProjectStore((state) => state.setSampleInfoField);
-  const recalculate = useProjectStore((state) => state.recalculate);
   const analysis = project.analysis;
   const sampleInfo = project.ui?.sampleInfo ?? {};
   const locale = useUserSettingsStore((state) => state.locale);
@@ -261,34 +260,41 @@ export function AnalysisControls({ activeTab = "sample" }: { activeTab?: Analysi
           <Panel title="Band Diagram">
             <label className="mb-2 grid grid-cols-[118px_1fr_34px] items-center gap-2">
               <span className="font-semibold text-slate-600">IP source</span>
-              <select
-                className="min-w-0 rounded border border-slate-300 bg-white px-2 py-1"
+              <SelectField
+                ariaLabel="Band Diagram IP source"
+                options={[
+                  "zero-voltage-extrapolated",
+                  "average",
+                  ...(analysis.ups?.ipResults ?? []).map((result) => `dataset:${result.datasetId}`),
+                ]}
                 value={bandIpSourceValue(analysis.bandIpSource)}
-                onChange={(event) => {
-                  const value = event.currentTarget.value;
+                disabledOptions={
+                  (analysis.ups?.ipResults ?? []).filter((result) => Number.isFinite(result.ip))
+                    .length < 2
+                    ? ["zero-voltage-extrapolated"]
+                    : []
+                }
+                labelForOption={(value) => {
+                  if (value === "zero-voltage-extrapolated") {
+                    return "0 V extrapolated";
+                  }
+                  if (value === "average") {
+                    return "Average";
+                  }
+                  const datasetId = value.replace("dataset:", "");
+                  return (
+                    (analysis.ups?.ipResults ?? []).find((result) => result.datasetId === datasetId)
+                      ?.datasetName ?? datasetId
+                  );
+                }}
+                onChange={(value) => {
                   if (value === "average" || value === "zero-voltage-extrapolated") {
                     setBandIpSource({ mode: value });
                   } else {
                     setBandIpSource({ mode: "dataset", datasetId: value.replace("dataset:", "") });
                   }
                 }}
-              >
-                <option
-                  disabled={
-                    (analysis.ups?.ipResults ?? []).filter((result) => Number.isFinite(result.ip))
-                      .length < 2
-                  }
-                  value="zero-voltage-extrapolated"
-                >
-                  0 V extrapolated
-                </option>
-                <option value="average">Average</option>
-                {(analysis.ups?.ipResults ?? []).map((result) => (
-                  <option key={result.datasetId} value={`dataset:${result.datasetId}`}>
-                    {result.datasetName}
-                  </option>
-                ))}
-              </select>
+              />
               <span className="text-slate-500">IP</span>
             </label>
             <label className="mb-2 grid grid-cols-[118px_1fr_34px] items-center gap-2">
@@ -329,16 +335,6 @@ export function AnalysisControls({ activeTab = "sample" }: { activeTab?: Analysi
             </div>
           </Panel>
         ) : null}
-      </div>
-
-      <div className="sticky bottom-0 border-t border-slate-300 bg-slate-100 p-2">
-        <button
-          className="w-full rounded bg-slate-950 px-3 py-2 font-semibold text-white hover:bg-slate-800"
-          type="button"
-          onClick={recalculate}
-        >
-          Calculate
-        </button>
       </div>
     </div>
   );

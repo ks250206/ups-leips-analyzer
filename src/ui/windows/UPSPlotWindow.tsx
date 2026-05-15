@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState } from "react";
 import { calculateBiasDependence } from "../../domain/analysis";
-import type { FitRange, FitTarget } from "../../domain/types";
+import type { FitRange, FitTarget, UPSIPResult } from "../../domain/types";
 import { useProjectStore } from "../../store/projectStore";
 import type { ContextMenuItem } from "../ContextMenu";
 import { formatNumber } from "../format";
@@ -349,17 +349,56 @@ export function UPSIPPlotWindow() {
 
 export function UPSBiasDependenceWindow() {
   const project = useProjectStore((state) => state.project);
-  const [tab, setTab] = useState<"ecutoff" | "evbm" | "ip">("ecutoff");
+  const setUpsBiasPlotViewport = useProjectStore((state) => state.setUpsBiasPlotViewport);
   const ipResults = project.analysis.ups?.ipResults ?? [];
-  const config = {
-    ecutoff: { label: "Binding energy of Ecutoff / eV", field: "ecutoff", color: "#ef4444" },
-    evbm: { label: "Binding energy of EVBM / eV", field: "ipEvbm", color: "#f97316" },
-    ip: { label: "Ionization potential (IP) / eV", field: "ip", color: "#dc2626" },
-  }[tab] as {
-    label: string;
-    field: "ecutoff" | "ipEvbm" | "ip";
-    color: string;
-  };
+  const viewports = project.ui?.upsBiasPlotViewports ?? {};
+  return (
+    <div className="grid h-full grid-cols-3 gap-3 bg-white p-3">
+      {BIAS_PLOTS.map((config) => (
+        <BiasDependencePlot
+          key={config.id}
+          config={config}
+          ipResults={ipResults}
+          viewport={viewports[config.id] ?? {}}
+          onViewportChange={(viewport) => setUpsBiasPlotViewport(config.id, viewport)}
+        />
+      ))}
+    </div>
+  );
+}
+
+const BIAS_PLOTS = [
+  {
+    id: "ecutoff",
+    label: "Binding energy of Ecutoff / eV",
+    field: "ecutoff",
+    color: "#ef4444",
+  },
+  {
+    id: "evbm",
+    label: "Binding energy of EVBM / eV",
+    field: "ipEvbm",
+    color: "#f97316",
+  },
+  {
+    id: "ip",
+    label: "Ionization potential (IP) / eV",
+    field: "ip",
+    color: "#dc2626",
+  },
+] as const;
+
+function BiasDependencePlot({
+  config,
+  ipResults,
+  viewport,
+  onViewportChange,
+}: {
+  config: (typeof BIAS_PLOTS)[number];
+  ipResults: readonly UPSIPResult[];
+  viewport: PlotViewport;
+  onViewportChange: (viewport: PlotViewport) => void;
+}) {
   const points = ipResults.map((result) => ({
     x: result.appliedVoltage,
     y: result[config.field],
@@ -390,10 +429,6 @@ export function UPSBiasDependenceWindow() {
         dash: [5, 3],
         width: 1.5,
         affectsScale: false,
-        fitLabel: `y = ${formatNumber(dependence.slope, 3)}x + ${formatNumber(
-          dependence.intercept,
-          3,
-        )} eV`,
       });
     }
     return items;
@@ -419,40 +454,19 @@ export function UPSBiasDependenceWindow() {
     [dependence],
   );
 
+  const viewportKey = JSON.stringify(viewport);
   return (
-    <div className="flex h-full flex-col bg-white">
-      <div className="flex shrink-0 gap-1 border-b border-slate-200 bg-slate-50 px-2 py-1 text-[11px]">
-        {[
-          ["ecutoff", "Cutoff"],
-          ["evbm", "EVBM"],
-          ["ip", "IP"],
-        ].map(([id, label]) => (
-          <button
-            key={id}
-            className={
-              tab === id
-                ? "rounded bg-slate-800 px-2 py-1 font-semibold text-white"
-                : "rounded border border-slate-300 bg-white px-2 py-1 text-slate-700 hover:bg-slate-100"
-            }
-            type="button"
-            onClick={() => setTab(id as typeof tab)}
-          >
-            {label}
-          </button>
-        ))}
-      </div>
-      <div className="min-h-0 flex-1">
-        <div className="flex h-full w-full items-center justify-center p-2">
-          <div className="aspect-[4/3] h-full max-w-full">
-            <SpectrumPlot
-              title="UPS Bias Dependence"
-              xLabel="Applied Bias / V"
-              yLabel={config.label}
-              series={series}
-              annotations={annotations}
-            />
-          </div>
-        </div>
+    <div className="min-w-0">
+      <div className="aspect-[4/3] w-full">
+        <SpectrumPlot
+          title={`UPS Bias Dependence ${config.id}`}
+          xLabel="Applied Bias / V"
+          yLabel={config.label}
+          series={series}
+          annotations={annotations}
+          viewportRequest={{ id: `${config.id}-${viewportKey}`, viewport }}
+          onViewportChange={onViewportChange}
+        />
       </div>
     </div>
   );

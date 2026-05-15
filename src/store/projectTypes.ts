@@ -65,6 +65,16 @@ export interface ProjectUiState {
       y2?: UiScaleRange;
     }
   >;
+  upsBiasPlotViewports?: Partial<
+    Record<
+      "ecutoff" | "evbm" | "ip",
+      {
+        x?: UiScaleRange;
+        y?: UiScaleRange;
+        y2?: UiScaleRange;
+      }
+    >
+  >;
   activeUpsIpDatasetId?: string;
   leipsPlotViewport?: {
     x?: UiScaleRange;

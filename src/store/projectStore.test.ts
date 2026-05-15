@@ -9,6 +9,7 @@ import {
   writeLastOpenedWorkspace,
 } from "./lastOpenedWorkspace";
 import { fitRangeKey, useProjectStore } from "./projectStore";
+import { normalizeProject } from "./projectModel";
 
 const TARGETS: FitTarget[] = [
   "ups-vb-edge",
@@ -139,6 +140,7 @@ describe("project store", () => {
     useProjectStore.getState().setUpsVbPlotViewport(viewport);
     useProjectStore.getState().setUpsIpPlotViewport(viewport);
     useProjectStore.getState().setUpsIpPlotViewportForDataset(ipId!, viewport);
+    useProjectStore.getState().setUpsBiasPlotViewport("ecutoff", viewport);
     useProjectStore.getState().setLeipsPlotViewport(viewport);
     useProjectStore.getState().setLeipsEvacPlotViewport(viewport);
 
@@ -148,8 +150,21 @@ describe("project store", () => {
     expect(useProjectStore.getState().project.ui?.upsIpPlotViewportsByDatasetId?.[ipId!]).toEqual(
       viewport,
     );
+    expect(useProjectStore.getState().project.ui?.upsBiasPlotViewports?.ecutoff).toEqual(viewport);
     expect(useProjectStore.getState().project.ui?.leipsPlotViewport).toEqual(viewport);
     expect(useProjectStore.getState().project.ui?.leipsEvacPlotViewport).toEqual(viewport);
+  });
+
+  test("normalizes legacy UPS bias window size to the wide layout", () => {
+    const project = useProjectStore.getState().project;
+    const normalized = normalizeProject({
+      ...project,
+      windows: project.windows.map((window) =>
+        window.id === "ups-bias" ? { ...window, width: 560, height: 340 } : window,
+      ),
+    });
+
+    expect(normalized.windows.find((window) => window.id === "ups-bias")?.width).toBe(1130);
   });
 
   test("stores per-IP applied voltage and fit ranges", () => {

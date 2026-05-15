@@ -13,6 +13,7 @@ import { readLastOpenedWorkspace, writeLastOpenedWorkspace } from "../store/last
 import { useProjectStore } from "../store/projectStore";
 import type { CatalogRecord, ProjectRecord, WindowLayout } from "../store/projectTypes";
 import { ContextMenu, useContextMenu } from "./ContextMenu";
+import { SelectField } from "./FormSelect";
 import { useUserSettingsStore } from "./Settings";
 import { ToastViewport, useToastStore } from "./Toast";
 import { buildMenuGroups, TopBar } from "./workspace/WorkspaceMenu";
@@ -66,6 +67,7 @@ export function Workspace() {
     (state) => state.resetToDefaultEmptyWorkspace,
   );
   const toggleHelpWindow = useProjectStore((state) => state.toggleHelpWindow);
+  const setActiveUpsIpDatasetId = useProjectStore((state) => state.setActiveUpsIpDatasetId);
   const locale = useUserSettingsStore((state) => state.locale);
   const setLocale = useUserSettingsStore((state) => state.setLocale);
   const toggleProjectsWindow = useProjectStore((state) => state.toggleProjectsWindow);
@@ -84,6 +86,7 @@ export function Workspace() {
   const [lastOpenedRestored, setLastOpenedRestored] = useState(false);
   const importInputRef = useRef<HTMLInputElement>(null);
   const catalogImportInputRef = useRef<HTMLInputElement>(null);
+  const restoreStartedRef = useRef(false);
   const [recentProjects, setRecentProjects] = useState<ProjectRecord[]>([]);
   const [catalogs, setCatalogs] = useState<CatalogRecord[]>([]);
   const pushToast = useToastStore((state) => state.pushToast);
@@ -92,6 +95,10 @@ export function Workspace() {
   );
   const windows = useMemo(() => project.windows, [project.windows]);
   useEffect(() => {
+    if (restoreStartedRef.current) {
+      return;
+    }
+    restoreStartedRef.current = true;
     const ref = readLastOpenedWorkspace();
     if (!ref) {
       setLastOpenedRestored(true);
@@ -408,6 +415,16 @@ export function Workspace() {
                 selection: project.analysis.selection,
               })}
               isActive={activeWindowId === window.id}
+              titleBarAccessory={
+                window.kind === "ups-ip" || window.kind === "ups" ? (
+                  <UpsIpTitleSelector
+                    activeDatasetId={project.ui?.activeUpsIpDatasetId}
+                    datasetIds={project.analysis.selection.upsIpDatasetIds ?? []}
+                    datasets={project.datasets}
+                    onChange={setActiveUpsIpDatasetId}
+                  />
+                ) : undefined
+              }
             >
               {renderWindow(window, analysisTab)}
             </WindowFrame>
@@ -593,6 +610,37 @@ export function Workspace() {
 
 function errorMessage(prefix: string, caught: unknown): string {
   return `${prefix}: ${caught instanceof Error ? caught.message : String(caught)}`;
+}
+
+function UpsIpTitleSelector({
+  activeDatasetId,
+  datasetIds,
+  datasets,
+  onChange,
+}: {
+  activeDatasetId?: string;
+  datasetIds: readonly string[];
+  datasets: readonly { id: string; name: string }[];
+  onChange: (datasetId: string) => void;
+}) {
+  const validActive =
+    activeDatasetId && datasetIds.includes(activeDatasetId) ? activeDatasetId : "";
+  const value = validActive || datasetIds[0] || "";
+  if (datasetIds.length === 0) {
+    return <span className="text-[11px] font-medium text-slate-500">No IP dataset</span>;
+  }
+  const names = new Map(datasets.map((dataset) => [dataset.id, dataset.name]));
+  return (
+    <div className="w-56 text-[11px]" onPointerDown={(event) => event.stopPropagation()}>
+      <SelectField
+        ariaLabel="Active UPS IP dataset"
+        options={[...datasetIds]}
+        value={value}
+        labelForOption={(id) => names.get(id) ?? id}
+        onChange={onChange}
+      />
+    </div>
+  );
 }
 
 function tabForWindowKind(kind: WindowLayout["kind"] | undefined): AnalysisControlTab | undefined {

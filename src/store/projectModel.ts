@@ -10,6 +10,7 @@ import {
 } from "../domain/analysis";
 import { CUSTOM_BANDPASS_TYPE, bandpassEnergy } from "../domain/constants";
 import { DEFAULT_FIT_RANGES } from "../domain/demoData";
+import { defaultWindows } from "./projectFactory";
 import { lineIntersection, linearFit } from "../domain/fit";
 import { normalizeSampleInfo } from "../domain/sampleInfo";
 import type {
@@ -143,6 +144,7 @@ export function fitRangeKey(target: FitTarget): keyof AnalysisState["fitRanges"]
 export function normalizeProject(project: ProjectSnapshot): ProjectSnapshot {
   return {
     ...project,
+    windows: normalizeWindows(project.windows),
     ui: {
       ...project.ui,
       sampleInfo: normalizeSampleInfo(project.ui?.sampleInfo),
@@ -161,6 +163,19 @@ export function normalizeProject(project: ProjectSnapshot): ProjectSnapshot {
       bandIpSource: project.analysis.bandIpSource ?? defaultBandIpSource(project.analysis),
     },
   };
+}
+
+function normalizeWindows(windows: ProjectSnapshot["windows"]): ProjectSnapshot["windows"] {
+  const defaults = defaultWindows();
+  return windows.map((window) => {
+    if (window.id !== "ups-bias" || window.width > 600) {
+      return window;
+    }
+    const defaultWindow = defaults.find((item) => item.id === "ups-bias");
+    return defaultWindow
+      ? { ...window, x: defaultWindow.x, width: defaultWindow.width, height: defaultWindow.height }
+      : window;
+  });
 }
 
 function defaultBandIpSource(analysis: AnalysisState): BandIpSource {

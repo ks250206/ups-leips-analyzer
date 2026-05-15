@@ -6,6 +6,8 @@ interface SelectFieldProps {
   value: string;
   options: readonly string[];
   placeholder?: string;
+  disabledOptions?: readonly string[];
+  labelForOption?: (value: string) => string;
   onChange: (value: string) => void;
 }
 
@@ -27,10 +29,13 @@ export function SelectField({
   value,
   options,
   placeholder,
+  disabledOptions = [],
+  labelForOption = (option) => option,
   onChange,
 }: SelectFieldProps) {
   const [open, setOpen] = useState(false);
   const rootRef = useCloseOnOutsidePointer(setOpen);
+  const disabled = new Set(disabledOptions);
   return (
     <div ref={rootRef} className="relative min-w-0">
       <button
@@ -41,7 +46,7 @@ export function SelectField({
         onClick={() => setOpen((current) => !current)}
       >
         <span className={value ? "truncate text-slate-800" : "truncate text-slate-400"}>
-          {value || placeholder || "-"}
+          {value ? labelForOption(value) : placeholder || "-"}
         </span>
         <ChevronDown size={14} className="shrink-0 text-slate-500" />
       </button>
@@ -50,14 +55,15 @@ export function SelectField({
           {options.map((option) => (
             <button
               key={option}
-              className="flex w-full items-center justify-between gap-4 px-2 py-1.5 text-left hover:bg-cyan-50"
+              className="flex w-full items-center justify-between gap-4 px-2 py-1.5 text-left hover:bg-cyan-50 disabled:text-slate-400 disabled:hover:bg-white"
+              disabled={disabled.has(option)}
               type="button"
               onClick={() => {
                 onChange(option);
                 setOpen(false);
               }}
             >
-              <span className="truncate">{option}</span>
+              <span className="truncate">{labelForOption(option)}</span>
               {option === value ? <Check size={13} className="shrink-0 text-slate-700" /> : null}
             </button>
           ))}

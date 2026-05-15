@@ -81,6 +81,10 @@ interface ProjectStore {
     datasetId: string,
     viewport: ProjectUiState["upsIpPlotViewport"],
   ) => void;
+  setUpsBiasPlotViewport: (
+    plot: "ecutoff" | "evbm" | "ip",
+    viewport: NonNullable<ProjectUiState["upsBiasPlotViewports"]>["ecutoff"],
+  ) => void;
   setActiveUpsIpDatasetId: (datasetId: string) => void;
   setLeipsPlotViewport: (viewport: ProjectUiState["leipsPlotViewport"]) => void;
   setLeipsEvacPlotViewport: (viewport: ProjectUiState["leipsEvacPlotViewport"]) => void;
@@ -530,6 +534,20 @@ export const useProjectStore = create<ProjectStore>((set, get) => ({
           upsIpPlotViewportsByDatasetId: {
             ...state.project.ui?.upsIpPlotViewportsByDatasetId,
             ...(viewport ? { [datasetId]: viewport } : {}),
+          },
+        },
+      }),
+    }));
+  },
+  setUpsBiasPlotViewport: (plot, viewport) => {
+    set((state) => ({
+      project: touchProject({
+        ...state.project,
+        ui: {
+          ...state.project.ui,
+          upsBiasPlotViewports: {
+            ...state.project.ui?.upsBiasPlotViewports,
+            [plot]: viewport,
           },
         },
       }),
