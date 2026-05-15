@@ -14,6 +14,8 @@ const FIT_TARGETS: Array<{ target: FitTarget; label: string }> = [
   { target: "leet-der-peak", label: "LEET(der) peak" },
   { target: "leips-edge", label: "CBM edge" },
   { target: "leips-bg", label: "BG(LEIPS)" },
+  { target: "reels-edge", label: "REELS onset" },
+  { target: "reels-bg", label: "BG(REELS)" },
 ];
 
 const DATASET_SLOTS: Array<{
@@ -30,9 +32,10 @@ const DATASET_SLOTS: Array<{
     filter: (dataset) => dataset.kind === "leet-der",
   },
   { slot: "leipsDatasetId", label: "LEIPS", filter: (dataset) => dataset.kind === "leips" },
+  { slot: "reelsDatasetId", label: "REELS", filter: (dataset) => dataset.kind === "reels" },
 ];
 
-type AnalysisTab = "data" | "ups" | "leips" | "band" | "fit";
+type AnalysisTab = "data" | "ups" | "leips" | "reels" | "band" | "fit";
 
 export function AnalysisControls({ activeTab = "data" }: { activeTab?: AnalysisTab }) {
   const project = useProjectStore((state) => state.project);
@@ -42,6 +45,7 @@ export function AnalysisControls({ activeTab = "data" }: { activeTab?: AnalysisT
   const setActiveFitTarget = useProjectStore((state) => state.setActiveFitTarget);
   const setBandpassType = useProjectStore((state) => state.setBandpassType);
   const setCustomBandpassEnergy = useProjectStore((state) => state.setCustomBandpassEnergy);
+  const setReelsIncidentEnergy = useProjectStore((state) => state.setReelsIncidentEnergy);
   const setEfMinusEvbm = useProjectStore((state) => state.setEfMinusEvbm);
   const recalculate = useProjectStore((state) => state.recalculate);
   const analysis = project.analysis;
@@ -55,11 +59,12 @@ export function AnalysisControls({ activeTab = "data" }: { activeTab?: AnalysisT
           {analysis.error}
         </div>
       ) : null}
-      <div className="grid grid-cols-5 gap-1 border-b border-slate-300 bg-slate-200 p-2">
+      <div className="grid grid-cols-6 gap-1 border-b border-slate-300 bg-slate-200 p-2">
         {[
           ["data", "Data"],
           ["ups", "UPS"],
           ["leips", "LEIPS"],
+          ["reels", "REELS"],
           ["band", "Band"],
           ["fit", "Fit"],
         ].map(([id, label]) => (
@@ -158,6 +163,22 @@ export function AnalysisControls({ activeTab = "data" }: { activeTab?: AnalysisT
                 ["EA", formatNumber(analysis.leips?.ea), "eV"],
               ]}
             />
+          </Panel>
+        ) : null}
+
+        {tab === "reels" ? (
+          <Panel title="REELS analysis">
+            <label className="mb-2 grid grid-cols-[118px_1fr_34px] items-center gap-2">
+              <span className="font-semibold text-slate-600">Incident E</span>
+              <input
+                className="rounded border border-slate-300 bg-white px-2 py-1"
+                inputMode="decimal"
+                value={analysis.reelsIncidentEnergy}
+                onChange={(event) => setReelsIncidentEnergy(Number(event.currentTarget.value))}
+              />
+              <span className="text-slate-500">eV</span>
+            </label>
+            <ResultGrid rows={[["Eg", formatNumber(analysis.reels?.bandGap), "eV"]]} />
           </Panel>
         ) : null}
 

@@ -17,9 +17,10 @@ import { DataBrowser } from "../windows/DataBrowser";
 import { DataTable } from "../windows/DataTable";
 import { LEIPSEvacPlotWindow, LEIPSPlotWindow } from "../windows/LEIPSPlotWindow";
 import { ProjectListWindow } from "../windows/ProjectListWindow";
+import { REELSPlotWindow } from "../windows/REELSPlotWindow";
 import { UPSIPPlotWindow, UPSVBPlotWindow } from "../windows/UPSPlotWindow";
 
-export type AnalysisControlTab = "data" | "ups" | "leips" | "band" | "fit";
+export type AnalysisControlTab = "data" | "ups" | "leips" | "reels" | "band" | "fit";
 
 export function renderWindow(window: WindowLayout, analysisTab: AnalysisControlTab = "data") {
   switch (window.kind) {
@@ -36,6 +37,8 @@ export function renderWindow(window: WindowLayout, analysisTab: AnalysisControlT
       return <LEIPSPlotWindow />;
     case "leips-evac":
       return <LEIPSEvacPlotWindow />;
+    case "reels":
+      return <REELSPlotWindow />;
     case "band":
       return <BandDiagramWindow />;
     case "controls":
@@ -58,6 +61,7 @@ export function iconForWindow(kind: WindowLayout["kind"]): ReactNode {
     case "ups-ip":
     case "leips":
     case "leips-evac":
+    case "reels":
       return <LineChart size={14} />;
     case "band":
       return <BarChart3 size={14} />;
@@ -84,6 +88,8 @@ export function titleForWindow(
     case "leips":
     case "leips-evac":
       return appendDatasetName(window.title, datasets, selection.leipsDatasetId);
+    case "reels":
+      return appendDatasetName(window.title, datasets, selection.reelsDatasetId);
     default:
       return window.title;
   }
@@ -145,6 +151,13 @@ export function windowContextItems(
     case "leips-evac":
       return [
         datasetSubmenu("LEIPS dataset", "leipsDatasetId", "leips", actions),
+        { type: "separator" },
+        { type: "item", label: "Recalculate", action: actions.recalculate },
+        ...resetItems,
+      ];
+    case "reels":
+      return [
+        datasetSubmenu("REELS dataset", "reelsDatasetId", "reels", actions),
         { type: "separator" },
         { type: "item", label: "Recalculate", action: actions.recalculate },
         ...resetItems,

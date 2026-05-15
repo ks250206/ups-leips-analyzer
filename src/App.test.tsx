@@ -22,6 +22,7 @@ describe("App", () => {
     expect(screen.getByText("Datasets")).toBeTruthy();
     expect(screen.getAllByText("UPS VB").length).toBeGreaterThan(0);
     expect(screen.getAllByText("UPS IP").length).toBeGreaterThan(0);
+    expect(screen.getAllByText("REELS Plot").length).toBeGreaterThan(0);
     expect(await screen.findAllByText("UPS-LEIPS Band Diagram")).toHaveLength(1);
     expect(screen.getByLabelText("LEET / LEET(der) / LEIPS plot").dataset.xDirection).toBe(
       "normal",
@@ -43,6 +44,9 @@ describe("App", () => {
 
     await user.click(screen.getByRole("button", { name: "LEIPS" }));
     expect(screen.getByText("LEIPS spectra analysis")).toBeTruthy();
+
+    await user.click(screen.getByRole("button", { name: "REELS" }));
+    expect(screen.getByText("REELS analysis")).toBeTruthy();
 
     await user.click(screen.getByRole("button", { name: "Fit" }));
     expect(screen.getByText("Cursor / fitting ranges")).toBeTruthy();
@@ -141,6 +145,9 @@ describe("App", () => {
 
     fireEvent.pointerDown(screen.getByText(/LEIPS Plot -/));
     expect(await screen.findByText("LEIPS spectra analysis")).toBeTruthy();
+
+    fireEvent.pointerDown(screen.getByText(/REELS Plot -/));
+    expect(await screen.findByText("REELS analysis")).toBeTruthy();
   });
 
   test("shows workspace context menu and removes active cursor badges", async () => {

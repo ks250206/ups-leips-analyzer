@@ -118,5 +118,15 @@ export function defaultWindows(): WindowLayout[] {
       height: 460,
       zIndex: 10,
     },
+    {
+      id: "reels",
+      title: "REELS Plot",
+      kind: "reels",
+      x: 878,
+      y: 728,
+      width: 560,
+      height: 360,
+      zIndex: 11,
+    },
   ];
 }

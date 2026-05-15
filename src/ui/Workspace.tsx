@@ -303,6 +303,8 @@ function tabForWindowKind(kind: WindowLayout["kind"] | undefined): AnalysisContr
     case "leips":
     case "leips-evac":
       return "leips";
+    case "reels":
+      return "reels";
     case "band":
       return "band";
     case "browser":

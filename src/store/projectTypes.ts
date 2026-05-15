@@ -11,6 +11,7 @@ export interface WindowLayout {
     | "ups-ip"
     | "leips"
     | "leips-evac"
+    | "reels"
     | "band"
     | "controls"
     | "help"
