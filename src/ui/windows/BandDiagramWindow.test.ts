@@ -4,10 +4,15 @@ import {
   createBandAutoViewport,
   createIgorBandModel,
 } from "./bandDiagramModel";
+import { bandArrowMarkerProps } from "./BandDiagramAnnotations";
 import {
   nextIgorBandViewportAfterDrag,
   nextIgorBandViewportAfterWheel,
 } from "./bandDiagramInteraction";
+import {
+  DEFAULT_BAND_INDICATOR_ARROW_SCALE,
+  DEFAULT_BAND_INDICATOR_FONT_SIZE,
+} from "./BandDiagramWindow";
 
 const BAND = {
   efMinusEvbm: 1,
@@ -39,6 +44,22 @@ function model() {
 }
 
 describe("Igor-style band diagram plot model", () => {
+  test("uses compact default annotation controls", () => {
+    expect(DEFAULT_BAND_INDICATOR_FONT_SIZE).toBe(30);
+    expect(DEFAULT_BAND_INDICATOR_ARROW_SCALE).toBe(0.7);
+  });
+
+  test("can render one-sided left arrowheads for IP and EA", () => {
+    expect(bandArrowMarkerProps("arrow", "left")).toEqual({
+      markerEnd: undefined,
+      markerStart: "url(#arrow)",
+    });
+    expect(bandArrowMarkerProps("arrow", "both")).toEqual({
+      markerEnd: "url(#arrow)",
+      markerStart: "url(#arrow)",
+    });
+  });
+
   test("renders energy axis reversed like the Igor band diagram", () => {
     const current = model();
 

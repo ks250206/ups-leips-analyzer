@@ -123,7 +123,7 @@ export function PlotAxes({
         x={geometry.left + geometry.plotWidth / 2}
         y={geometry.height - (largeAxisLabels ? 8 : 4)}
       >
-        {xLabel}
+        <AxisLabelText label={xLabel} largeAxisLabels={largeAxisLabels} />
       </text>
       <text
         fill={axisColor}
@@ -151,6 +151,21 @@ export function PlotAxes({
       ) : null}
     </g>
   );
+}
+
+function AxisLabelText({ label, largeAxisLabels }: { label: string; largeAxisLabels: boolean }) {
+  if (label === "Energy from Evac. / eV") {
+    return (
+      <>
+        Energy from E
+        <tspan baselineShift="sub" fontSize={largeAxisLabels ? 16 : 10}>
+          vac.
+        </tspan>{" "}
+        / eV
+      </>
+    );
+  }
+  return label;
 }
 
 export function SeriesPath({

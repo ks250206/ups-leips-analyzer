@@ -271,7 +271,7 @@ export function IgorBandDiagramPlot({
           paintOrder="stroke fill"
           stroke="white"
           strokeLinejoin="round"
-          strokeWidth={12}
+          strokeWidth={18}
           x={plot.left + 34}
           y={plot.top + 66}
         >
@@ -284,7 +284,7 @@ export function IgorBandDiagramPlot({
           paintOrder="stroke fill"
           stroke="white"
           strokeLinejoin="round"
-          strokeWidth={12}
+          strokeWidth={18}
           textAnchor="end"
           x={plotRight - 46}
           y={plot.top + 66}
@@ -314,6 +314,7 @@ export function IgorBandDiagramPlot({
         />
         <BandArrow
           arrowId={arrowId}
+          arrowHead="left"
           label={`IP=${formatNumber(band.ip, 2)} eV`}
           fontSize={indicatorFontSize}
           arrowScale={indicatorArrowScale}
@@ -324,6 +325,7 @@ export function IgorBandDiagramPlot({
         />
         <BandArrow
           arrowId={arrowId}
+          arrowHead="left"
           label={`EA= ${formatNumber(band.ea, 2)} eV`}
           fontSize={indicatorFontSize}
           arrowScale={indicatorArrowScale}

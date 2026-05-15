@@ -47,6 +47,7 @@ export function BandArrow({
   y,
   label,
   arrowId,
+  arrowHead = "both",
   fontSize,
   arrowScale,
 }: {
@@ -56,6 +57,7 @@ export function BandArrow({
   y: number;
   label: ReactNode;
   arrowId: string;
+  arrowHead?: BandArrowHead;
   fontSize: number;
   arrowScale: number;
 }) {
@@ -63,11 +65,12 @@ export function BandArrow({
   const right = model.xScale(x2);
   const start = Math.min(left, right);
   const end = Math.max(left, right);
+  const markers = bandArrowMarkerProps(arrowId, arrowHead);
   return (
     <g>
       <line
-        markerEnd={`url(#${arrowId})`}
-        markerStart={`url(#${arrowId})`}
+        markerEnd={markers.markerEnd}
+        markerStart={markers.markerStart}
         stroke="black"
         strokeWidth={Math.max(1, 3 * arrowScale)}
         x1={start}
@@ -80,4 +83,13 @@ export function BandArrow({
       </text>
     </g>
   );
+}
+
+export type BandArrowHead = "both" | "left";
+
+export function bandArrowMarkerProps(arrowId: string, arrowHead: BandArrowHead) {
+  return {
+    markerEnd: arrowHead === "both" ? `url(#${arrowId})` : undefined,
+    markerStart: `url(#${arrowId})`,
+  };
 }

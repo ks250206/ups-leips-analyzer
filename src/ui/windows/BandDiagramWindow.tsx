@@ -8,6 +8,9 @@ import {
   createBandAutoViewport,
 } from "./bandDiagramModel";
 
+export const DEFAULT_BAND_INDICATOR_FONT_SIZE = 30;
+export const DEFAULT_BAND_INDICATOR_ARROW_SCALE = 0.7;
+
 export function BandDiagramWindow() {
   const band = useProjectStore((state) => state.project.analysis.band);
   const persistedViewport = useProjectStore((state) => state.project.ui?.bandDiagramViewport);
@@ -16,8 +19,10 @@ export function BandDiagramWindow() {
   const [upsOffset, setUpsOffset] = useState(0);
   const [leipsScale, setLeipsScale] = useState(1);
   const [leipsOffset, setLeipsOffset] = useState(0);
-  const [indicatorFontSize, setIndicatorFontSize] = useState(34);
-  const [indicatorArrowScale, setIndicatorArrowScale] = useState(1);
+  const [indicatorFontSize, setIndicatorFontSize] = useState(DEFAULT_BAND_INDICATOR_FONT_SIZE);
+  const [indicatorArrowScale, setIndicatorArrowScale] = useState(
+    DEFAULT_BAND_INDICATOR_ARROW_SCALE,
+  );
   const lastBandDataSignature = useRef<string | undefined>(undefined);
   const bandXDomain = useMemo(() => {
     const points = band ? [...band.upsPoints, ...band.leipsPoints] : [];
