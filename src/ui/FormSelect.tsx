@@ -15,11 +15,12 @@ interface MultiSelectFieldProps {
   options: readonly string[];
   placeholder?: string;
   labelForOption?: (value: string) => string;
+  summaryLabel?: (values: readonly string[], labelForOption: (value: string) => string) => string;
   onChange: (values: string[]) => void;
 }
 
 const buttonClass =
-  "flex min-w-0 items-center justify-between gap-2 rounded border border-slate-300 bg-white px-2 py-1 text-left hover:bg-slate-50";
+  "flex w-full min-w-0 items-center justify-between gap-2 rounded border border-slate-300 bg-white px-2 py-1 text-left hover:bg-slate-50";
 
 export function SelectField({
   ariaLabel,
@@ -72,12 +73,16 @@ export function MultiSelectField({
   options,
   placeholder,
   labelForOption = (value) => value,
+  summaryLabel,
   onChange,
 }: MultiSelectFieldProps) {
   const [open, setOpen] = useState(false);
   const rootRef = useCloseOnOutsidePointer(setOpen);
   const selected = new Set(values);
-  const label = values.length > 0 ? values.map(labelForOption).join(", ") : placeholder || "-";
+  const label =
+    values.length > 0
+      ? (summaryLabel?.(values, labelForOption) ?? values.map(labelForOption).join(", "))
+      : placeholder || "-";
   return (
     <div ref={rootRef} className="relative min-w-0">
       <button

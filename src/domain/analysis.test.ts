@@ -76,6 +76,51 @@ describe("REELS analysis", () => {
     expect(result.backgroundFit.pointsUsed).toBeGreaterThanOrEqual(2);
     expect(result.bandGap).toBeCloseTo(2.65, 1);
   });
+
+  test("uses a single REELS background point as a horizontal y-constant fit", () => {
+    const dataset = {
+      id: "reels-single-point",
+      name: "REELS single point",
+      sourceName: "REELS single point",
+      kind: "reels" as const,
+      xLabel: "Kinetic Energy / eV",
+      yLabel: "Intensity / a.u.",
+      metadata: {},
+      points: [
+        { x: 1000, y: 0 },
+        { x: 998, y: 2 },
+        { x: 996, y: 4 },
+      ],
+    };
+    const result = calculateREELSResult({
+      dataset,
+      edgeRange: { min: 2, max: 4 },
+      backgroundRange: { min: 0, max: 2 },
+      backgroundMode: "single-point",
+    });
+
+    expect(result.backgroundFit.slope).toBe(0);
+    expect(result.backgroundFit.intercept).toBeCloseTo(1, 6);
+    expect(result.backgroundFit.pointsUsed).toBe(1);
+    expect(result.bandGap).toBeCloseTo(1, 6);
+
+    expect(
+      calculateREELSResult({
+        dataset,
+        edgeRange: { min: 2, max: 4 },
+        backgroundRange: { min: -2, max: -1 },
+        backgroundMode: "single-point",
+      }).backgroundFit.intercept,
+    ).toBe(0);
+    expect(
+      calculateREELSResult({
+        dataset,
+        edgeRange: { min: 2, max: 4 },
+        backgroundRange: { min: 5, max: 6 },
+        backgroundMode: "single-point",
+      }).backgroundFit.intercept,
+    ).toBe(4);
+  });
 });
 
 describe("LEIPS analysis", () => {

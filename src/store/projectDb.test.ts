@@ -133,6 +133,28 @@ describe("project persistence", () => {
     await registry.delete();
   });
 
+  test("clears projects when deleting the only default catalog", async () => {
+    const runId = crypto.randomUUID();
+    const registry = new CatalogRegistryDatabase(`registry-clear-${runId}`);
+    const defaultDb = new UpsLeipsDatabase(`default-clear-${runId}`);
+    const legacyDb = new UpsLeipsDatabase(`legacy-clear-${runId}`);
+    const getDb = (id: string) => {
+      expect(id).toBe("default-catalog");
+      return defaultDb;
+    };
+
+    await ensureDefaultCatalog(registry, defaultDb, legacyDb);
+    await saveProject({ ...createInitialProject(), id: "kept-before-delete" }, defaultDb);
+
+    await deleteCatalogRecord("default-catalog", registry, getDb);
+
+    expect(await registry.catalogs.count()).toBe(1);
+    expect(await listProjects(defaultDb)).toHaveLength(0);
+    await defaultDb.delete();
+    await legacyDb.delete();
+    await registry.delete();
+  });
+
   test("rejects invalid project JSON", () => {
     expect(() => importProjectJson("{}")).toThrow("Invalid UPS-LEIPS project JSON.");
   });

@@ -1,4 +1,5 @@
-import { useState, type ReactNode } from "react";
+import { useEffect, useState, type ReactNode } from "react";
+import { AlertTriangle } from "lucide-react";
 import type { CatalogRecord, ProjectRecord } from "../../store/projectTypes";
 import { ProjectTable } from "../windows/ProjectListWindow";
 
@@ -45,6 +46,53 @@ export function SaveAsModal({
           onClick={() => onSave(name)}
         >
           {actionLabel}
+        </button>
+      </div>
+    </Modal>
+  );
+}
+
+export function OverwriteProjectModal({
+  projectName,
+  onCancel,
+  onConfirm,
+  onRename,
+}: {
+  projectName: string;
+  onCancel: () => void;
+  onConfirm: () => void;
+  onRename: () => void;
+}) {
+  return (
+    <Modal title="Overwrite Project?">
+      <div className="flex gap-3 text-sm text-slate-700">
+        <AlertTriangle className="mt-0.5 shrink-0 text-amber-600" size={22} />
+        <p>
+          A project named <span className="font-semibold">{projectName}</span> already exists.
+          Saving will overwrite that project.
+        </p>
+      </div>
+      <div className="mt-4 flex justify-end gap-2">
+        <button
+          className="rounded border border-slate-300 px-3 py-1 text-xs"
+          type="button"
+          onClick={onCancel}
+        >
+          Cancel
+        </button>
+        <button
+          className="rounded border border-slate-300 px-3 py-1 text-xs"
+          type="button"
+          onClick={onRename}
+        >
+          Rename
+        </button>
+        <button
+          className="rounded bg-amber-700 px-3 py-1 text-xs font-semibold text-white"
+          type="button"
+          onClick={onConfirm}
+        >
+          Confirmed
         </button>
       </div>
     </Modal>
@@ -170,11 +218,28 @@ export function DeleteCatalogModal({
   onCancel: () => void;
   onDelete: () => void;
 }) {
+  const [remaining, setRemaining] = useState(5);
+  useEffect(() => {
+    const started = Date.now();
+    const interval = window.setInterval(() => {
+      const next = Math.max(0, 5 - Math.floor((Date.now() - started) / 1000));
+      setRemaining(next);
+      if (next === 0) {
+        window.clearInterval(interval);
+      }
+    }, 150);
+    return () => window.clearInterval(interval);
+  }, []);
+  const progress = ((5 - remaining) / 5) * 100;
   return (
     <Modal title="Delete Catalog">
-      <p className="text-sm text-slate-700">
-        Delete <span className="font-semibold">{catalogName}</span> and its saved projects?
-      </p>
+      <div className="flex gap-3 text-sm text-slate-700">
+        <AlertTriangle className="mt-0.5 shrink-0 text-red-700" size={24} />
+        <p>
+          Delete <span className="font-semibold">{catalogName}</span> and all saved projects in this
+          Catalog?
+        </p>
+      </div>
       <p className="mt-2 text-xs text-slate-500">
         This removes only the selected Catalog database. Other Catalogs remain available.
       </p>
@@ -187,11 +252,16 @@ export function DeleteCatalogModal({
           Cancel
         </button>
         <button
-          className="rounded bg-red-700 px-3 py-1 text-xs text-white"
+          className="relative overflow-hidden rounded bg-red-700 px-3 py-1 text-xs text-white disabled:bg-slate-400"
+          disabled={remaining > 0}
           type="button"
           onClick={onDelete}
         >
-          Delete
+          <span
+            className="absolute inset-y-0 left-0 bg-red-900/40 transition-[width]"
+            style={{ width: `${progress}%` }}
+          />
+          <span className="relative">{remaining > 0 ? `Delete (${remaining}s)` : "Delete"}</span>
         </button>
       </div>
     </Modal>

@@ -3,6 +3,7 @@ import { useRef, useState } from "react";
 import type { ProjectRecord, WindowLayout } from "../../store/projectTypes";
 import { useProjectStore } from "../../store/projectStore";
 import { ContextMenu, type ContextMenuItem, useContextMenu } from "../ContextMenu";
+import { MultiSelectField } from "../FormSelect";
 import { localeLabel, USER_LOCALES, type UserLocale } from "../Settings";
 
 export interface MenuGroup {
@@ -21,7 +22,10 @@ export function TopBar({
 }) {
   const project = useProjectStore((state) => state.project);
   const activeCatalog = useProjectStore((state) => state.activeCatalog);
+  const assignUpsIpDatasets = useProjectStore((state) => state.assignUpsIpDatasets);
   const sampleInfo = project.ui?.sampleInfo;
+  const upsIpDatasets = project.datasets.filter((dataset) => dataset.kind === "ups-ip");
+  const upsIpNames = new Map(upsIpDatasets.map((dataset) => [dataset.id, dataset.name]));
   const { menu, openMenu, closeMenu } = useContextMenu();
   const [activeMenu, setActiveMenu] = useState<string>();
   const buttonRefs = useRef(new Map<string, HTMLButtonElement>());
@@ -80,6 +84,23 @@ export function TopBar({
         ) : null}
       </div>
       <div className="flex items-center gap-2">
+        {upsIpDatasets.length > 0 ? (
+          <div className="w-[260px] text-xs">
+            <MultiSelectField
+              ariaLabel="UPS IP datasets"
+              options={upsIpDatasets.map((dataset) => dataset.id)}
+              values={project.analysis.selection.upsIpDatasetIds ?? []}
+              placeholder="UPS IP datasets"
+              labelForOption={(id) => upsIpNames.get(id) ?? id}
+              summaryLabel={(ids, labelForOption) =>
+                ids.length <= 1
+                  ? labelForOption(ids[0] ?? "")
+                  : `${labelForOption(ids[0] ?? "")} .. + ${ids.length - 1}`
+              }
+              onChange={assignUpsIpDatasets}
+            />
+          </div>
+        ) : null}
         <span className="rounded border border-cyan-200/60 bg-white/10 px-2 py-1 text-xs font-medium text-white">
           Zoom {Math.round(zoomScale * 100)}%
         </span>

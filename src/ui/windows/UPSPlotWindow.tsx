@@ -1,4 +1,4 @@
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { calculateBiasDependence } from "../../domain/analysis";
 import type { FitRange, FitTarget } from "../../domain/types";
 import { useProjectStore } from "../../store/projectStore";
@@ -138,6 +138,9 @@ export function UPSIPPlotWindow() {
     ? (project.ui?.upsIpPlotViewportsByDatasetId?.[activeId] ?? project.ui?.upsIpPlotViewport ?? {})
     : {};
   const persistedViewportKey = JSON.stringify(persistedViewport);
+  useEffect(() => {
+    setViewportRequest(undefined);
+  }, [activeId]);
 
   const series = useMemo<PlotSeries[]>(() => {
     const items: PlotSeries[] = [];
@@ -248,6 +251,22 @@ export function UPSIPPlotWindow() {
   const contextItems = useMemo<ContextMenuItem[]>(
     () => [
       {
+        type: "submenu",
+        label: "Active UPS IP dataset",
+        items:
+          ipDatasetIds.length > 0
+            ? ipDatasetIds.map((datasetId) => {
+                const dataset = project.datasets.find((item) => item.id === datasetId);
+                return {
+                  type: "item" as const,
+                  label: `${datasetId === activeId ? "✓ " : ""}${dataset?.name ?? datasetId}`,
+                  action: () => setActiveUpsIpDatasetId(datasetId),
+                };
+              })
+            : [{ type: "item", label: "No selected UPS IP datasets", disabled: true }],
+      },
+      { type: "separator" },
+      {
         type: "item",
         label: "Save VBM view",
         action: () => setSnapshots((current) => ({ ...current, evbm: viewport })),
@@ -277,72 +296,54 @@ export function UPSIPPlotWindow() {
           }),
       },
     ],
-    [cutoffFallbackViewport, evbmFallbackViewport, snapshots.cutoff, snapshots.evbm, viewport],
+    [
+      activeId,
+      cutoffFallbackViewport,
+      evbmFallbackViewport,
+      ipDatasetIds,
+      project.datasets,
+      setActiveUpsIpDatasetId,
+      snapshots.cutoff,
+      snapshots.evbm,
+      viewport,
+    ],
   );
 
   return (
-    <div className="flex h-full flex-col bg-white">
-      <div className="flex shrink-0 gap-1 border-b border-slate-200 bg-slate-50 px-2 py-1 text-[11px]">
-        {ipDatasetIds.length > 0 ? (
-          ipDatasetIds.map((datasetId) => {
-            const dataset = project.datasets.find((item) => item.id === datasetId);
-            const result = ups?.ipResults.find((item) => item.datasetId === datasetId);
-            return (
-              <button
-                key={datasetId}
-                className={
-                  datasetId === activeId
-                    ? "rounded bg-slate-800 px-2 py-1 font-semibold text-white"
-                    : "rounded border border-slate-300 bg-white px-2 py-1 text-slate-700 hover:bg-slate-100"
-                }
-                type="button"
-                onClick={() => setActiveUpsIpDatasetId(datasetId)}
-              >
-                {dataset?.name ?? datasetId} ({formatNumber(result?.appliedVoltage, 2)} V)
-              </button>
-            );
-          })
-        ) : (
-          <span className="px-1 py-1 text-slate-500">No UPS IP dataset selected</span>
-        )}
-      </div>
-      <div className="min-h-0 flex-1">
-        <SpectrumPlot
-          title="UPS IP"
-          xLabel="Binding Energy / eV"
-          yLabel="Intensity / a.u."
-          series={series}
-          markers={markers}
-          rangeBands={rangeBands}
-          xDirection="reverse"
-          viewportRequest={
-            viewportRequest ?? {
-              id: `${project.id}-${activeId ?? "none"}-${persistedViewportKey}`,
-              viewport: persistedViewport,
-            }
-          }
-          onViewportChange={(next) => {
-            setViewport(next);
-            if (activeId) {
-              setUpsIpPlotViewportForDataset(activeId, next);
-            }
-          }}
-          cursorStyle={project.ui?.cursorStyles?.upsIp ?? "point"}
-          onCursorStyleChange={(style) => setPlotCursorStyle("upsIp", style)}
-          extraContextMenuItems={contextItems}
-          onSelectRange={(range) => {
-            if (activeId) {
-              setUpsIpFitRange(activeId, ipTarget(activeFitTarget), range);
-            }
-          }}
-          onRangeBandChange={(target, range) => {
-            if (activeId) {
-              setUpsIpFitRange(activeId, target as FitTarget, range);
-            }
-          }}
-        />
-      </div>
-    </div>
+    <SpectrumPlot
+      title="UPS IP"
+      xLabel="Binding Energy / eV"
+      yLabel="Intensity / a.u."
+      series={series}
+      markers={markers}
+      rangeBands={rangeBands}
+      xDirection="reverse"
+      viewportRequest={
+        viewportRequest ?? {
+          id: `${project.id}-${activeId ?? "none"}-${persistedViewportKey}`,
+          viewport: persistedViewport,
+        }
+      }
+      onViewportChange={(next) => {
+        setViewport(next);
+        if (activeId) {
+          setUpsIpPlotViewportForDataset(activeId, next);
+        }
+      }}
+      cursorStyle={project.ui?.cursorStyles?.upsIp ?? "point"}
+      onCursorStyleChange={(style) => setPlotCursorStyle("upsIp", style)}
+      extraContextMenuItems={contextItems}
+      onSelectRange={(range) => {
+        if (activeId) {
+          setUpsIpFitRange(activeId, ipTarget(activeFitTarget), range);
+        }
+      }}
+      onRangeBandChange={(target, range) => {
+        if (activeId) {
+          setUpsIpFitRange(activeId, target as FitTarget, range);
+        }
+      }}
+    />
   );
 }
 
@@ -373,6 +374,7 @@ export function UPSBiasDependenceWindow() {
         color: config.color,
         points,
         width: 0,
+        pointRadius: 3.5,
       },
     ];
     if (dependence && points.length >= 2) {
@@ -402,7 +404,10 @@ export function UPSBiasDependenceWindow() {
         ? [
             {
               type: "text" as const,
-              label: `0 V: ${formatNumber(dependence.valueAtZero, 3)} eV`,
+              label: `y = ${formatNumber(dependence.slope, 3)}x + ${formatNumber(
+                dependence.intercept,
+                3,
+              )} eV`,
               color: "#111827",
               xFraction: 0.55,
               yFraction: 0.2,
@@ -437,13 +442,17 @@ export function UPSBiasDependenceWindow() {
         ))}
       </div>
       <div className="min-h-0 flex-1">
-        <SpectrumPlot
-          title="UPS Bias Dependence"
-          xLabel="Applied Bias / V"
-          yLabel={config.label}
-          series={series}
-          annotations={annotations}
-        />
+        <div className="flex h-full w-full items-center justify-center p-2">
+          <div className="aspect-[4/3] h-full max-w-full">
+            <SpectrumPlot
+              title="UPS Bias Dependence"
+              xLabel="Applied Bias / V"
+              yLabel={config.label}
+              series={series}
+              annotations={annotations}
+            />
+          </div>
+        </div>
       </div>
     </div>
   );

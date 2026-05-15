@@ -1,6 +1,7 @@
 import { useId, useMemo, useRef, useState } from "react";
 import type { BandDiagramResult } from "../../domain/types";
 import { ContextMenu, useContextMenu } from "../ContextMenu";
+import type { ContextMenuItem } from "../ContextMenu";
 import { formatNumber, formatSignificant } from "../format";
 import { copyPng, exportPng, exportSvg } from "./plotExport";
 import { BandArrow, BandVerticalLine } from "./BandDiagramAnnotations";
@@ -27,6 +28,7 @@ export function IgorBandDiagramPlot({
   viewport,
   onResetView,
   onViewportChange,
+  extraContextMenuItems = [],
 }: {
   band: BandDiagramResult | undefined;
   xDomain: { min: number; max: number };
@@ -40,6 +42,7 @@ export function IgorBandDiagramPlot({
   viewport: BandViewport;
   onResetView: () => void;
   onViewportChange: (viewport: BandViewport) => void;
+  extraContextMenuItems?: ContextMenuItem[];
 }) {
   const containerRef = useRef<HTMLDivElement>(null);
   const svgRef = useRef<SVGSVGElement>(null);
@@ -83,6 +86,8 @@ export function IgorBandDiagramPlot({
 
   function openPlotMenu(x: number, y: number) {
     openMenu(x, y, [
+      ...extraContextMenuItems,
+      ...(extraContextMenuItems.length > 0 ? [{ type: "separator" as const }] : []),
       { type: "item", label: "Reset view", action: onResetView },
       {
         type: "item",

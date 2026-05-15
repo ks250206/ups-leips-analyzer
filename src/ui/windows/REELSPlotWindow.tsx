@@ -76,20 +76,7 @@ export function REELSPlotWindow() {
     return items;
   }, [lossDataset, project.analysis.fitRanges, reels, reelsBackgroundMode]);
 
-  const displayBandGap = useMemo(() => {
-    if (!reels) {
-      return undefined;
-    }
-    if (reelsBackgroundMode !== "single-point" || !lossDataset) {
-      return reels.bandGap;
-    }
-    const x = rangeCenter(project.analysis.fitRanges.reelsBackground);
-    const y = interpolateY(lossDataset.points, x);
-    if (Math.abs(reels.edgeFit.slope) < 1e-12) {
-      return reels.bandGap;
-    }
-    return (y - reels.edgeFit.intercept) / reels.edgeFit.slope;
-  }, [lossDataset, project.analysis.fitRanges.reelsBackground, reels, reelsBackgroundMode]);
+  const displayBandGap = reels?.bandGap;
 
   const markers = useMemo<PlotMarker[]>(
     () =>
@@ -211,28 +198,4 @@ export function REELSPlotWindow() {
       onRangeBandChange={(target, range) => setFitRange(target as FitTarget, range)}
     />
   );
-}
-
-function rangeCenter(range: { min: number; max: number }): number {
-  return (range.min + range.max) / 2;
-}
-
-function interpolateY(points: readonly { x: number; y: number }[], x: number): number {
-  if (points.length === 0) {
-    return 0;
-  }
-  const sorted = [...points].sort((left, right) => left.x - right.x);
-  if (x <= sorted[0].x) {
-    return sorted[0].y;
-  }
-  for (let index = 1; index < sorted.length; index += 1) {
-    const previous = sorted[index - 1];
-    const current = sorted[index];
-    if (x <= current.x) {
-      const span = current.x - previous.x || 1;
-      const ratio = (x - previous.x) / span;
-      return previous.y + (current.y - previous.y) * ratio;
-    }
-  }
-  return sorted[sorted.length - 1].y;
 }

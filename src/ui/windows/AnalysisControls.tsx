@@ -361,6 +361,11 @@ function DatasetMultiSelect({
       values={[...selectedIds]}
       placeholder="Select UPS IP datasets"
       labelForOption={(id) => byId.get(id) ?? id}
+      summaryLabel={(ids, labelForOption) =>
+        ids.length <= 1
+          ? labelForOption(ids[0] ?? "")
+          : `${labelForOption(ids[0] ?? "")} .. + ${ids.length - 1}`
+      }
       onChange={onChange}
     />
   );

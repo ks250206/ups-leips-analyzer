@@ -198,15 +198,30 @@ export function SeriesPath({
   const labelPoint = fitLabelPointForSeries(series, visibleXDomain, geometry, xScale, yScale);
   return (
     <g>
-      <path
-        d={path}
-        fill="none"
-        stroke={series.color}
-        strokeDasharray={series.dash?.join(" ")}
-        strokeLinecap="round"
-        strokeLinejoin="round"
-        strokeWidth={series.width ?? 2}
-      />
+      {(series.width ?? 2) > 0 ? (
+        <path
+          d={path}
+          fill="none"
+          stroke={series.color}
+          strokeDasharray={series.dash?.join(" ")}
+          strokeLinecap="round"
+          strokeLinejoin="round"
+          strokeWidth={series.width ?? 2}
+        />
+      ) : null}
+      {series.pointRadius
+        ? sortedPoints(series.points).map((point) =>
+            Number.isFinite(point.x) && Number.isFinite(point.y) ? (
+              <circle
+                key={`${series.name}-${point.x}-${point.y}`}
+                cx={xScale(point.x)}
+                cy={yScale(point.y)}
+                fill={series.color}
+                r={series.pointRadius}
+              />
+            ) : null,
+          )
+        : null}
       {showFitLabel && series.fitLabel && labelPoint ? (
         <text
           fill={series.color}

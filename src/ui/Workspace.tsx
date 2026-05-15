@@ -21,6 +21,7 @@ import {
   DeleteCatalogModal,
   DeleteProjectModal,
   LoadProjectModal,
+  OverwriteProjectModal,
   SaveAsModal,
   SwitchCatalogModal,
 } from "./workspace/WorkspaceModals";
@@ -73,6 +74,7 @@ export function Workspace() {
   const [activeWindowId, setActiveWindowId] = useState<string>();
   const [analysisTab, setAnalysisTab] = useState<AnalysisControlTab>("sample");
   const [saveAsOpen, setSaveAsOpen] = useState(false);
+  const [pendingOverwriteName, setPendingOverwriteName] = useState<string>();
   const [renameProjectOpen, setRenameProjectOpen] = useState(false);
   const [deleteOpen, setDeleteOpen] = useState(false);
   const [loadProjectOpen, setLoadProjectOpen] = useState(false);
@@ -96,6 +98,9 @@ export function Workspace() {
       return;
     }
     void restoreLastOpenedWorkspace(ref)
+      .then(() => {
+        pushToast("Last opened project loaded.", "success");
+      })
       .catch((caught: unknown) => {
         return resetToDefaultEmptyWorkspace().then(() => {
           pushToast(errorMessage("Last opened workspace restore failed", caught), "error");
@@ -415,10 +420,39 @@ export function Workspace() {
           defaultName={project.name}
           onCancel={() => setSaveAsOpen(false)}
           onSave={(name) => {
-            void saveProjectAs(name)
+            void listRecentProjects()
+              .then((projects) => {
+                const existing = projects.find((record) => record.name === name.trim());
+                if (existing) {
+                  setPendingOverwriteName(name.trim());
+                  setSaveAsOpen(false);
+                  return Promise.resolve();
+                }
+                return saveProjectAs(name).then(() => {
+                  refreshRecentProjects();
+                  setSaveAsOpen(false);
+                  pushToast("Project saved.", "success");
+                });
+              })
+              .catch((caught: unknown) => {
+                pushToast(errorMessage("Project save failed", caught), "error");
+              });
+          }}
+        />
+      ) : null}
+      {pendingOverwriteName ? (
+        <OverwriteProjectModal
+          projectName={pendingOverwriteName}
+          onCancel={() => setPendingOverwriteName(undefined)}
+          onRename={() => {
+            setSaveAsOpen(true);
+            setPendingOverwriteName(undefined);
+          }}
+          onConfirm={() => {
+            void saveProjectAs(pendingOverwriteName)
               .then(() => {
                 refreshRecentProjects();
-                setSaveAsOpen(false);
+                setPendingOverwriteName(undefined);
                 pushToast("Project saved.", "success");
               })
               .catch((caught: unknown) => {

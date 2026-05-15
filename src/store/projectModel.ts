@@ -94,6 +94,7 @@ export function recalculateProject(project: ProjectSnapshot): ProjectSnapshot {
           edgeRange: analysis.fitRanges.reelsEdge,
           backgroundRange: analysis.fitRanges.reelsBackground,
           incidentEnergy: analysis.reelsIncidentEnergy,
+          backgroundMode: project.ui?.reelsBackgroundMode,
         }),
       )
     : undefined;

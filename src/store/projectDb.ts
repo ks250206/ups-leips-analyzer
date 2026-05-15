@@ -163,6 +163,12 @@ export async function deleteCatalogRecord(
 ): Promise<void> {
   await ensureDefaultCatalog(registry);
   if (id === DEFAULT_CATALOG_ID && (await registry.catalogs.count()) <= 1) {
+    const db = getDb(id);
+    await db.transaction("rw", db.tables, async () => {
+      for (const table of db.tables) {
+        await table.clear();
+      }
+    });
     return;
   }
   await registry.catalogs.delete(id);

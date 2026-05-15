@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import type { ContextMenuItem } from "../ContextMenu";
 import { useProjectStore } from "../../store/projectStore";
 import { SmallNumber } from "./BandDiagramControls";
 import { IgorBandDiagramPlot } from "./BandDiagramPlot";
@@ -15,6 +16,10 @@ export const DEFAULT_BAND_X_RANGE = { min: -5, max: 8 } as const;
 
 export function BandDiagramWindow() {
   const band = useProjectStore((state) => state.project.analysis.band);
+  const upsAnalysis = useProjectStore((state) => state.project.analysis.ups);
+  const ipResults = upsAnalysis?.ipResults ?? [];
+  const bandIpSource = useProjectStore((state) => state.project.analysis.bandIpSource);
+  const setBandIpSource = useProjectStore((state) => state.setBandIpSource);
   const persistedViewport = useProjectStore((state) => state.project.ui?.bandDiagramViewport);
   const setBandDiagramViewport = useProjectStore((state) => state.setBandDiagramViewport);
   const [upsScale, setUpsScale] = useState(1);
@@ -31,6 +36,37 @@ export function BandDiagramWindow() {
   const [xMin, setXMin] = useState<number>(DEFAULT_BAND_X_RANGE.min);
   const [xMax, setXMax] = useState<number>(DEFAULT_BAND_X_RANGE.max);
   const [viewport, setViewport] = useState<BandViewport>(persistedViewport ?? {});
+  const bandContextItems = useMemo<ContextMenuItem[]>(
+    () => [
+      {
+        type: "submenu",
+        label: "IP source",
+        items: [
+          {
+            type: "item",
+            label: `${bandIpSource?.mode === "zero-voltage-extrapolated" ? "✓ " : ""}0 V extrapolated`,
+            disabled: ipResults.filter((result) => Number.isFinite(result.ip)).length < 2,
+            action: () => setBandIpSource({ mode: "zero-voltage-extrapolated" }),
+          },
+          {
+            type: "item",
+            label: `${bandIpSource?.mode === "average" ? "✓ " : ""}Average`,
+            action: () => setBandIpSource({ mode: "average" }),
+          },
+          ...ipResults.map((result) => ({
+            type: "item" as const,
+            label: `${
+              bandIpSource?.mode === "dataset" && bandIpSource.datasetId === result.datasetId
+                ? "✓ "
+                : ""
+            }${result.datasetName}`,
+            action: () => setBandIpSource({ mode: "dataset", datasetId: result.datasetId }),
+          })),
+        ],
+      },
+    ],
+    [bandIpSource, ipResults, setBandIpSource],
+  );
   const applyAutoScale = useCallback(() => {
     if (!band) {
       setViewport({});
@@ -105,6 +141,7 @@ export function BandDiagramWindow() {
           indicatorArrowScale={indicatorArrowScale}
           significantDigits={significantDigits}
           viewport={viewport}
+          extraContextMenuItems={bandContextItems}
           onResetView={applyAutoScale}
           onViewportChange={handleViewportChange}
         />

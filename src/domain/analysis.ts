@@ -4,6 +4,7 @@ import type {
   BandDiagramResult,
   FitRange,
   LEIPSResult,
+  LineFitResult,
   Point,
   REELSResult,
   SpectrumDataset,
@@ -225,11 +226,15 @@ export function calculateREELSResult(input: {
   edgeRange: FitRange;
   backgroundRange: FitRange;
   incidentEnergy?: number;
+  backgroundMode?: "fit-range" | "single-point";
 }): REELSResult {
   const incidentEnergy = input.incidentEnergy ?? 1000;
   const lossPoints = convertKineticToLoss(input.dataset.points, incidentEnergy);
   const edgeFit = linearFit(lossPoints, input.edgeRange);
-  const backgroundFit = linearFit(lossPoints, input.backgroundRange);
+  const backgroundFit =
+    input.backgroundMode === "single-point"
+      ? horizontalFitAtRangeCenter(lossPoints, input.backgroundRange)
+      : linearFit(lossPoints, input.backgroundRange);
   const bandGap = lineIntersection(edgeFit, backgroundFit);
 
   return {
@@ -239,4 +244,40 @@ export function calculateREELSResult(input: {
     backgroundFit,
     lossPoints,
   };
+}
+
+function horizontalFitAtRangeCenter(points: readonly Point[], range: FitRange): LineFitResult {
+  const x = (range.min + range.max) / 2;
+  const y = interpolatePointY(points, x);
+  return {
+    intercept: y,
+    slope: 0,
+    rSquared: 1,
+    range,
+    pointsUsed: 1,
+  };
+}
+
+function interpolatePointY(points: readonly Point[], x: number): number {
+  if (points.length === 0) {
+    return 0;
+  }
+  const sorted = [...points].sort((left, right) => left.x - right.x);
+  if (x <= (sorted[0]?.x ?? x)) {
+    return sorted[0]?.y ?? 0;
+  }
+  for (let index = 1; index < sorted.length; index += 1) {
+    const previous = sorted[index - 1];
+    const current = sorted[index];
+    if (!previous || !current) {
+      continue;
+    }
+    if (x >= previous.x && x <= current.x) {
+      const span = current.x - previous.x;
+      return span === 0
+        ? current.y
+        : previous.y + ((x - previous.x) / span) * (current.y - previous.y);
+    }
+  }
+  return sorted.at(-1)?.y ?? 0;
 }

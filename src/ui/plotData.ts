@@ -19,6 +19,7 @@ export interface PlotSeries {
   affectsScale?: boolean;
   fitRange?: FitRange;
   fitLabel?: string;
+  pointRadius?: number;
 }
 
 export interface PlotMarker {
