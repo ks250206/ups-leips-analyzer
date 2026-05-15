@@ -16,6 +16,10 @@ vp test
 vp test --coverage
 vp build
 pnpm binary:build
+pnpm binary:build:darwin-arm64
+pnpm binary:build:darwin-amd64
+pnpm binary:build:windows-x64
+pnpm binary:build:macos-app:arm64
 ```
 
 ## Manual Smoke
@@ -27,3 +31,6 @@ pnpm binary:build
 5. Top menuと背景右クリックmenuが表示される。
 6. Band Diagramのズーム、パン、ダブルクリックリセットが動く。
 7. Goバイナリで `/` と `/assets/...` が返る。
+8. macOS `.app` は `Contents/Resources/favicon.icns` と `CFBundleIconFile` を持つ。
+9. Windows `.exe` はfavicon resourceを埋め込んで生成される。
+10. `docker compose up` で `http://127.0.0.1:4173/` が返る。

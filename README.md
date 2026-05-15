@@ -23,3 +23,27 @@ pnpm binary:build
 ```
 
 デフォルトでは `http://127.0.0.1:4173/` で起動します。
+
+## 配布ビルド
+
+```sh
+pnpm binary:build:darwin-arm64
+pnpm binary:build:darwin-amd64
+pnpm binary:build:windows-x64
+pnpm binary:build:macos-app:arm64
+pnpm binary:build:macos-app:amd64
+```
+
+macOSのアイコン付き配布物は `.app.zip`、Windowsはfaviconを埋め込んだ `.exe` を生成します。
+
+## Nix / Docker
+
+```sh
+nix develop
+vp install
+```
+
+```sh
+docker compose build
+docker compose up
+```

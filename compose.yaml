@@ -1,0 +1,7 @@
+services:
+  ups-leips-analyzer:
+    build:
+      context: .
+    ports:
+      - "127.0.0.1:4173:4173"
+    command: ["--host", "0.0.0.0", "--port", "4173"]
