@@ -37,6 +37,7 @@ export function UPSVBPlotWindow() {
           project.analysis.fitRanges.upsVbEdge,
           "#1d4ed8",
           extent,
+          "VBM edge",
         ),
       );
       items.push(
@@ -46,6 +47,7 @@ export function UPSVBPlotWindow() {
           project.analysis.fitRanges.upsVbBackground,
           "#0f766e",
           extent,
+          "VBM BG",
         ),
       );
     }
@@ -123,6 +125,7 @@ export function UPSIPPlotWindow() {
           project.analysis.fitRanges.upsIpVbmEdge,
           "#7c3aed",
           extent,
+          "VBM edge",
         ),
       );
       items.push(
@@ -132,6 +135,7 @@ export function UPSIPPlotWindow() {
           project.analysis.fitRanges.upsIpVbmBackground,
           "#0f766e",
           extent,
+          "VBM BG",
         ),
       );
       items.push(
@@ -141,6 +145,7 @@ export function UPSIPPlotWindow() {
           project.analysis.fitRanges.upsIpEdge,
           "#b91c1c",
           extent,
+          "cut-off edge",
         ),
       );
       items.push(
@@ -150,6 +155,7 @@ export function UPSIPPlotWindow() {
           project.analysis.fitRanges.upsIpBackground,
           "#15803d",
           extent,
+          "cut-off BG",
         ),
       );
     }

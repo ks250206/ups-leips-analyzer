@@ -120,7 +120,7 @@ export function LEIPSPlotWindow() {
         type: "text",
         label: "LEET(der)",
         color: "#2563eb",
-        xFraction: 0.19,
+        xFraction: 0.12,
         yFraction: 0.17,
         fontSize: 16,
       },
@@ -257,6 +257,7 @@ export function LEIPSEvacPlotWindow() {
           project.analysis.fitRanges.leipsEdge,
           "#b91c1c",
           extent,
+          "edge",
         ),
         lineFitSeries(
           "LEIPS BG",
@@ -264,6 +265,7 @@ export function LEIPSEvacPlotWindow() {
           project.analysis.fitRanges.leipsBackground,
           "#15803d",
           extent,
+          "BG",
         ),
       );
     }

@@ -121,7 +121,7 @@ export function PlotAxes({
         fontWeight={labelWeight}
         textAnchor="middle"
         x={geometry.left + geometry.plotWidth / 2}
-        y={geometry.height - (largeAxisLabels ? 16 : 10)}
+        y={geometry.height - (largeAxisLabels ? 8 : 4)}
       >
         {xLabel}
       </text>
@@ -157,10 +157,12 @@ export function SeriesPath({
   series,
   xScale,
   yScale,
+  showFitLabel = false,
   visibleXDomain,
 }: {
   clipId: string;
   geometry: PlotGeometry;
+  showFitLabel?: boolean;
   visibleXDomain: PlotScaleRange;
   series: PlotSeries;
   xScale: ScaleLinear<number, number>;
@@ -176,17 +178,47 @@ export function SeriesPath({
   if (!path) {
     return null;
   }
+  const labelPoint = midpointForLabel(series.points, xScale, yScale);
   return (
-    <path
-      d={path}
-      fill="none"
-      stroke={series.color}
-      strokeDasharray={series.dash?.join(" ")}
-      strokeLinecap="round"
-      strokeLinejoin="round"
-      strokeWidth={series.width ?? 2}
-    />
+    <g>
+      <path
+        d={path}
+        fill="none"
+        stroke={series.color}
+        strokeDasharray={series.dash?.join(" ")}
+        strokeLinecap="round"
+        strokeLinejoin="round"
+        strokeWidth={series.width ?? 2}
+      />
+      {showFitLabel && series.fitLabel && labelPoint ? (
+        <text
+          fill={series.color}
+          fontSize={11}
+          fontWeight={700}
+          paintOrder="stroke fill"
+          stroke="white"
+          strokeWidth={3}
+          textAnchor="middle"
+          x={labelPoint.x}
+          y={labelPoint.y - 6}
+        >
+          {series.fitLabel}
+        </text>
+      ) : null}
+    </g>
   );
+}
+
+function midpointForLabel(
+  points: readonly Point[],
+  xScale: ScaleLinear<number, number>,
+  yScale: ScaleLinear<number, number>,
+): { x: number; y: number } | undefined {
+  if (points.length === 0) {
+    return undefined;
+  }
+  const point = points[Math.floor(points.length / 2)];
+  return point ? { x: xScale(point.x), y: yScale(point.y) } : undefined;
 }
 
 export function RangeBand({

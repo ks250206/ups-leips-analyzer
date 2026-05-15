@@ -223,7 +223,7 @@ export function IgorBandDiagramPlot({
                 <text
                   fill="black"
                   fontFamily="Arial, Helvetica, sans-serif"
-                  fontSize={24}
+                  fontSize={30}
                   fontWeight={700}
                   textAnchor="middle"
                   x={x}
@@ -254,8 +254,8 @@ export function IgorBandDiagramPlot({
           fontSize={38}
           fontWeight={800}
           textAnchor="middle"
-          transform={`rotate(-90 42 ${plot.top + plotHeight / 2})`}
-          x={42}
+          transform={`rotate(-90 58 ${plot.top + plotHeight / 2})`}
+          x={58}
           y={plot.top + plotHeight / 2}
         >
           Intensity / a.u.
