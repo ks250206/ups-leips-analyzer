@@ -6,11 +6,13 @@ import {
   axisLabelForDatasetKind,
   autoFitRanges,
   autoSelectDatasets,
+  defaultUpsIpRanges,
   fitRangeKey,
   isDemoDataset,
   mergeDatasets,
   normalizeProject,
   recalculateProject,
+  selectedUpsIpDatasetIds,
   touchProject,
 } from "./projectModel";
 import { createDemoProject, createEmptyProject, defaultWindows } from "./projectFactory";
@@ -61,7 +63,11 @@ interface ProjectStore {
   setDatasetKind: (datasetId: string, kind: SpectrumDataset["kind"]) => void;
   selectDataset: (datasetId: string) => void;
   assignDataset: (slot: keyof AnalysisState["selection"], datasetId: string) => void;
+  assignUpsIpDatasets: (datasetIds: string[]) => void;
   setFitRange: (target: FitTarget, range: FitRange) => void;
+  setUpsIpFitRange: (datasetId: string, target: FitTarget, range: FitRange) => void;
+  setUpsIpAppliedVoltage: (datasetId: string, voltage: number) => void;
+  setBandIpSource: (source: NonNullable<AnalysisState["bandIpSource"]>) => void;
   setBandpassType: (type: number) => void;
   setCustomBandpassEnergy: (energy: number) => void;
   setReelsIncidentEnergy: (energy: number) => void;
@@ -71,6 +77,11 @@ interface ProjectStore {
   setReelsPlotViewport: (viewport: ProjectUiState["reelsPlotViewport"]) => void;
   setUpsVbPlotViewport: (viewport: ProjectUiState["upsVbPlotViewport"]) => void;
   setUpsIpPlotViewport: (viewport: ProjectUiState["upsIpPlotViewport"]) => void;
+  setUpsIpPlotViewportForDataset: (
+    datasetId: string,
+    viewport: ProjectUiState["upsIpPlotViewport"],
+  ) => void;
+  setActiveUpsIpDatasetId: (datasetId: string) => void;
   setLeipsPlotViewport: (viewport: ProjectUiState["leipsPlotViewport"]) => void;
   setLeipsEvacPlotViewport: (viewport: ProjectUiState["leipsEvacPlotViewport"]) => void;
   setReelsBackgroundMode: (mode: NonNullable<ProjectUiState["reelsBackgroundMode"]>) => void;
@@ -140,7 +151,20 @@ export const useProjectStore = create<ProjectStore>((set, get) => ({
         ...state.project,
         datasets: merged,
         selectedDatasetId: datasets[0]?.id ?? state.project.selectedDatasetId,
-        analysis: { ...state.project.analysis, fitRanges, selection },
+        analysis: {
+          ...state.project.analysis,
+          fitRanges,
+          selection,
+          upsIpFitRangesByDatasetId: seedUpsIpFitRanges(
+            state.project.analysis.upsIpFitRangesByDatasetId,
+            selection.upsIpDatasetIds ?? [],
+          ),
+          upsIpConfigsByDatasetId: seedUpsIpConfigs(
+            state.project.analysis.upsIpConfigsByDatasetId,
+            merged,
+            selection.upsIpDatasetIds ?? [],
+          ),
+        },
       });
       return { project: recalculateProject(project) };
     });
@@ -162,6 +186,22 @@ export const useProjectStore = create<ProjectStore>((set, get) => ({
         analysis: {
           ...state.project.analysis,
           selection,
+          upsIpFitRangesByDatasetId: omitKeys(state.project.analysis.upsIpFitRangesByDatasetId, [
+            datasetId,
+          ]),
+          upsIpConfigsByDatasetId: omitKeys(state.project.analysis.upsIpConfigsByDatasetId, [
+            datasetId,
+          ]),
+        },
+        ui: {
+          ...state.project.ui,
+          upsIpPlotViewportsByDatasetId: omitKeys(state.project.ui?.upsIpPlotViewportsByDatasetId, [
+            datasetId,
+          ]),
+          activeUpsIpDatasetId:
+            state.project.ui?.activeUpsIpDatasetId === datasetId
+              ? selection.upsIpDatasetIds?.[0]
+              : state.project.ui?.activeUpsIpDatasetId,
         },
       });
       return { project: recalculateProject(project) };
@@ -201,6 +241,14 @@ export const useProjectStore = create<ProjectStore>((set, get) => ({
           ...state.project.analysis,
           selection,
           fitRanges,
+          upsIpFitRangesByDatasetId:
+            kind === "ups-ip"
+              ? state.project.analysis.upsIpFitRangesByDatasetId
+              : omitKeys(state.project.analysis.upsIpFitRangesByDatasetId, [datasetId]),
+          upsIpConfigsByDatasetId:
+            kind === "ups-ip"
+              ? state.project.analysis.upsIpConfigsByDatasetId
+              : omitKeys(state.project.analysis.upsIpConfigsByDatasetId, [datasetId]),
         },
       });
       return { project: recalculateProject(project) };
@@ -211,6 +259,35 @@ export const useProjectStore = create<ProjectStore>((set, get) => ({
   },
   assignDataset: (slot, datasetId) => {
     set((state) => {
+      if (slot === "upsIpDatasetIds") {
+        const current = new Set(selectedUpsIpDatasetIds(state.project.analysis.selection));
+        if (current.has(datasetId)) {
+          current.delete(datasetId);
+        } else {
+          current.add(datasetId);
+        }
+        const validIds = [...current].filter((id) =>
+          state.project.datasets.some((dataset) => dataset.id === id && dataset.kind === "ups-ip"),
+        );
+        const selection = { ...state.project.analysis.selection, upsIpDatasetIds: validIds };
+        const project = touchProject({
+          ...state.project,
+          analysis: {
+            ...state.project.analysis,
+            selection,
+            upsIpFitRangesByDatasetId: seedUpsIpFitRanges(
+              state.project.analysis.upsIpFitRangesByDatasetId,
+              validIds,
+            ),
+            upsIpConfigsByDatasetId: seedUpsIpConfigs(
+              state.project.analysis.upsIpConfigsByDatasetId,
+              state.project.datasets,
+              validIds,
+            ),
+          },
+        });
+        return { project: recalculateProject(project) };
+      }
       const selection = { ...state.project.analysis.selection, [slot]: datasetId };
       const fitRanges = autoFitRanges(
         state.project.datasets,
@@ -232,6 +309,41 @@ export const useProjectStore = create<ProjectStore>((set, get) => ({
       return { project: recalculateProject(project) };
     });
   },
+  assignUpsIpDatasets: (datasetIds) => {
+    set((state) => {
+      const validIds = datasetIds.filter((datasetId) =>
+        state.project.datasets.some(
+          (dataset) => dataset.id === datasetId && dataset.kind === "ups-ip",
+        ),
+      );
+      const selection = { ...state.project.analysis.selection, upsIpDatasetIds: validIds };
+      const project = touchProject({
+        ...state.project,
+        analysis: {
+          ...state.project.analysis,
+          selection,
+          upsIpFitRangesByDatasetId: seedUpsIpFitRanges(
+            state.project.analysis.upsIpFitRangesByDatasetId,
+            validIds,
+          ),
+          upsIpConfigsByDatasetId: seedUpsIpConfigs(
+            state.project.analysis.upsIpConfigsByDatasetId,
+            state.project.datasets,
+            validIds,
+          ),
+        },
+        ui: {
+          ...state.project.ui,
+          activeUpsIpDatasetId:
+            state.project.ui?.activeUpsIpDatasetId &&
+            validIds.includes(state.project.ui.activeUpsIpDatasetId)
+              ? state.project.ui.activeUpsIpDatasetId
+              : validIds[0],
+        },
+      });
+      return { project: recalculateProject(project) };
+    });
+  },
   setFitRange: (target, range) => {
     set((state) => {
       const fitRanges = { ...state.project.analysis.fitRanges };
@@ -241,6 +353,67 @@ export const useProjectStore = create<ProjectStore>((set, get) => ({
         analysis: { ...state.project.analysis, fitRanges },
       });
       return { activeFitTarget: target, project: recalculateProject(project) };
+    });
+  },
+  setUpsIpFitRange: (datasetId, target, range) => {
+    set((state) => {
+      const current =
+        state.project.analysis.upsIpFitRangesByDatasetId?.[datasetId] ?? defaultUpsIpRanges();
+      const next = { ...current };
+      switch (target) {
+        case "ups-ip-vbm-edge":
+          next.ipVbmEdge = range;
+          break;
+        case "ups-ip-vbm-bg":
+          next.ipVbmBackground = range;
+          break;
+        case "ups-ip-edge":
+          next.cutoffEdge = range;
+          break;
+        case "ups-ip-bg":
+          next.cutoffBackground = range;
+          break;
+        default:
+          return state;
+      }
+      const project = touchProject({
+        ...state.project,
+        analysis: {
+          ...state.project.analysis,
+          upsIpFitRangesByDatasetId: {
+            ...state.project.analysis.upsIpFitRangesByDatasetId,
+            [datasetId]: next,
+          },
+        },
+      });
+      return { activeFitTarget: target, project: recalculateProject(project) };
+    });
+  },
+  setUpsIpAppliedVoltage: (datasetId, voltage) => {
+    set((state) => {
+      if (!Number.isFinite(voltage)) {
+        return state;
+      }
+      const project = touchProject({
+        ...state.project,
+        analysis: {
+          ...state.project.analysis,
+          upsIpConfigsByDatasetId: {
+            ...state.project.analysis.upsIpConfigsByDatasetId,
+            [datasetId]: { appliedVoltage: voltage },
+          },
+        },
+      });
+      return { project: recalculateProject(project) };
+    });
+  },
+  setBandIpSource: (source) => {
+    set((state) => {
+      const project = touchProject({
+        ...state.project,
+        analysis: { ...state.project.analysis, bandIpSource: source },
+      });
+      return { project: recalculateProject(project) };
     });
   },
   setBandpassType: (type) => {
@@ -345,6 +518,28 @@ export const useProjectStore = create<ProjectStore>((set, get) => ({
       project: touchProject({
         ...state.project,
         ui: { ...state.project.ui, upsIpPlotViewport: viewport },
+      }),
+    }));
+  },
+  setUpsIpPlotViewportForDataset: (datasetId, viewport) => {
+    set((state) => ({
+      project: touchProject({
+        ...state.project,
+        ui: {
+          ...state.project.ui,
+          upsIpPlotViewportsByDatasetId: {
+            ...state.project.ui?.upsIpPlotViewportsByDatasetId,
+            ...(viewport ? { [datasetId]: viewport } : {}),
+          },
+        },
+      }),
+    }));
+  },
+  setActiveUpsIpDatasetId: (datasetId) => {
+    set((state) => ({
+      project: touchProject({
+        ...state.project,
+        ui: { ...state.project.ui, activeUpsIpDatasetId: datasetId },
       }),
     }));
   },
@@ -689,9 +884,11 @@ async function latestProjectForCatalog(catalogId: string): Promise<ProjectSnapsh
   return project;
 }
 
-const SELECTION_KIND: Record<keyof AnalysisState["selection"], SpectrumDataset["kind"]> = {
+const SELECTION_KIND: Record<
+  Exclude<keyof AnalysisState["selection"], "upsIpDatasetIds" | "upsIpDatasetId">,
+  SpectrumDataset["kind"]
+> = {
   upsVbDatasetId: "ups-vb",
-  upsIpDatasetId: "ups-ip",
   leetDatasetId: "leet",
   leetDerDatasetId: "leet-der",
   leipsDatasetId: "leips",
@@ -704,12 +901,59 @@ function keepOnlyMatchingSelections(
 ): AnalysisState["selection"] {
   const next: AnalysisState["selection"] = {};
   for (const [slot, kind] of Object.entries(SELECTION_KIND) as Array<
-    [keyof AnalysisState["selection"], SpectrumDataset["kind"]]
+    [
+      Exclude<keyof AnalysisState["selection"], "upsIpDatasetIds" | "upsIpDatasetId">,
+      SpectrumDataset["kind"],
+    ]
   >) {
     const datasetId = selection[slot];
     if (datasets.some((dataset) => dataset.id === datasetId && dataset.kind === kind)) {
       next[slot] = datasetId;
     }
+  }
+  next.upsIpDatasetIds = selectedUpsIpDatasetIds(selection).filter((datasetId) =>
+    datasets.some((dataset) => dataset.id === datasetId && dataset.kind === "ups-ip"),
+  );
+  return next;
+}
+
+function seedUpsIpFitRanges(
+  current: AnalysisState["upsIpFitRangesByDatasetId"] | undefined,
+  datasetIds: readonly string[],
+): NonNullable<AnalysisState["upsIpFitRangesByDatasetId"]> {
+  const next = { ...current };
+  for (const datasetId of datasetIds) {
+    next[datasetId] = next[datasetId] ?? defaultUpsIpRanges();
+  }
+  return next;
+}
+
+function seedUpsIpConfigs(
+  current: AnalysisState["upsIpConfigsByDatasetId"] | undefined,
+  datasets: readonly SpectrumDataset[],
+  datasetIds: readonly string[],
+): NonNullable<AnalysisState["upsIpConfigsByDatasetId"]> {
+  const next = { ...current };
+  for (const datasetId of datasetIds) {
+    const dataset = datasets.find((item) => item.id === datasetId);
+    const voltage = Number(dataset?.metadata.appliedVoltage);
+    next[datasetId] = next[datasetId] ?? {
+      appliedVoltage: Number.isFinite(voltage) ? voltage : 0,
+    };
+  }
+  return next;
+}
+
+function omitKeys<T>(
+  record: Record<string, T> | undefined,
+  keys: readonly string[],
+): Record<string, T> | undefined {
+  if (!record) {
+    return undefined;
+  }
+  const next = { ...record };
+  for (const key of keys) {
+    delete next[key];
   }
   return next;
 }

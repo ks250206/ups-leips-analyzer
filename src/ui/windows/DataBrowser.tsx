@@ -230,7 +230,7 @@ interface DatasetAssignment {
 function assignmentForDataset(
   selection: {
     upsVbDatasetId?: string;
-    upsIpDatasetId?: string;
+    upsIpDatasetIds?: string[];
     leetDatasetId?: string;
     leetDerDatasetId?: string;
     leipsDatasetId?: string;
@@ -240,12 +240,14 @@ function assignmentForDataset(
 ): DatasetAssignment | undefined {
   const assignments: Array<[string | undefined, DatasetAssignment]> = [
     [selection.upsVbDatasetId, { label: "UPS-VB", className: "bg-blue-100 text-blue-700" }],
-    [selection.upsIpDatasetId, { label: "UPS-IP", className: "bg-rose-100 text-rose-700" }],
     [selection.leetDatasetId, { label: "LEET", className: "bg-emerald-100 text-emerald-700" }],
     [selection.leetDerDatasetId, { label: "LEET-der", className: "bg-indigo-100 text-indigo-700" }],
     [selection.leipsDatasetId, { label: "LEIPS", className: "bg-red-100 text-red-700" }],
     [selection.reelsDatasetId, { label: "REELS", className: "bg-slate-800 text-white" }],
   ];
+  if (selection.upsIpDatasetIds?.includes(datasetId)) {
+    return { label: "UPS-IP", className: "bg-rose-100 text-rose-700" };
+  }
   return assignments.find(([assignedId]) => assignedId === datasetId)?.[1];
 }
 

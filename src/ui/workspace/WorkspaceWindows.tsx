@@ -18,7 +18,11 @@ import { DataTable } from "../windows/DataTable";
 import { LEIPSEvacPlotWindow, LEIPSPlotWindow } from "../windows/LEIPSPlotWindow";
 import { ProjectListWindow } from "../windows/ProjectListWindow";
 import { REELSPlotWindow } from "../windows/REELSPlotWindow";
-import { UPSIPPlotWindow, UPSVBPlotWindow } from "../windows/UPSPlotWindow";
+import {
+  UPSBiasDependenceWindow,
+  UPSIPPlotWindow,
+  UPSVBPlotWindow,
+} from "../windows/UPSPlotWindow";
 
 export type AnalysisControlTab = "data" | "sample" | "ups" | "leips" | "reels" | "band" | "fit";
 
@@ -33,6 +37,8 @@ export function renderWindow(window: WindowLayout, analysisTab: AnalysisControlT
       return <UPSIPPlotWindow />;
     case "ups-vb":
       return <UPSVBPlotWindow />;
+    case "ups-bias":
+      return <UPSBiasDependenceWindow />;
     case "leips":
       return <LEIPSPlotWindow />;
     case "leips-evac":
@@ -59,6 +65,7 @@ export function iconForWindow(kind: WindowLayout["kind"]): ReactNode {
     case "ups":
     case "ups-vb":
     case "ups-ip":
+    case "ups-bias":
     case "leips":
     case "leips-evac":
     case "reels":
@@ -84,7 +91,7 @@ export function titleForWindow(
       return appendDatasetName(window.title, datasets, selection.upsVbDatasetId);
     case "ups-ip":
     case "ups":
-      return appendDatasetName(window.title, datasets, selection.upsIpDatasetId);
+      return appendDatasetNames(window.title, datasets, selection.upsIpDatasetIds);
     case "leips":
     case "leips-evac":
       return appendDatasetName(window.title, datasets, selection.leipsDatasetId);
@@ -134,11 +141,13 @@ export function windowContextItems(
     case "ups":
     case "ups-ip":
       return [
-        datasetSubmenu("UPS IP dataset", "upsIpDatasetId", "ups-ip", actions),
+        multiDatasetSubmenu("UPS IP datasets", "ups-ip", actions),
         { type: "separator" },
         { type: "item", label: "Recalculate", action: actions.recalculate },
         ...resetItems,
       ];
+    case "ups-bias":
+      return [{ type: "item", label: "Recalculate", action: actions.recalculate }, ...resetItems];
     case "leips":
       return [
         datasetSubmenu("LEET dataset", "leetDatasetId", "leet", actions),
@@ -176,6 +185,20 @@ function appendDatasetName(
   return datasetName ? `${title} - ${datasetName}` : title;
 }
 
+function appendDatasetNames(
+  title: string,
+  datasets: readonly SpectrumDataset[],
+  datasetIds: readonly string[] | undefined,
+): string {
+  const names = (datasetIds ?? [])
+    .map((datasetId) => datasets.find((dataset) => dataset.id === datasetId)?.name)
+    .filter(Boolean);
+  if (names.length === 0) {
+    return title;
+  }
+  return `${title} - ${names.length === 1 ? names[0] : `${names.length} datasets`}`;
+}
+
 function datasetSubmenu(
   label: string,
   slot: keyof AnalysisSelection,
@@ -196,6 +219,31 @@ function datasetSubmenu(
             type: "item",
             label: dataset.id === actions.selection[slot] ? `${dataset.name} ✓` : dataset.name,
             action: () => actions.assignDataset(slot, dataset.id),
+          }))
+        : [{ type: "item", label: "No matching datasets", disabled: true }],
+  };
+}
+
+function multiDatasetSubmenu(
+  label: string,
+  kind: SpectrumDataset["kind"],
+  actions: {
+    assignDataset: (slot: keyof AnalysisSelection, datasetId: string) => void;
+    datasets: readonly SpectrumDataset[];
+    selection: AnalysisSelection;
+  },
+): ContextMenuItem {
+  const datasets = actions.datasets.filter((dataset) => dataset.kind === kind);
+  const selected = new Set(actions.selection.upsIpDatasetIds ?? []);
+  return {
+    type: "submenu",
+    label,
+    items:
+      datasets.length > 0
+        ? datasets.map((dataset) => ({
+            type: "item",
+            label: selected.has(dataset.id) ? `${dataset.name} ✓` : dataset.name,
+            action: () => actions.assignDataset("upsIpDatasetIds", dataset.id),
           }))
         : [{ type: "item", label: "No matching datasets", disabled: true }],
   };

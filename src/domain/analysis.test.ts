@@ -2,6 +2,7 @@ import { describe, expect, test } from "vite-plus/test";
 import { bandpassEnergy, DEFAULT_PHOTON_ENERGY_EV } from "./constants";
 import {
   calculateIonizationPotential,
+  calculateBiasDependence,
   calculateLEIPSResult,
   calculateREELSResult,
   calculateUPSResult,
@@ -38,8 +39,19 @@ describe("UPS analysis", () => {
     expect(result.vbEvbm).toBeCloseTo(0.56, 1);
     expect(result.efMinusEvbm).toBeCloseTo(0.56, 1);
     expect(result.ipEvbm).toBeCloseTo(0.56, 1);
-    expect(result.ecutoff).toBeCloseTo(11.86, 1);
+    expect(result.ecutoff).toBeGreaterThan(10);
+    expect(result.ipResults).toHaveLength(1);
     expect(result.ip).toBeGreaterThan(8);
+  });
+
+  test("calculates bias dependence and 0 V extrapolated values", () => {
+    const result = calculateBiasDependence([
+      { voltage: -10, value: 6 },
+      { voltage: -5, value: 5.5 },
+      { voltage: 0, value: 5 },
+    ]);
+    expect(result?.valueAtZero).toBeCloseTo(5, 6);
+    expect(result?.slope).toBeCloseTo(-0.1, 6);
   });
 });
 

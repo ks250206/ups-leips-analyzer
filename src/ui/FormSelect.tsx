@@ -14,6 +14,7 @@ interface MultiSelectFieldProps {
   values: readonly string[];
   options: readonly string[];
   placeholder?: string;
+  labelForOption?: (value: string) => string;
   onChange: (values: string[]) => void;
 }
 
@@ -70,12 +71,13 @@ export function MultiSelectField({
   values,
   options,
   placeholder,
+  labelForOption = (value) => value,
   onChange,
 }: MultiSelectFieldProps) {
   const [open, setOpen] = useState(false);
   const rootRef = useCloseOnOutsidePointer(setOpen);
   const selected = new Set(values);
-  const label = values.length > 0 ? values.join(", ") : placeholder || "-";
+  const label = values.length > 0 ? values.map(labelForOption).join(", ") : placeholder || "-";
   return (
     <div ref={rootRef} className="relative min-w-0">
       <button
@@ -107,7 +109,7 @@ export function MultiSelectField({
                 onChange([...next]);
               }}
             >
-              <span className="truncate">{option}</span>
+              <span className="truncate">{labelForOption(option)}</span>
               {selected.has(option) ? (
                 <Check size={13} className="shrink-0 text-slate-700" />
               ) : null}

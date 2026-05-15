@@ -47,6 +47,11 @@ export function parseMultiPakCsv(text: string, options: ParseMultiPakOptions): S
         metadataKind: kindText,
         headerText: metadataRows.join(" "),
       });
+    const voltage = inferAppliedVoltage({
+      seriesName: seriesLabel,
+      metadataText: metadataRows.join(" "),
+      sourceName: options.sourceName,
+    });
     datasets.push({
       id: createDatasetId(options.sourceName, yIndex),
       name:
@@ -64,6 +69,8 @@ export function parseMultiPakCsv(text: string, options: ParseMultiPakOptions): S
         kind: kindText,
         series: metadataRows[3] ?? "",
         columns: metadataRows[4] ?? "",
+        appliedVoltage: String(voltage.value),
+        appliedVoltageSource: voltage.source,
       },
     });
   }
@@ -85,6 +92,36 @@ export function inferSpectrumKind(
     });
   }
   return inferSpectrumKindFromContext(input);
+}
+
+export function inferAppliedVoltage(input: {
+  seriesName?: string;
+  metadataText?: string;
+  sourceName: string;
+}): { value: number; source: "metadata" | "filename" | "default" } {
+  const seriesMatch = voltageNearIp(input.seriesName ?? "");
+  if (seriesMatch !== undefined) {
+    return { value: seriesMatch, source: "metadata" };
+  }
+  const metadataMatch = voltageNearIp(input.metadataText ?? "");
+  if (metadataMatch !== undefined) {
+    return { value: metadataMatch, source: "metadata" };
+  }
+  const filenameMatch = voltageNearIp(input.sourceName);
+  if (filenameMatch !== undefined) {
+    return { value: filenameMatch, source: "filename" };
+  }
+  return { value: 0, source: "default" };
+}
+
+function voltageNearIp(text: string): number | undefined {
+  const normalized = text.replace(/_/g, " ");
+  const match = /\bip\s*([+-]?\d+(?:\.\d+)?)\s*v\b/iu.exec(normalized);
+  if (!match?.[1]) {
+    return undefined;
+  }
+  const value = Number(match[1]);
+  return Number.isFinite(value) ? value : undefined;
 }
 
 function inferSpectrumKindFromContext(input: {

@@ -8,7 +8,13 @@ import {
   type SampleInfoState,
 } from "../../domain/sampleInfo";
 import { useEffect, useState, type ReactNode } from "react";
-import type { AnalysisSelection, FitRange, FitTarget, SpectrumDataset } from "../../domain/types";
+import type {
+  AnalysisSelection,
+  AnalysisState,
+  FitRange,
+  FitTarget,
+  SpectrumDataset,
+} from "../../domain/types";
 import { fitRangeKey, useProjectStore } from "../../store/projectStore";
 import { MultiSelectField, SelectField } from "../FormSelect";
 import {
@@ -56,6 +62,9 @@ export function AnalysisControls({ activeTab = "sample" }: { activeTab?: Analysi
   const project = useProjectStore((state) => state.project);
   const activeFitTarget = useProjectStore((state) => state.activeFitTarget);
   const assignDataset = useProjectStore((state) => state.assignDataset);
+  const assignUpsIpDatasets = useProjectStore((state) => state.assignUpsIpDatasets);
+  const setUpsIpAppliedVoltage = useProjectStore((state) => state.setUpsIpAppliedVoltage);
+  const setBandIpSource = useProjectStore((state) => state.setBandIpSource);
   const setFitRange = useProjectStore((state) => state.setFitRange);
   const setActiveFitTarget = useProjectStore((state) => state.setActiveFitTarget);
   const setBandpassType = useProjectStore((state) => state.setBandpassType);
@@ -105,23 +114,34 @@ export function AnalysisControls({ activeTab = "sample" }: { activeTab?: Analysi
         {tab === "data" ? (
           <Panel title="Datasets">
             <div className="grid gap-2">
-              {DATASET_SLOTS.map((item) => (
-                <label key={item.slot} className="grid grid-cols-[82px_1fr] items-center gap-2">
-                  <span className="font-semibold text-slate-600">{item.label}</span>
-                  <select
-                    className="min-w-0 rounded border border-slate-300 bg-white px-2 py-1"
-                    value={analysis.selection[item.slot] ?? ""}
-                    onChange={(event) => assignDataset(item.slot, event.currentTarget.value)}
-                  >
-                    <option value="">-</option>
-                    {project.datasets.filter(item.filter).map((dataset) => (
-                      <option key={dataset.id} value={dataset.id}>
-                        {dataset.name}
-                      </option>
-                    ))}
-                  </select>
-                </label>
-              ))}
+              {DATASET_SLOTS.map((item) =>
+                item.slot === "upsIpDatasetId" ? (
+                  <label key={item.slot} className="grid grid-cols-[82px_1fr] items-center gap-2">
+                    <span className="font-semibold text-slate-600">UPS IP</span>
+                    <DatasetMultiSelect
+                      datasets={project.datasets.filter(item.filter)}
+                      selectedIds={analysis.selection.upsIpDatasetIds ?? []}
+                      onChange={assignUpsIpDatasets}
+                    />
+                  </label>
+                ) : (
+                  <label key={item.slot} className="grid grid-cols-[82px_1fr] items-center gap-2">
+                    <span className="font-semibold text-slate-600">{item.label}</span>
+                    <select
+                      className="min-w-0 rounded border border-slate-300 bg-white px-2 py-1"
+                      value={(analysis.selection[item.slot] as string | undefined) ?? ""}
+                      onChange={(event) => assignDataset(item.slot, event.currentTarget.value)}
+                    >
+                      <option value="">-</option>
+                      {project.datasets.filter(item.filter).map((dataset) => (
+                        <option key={dataset.id} value={dataset.id}>
+                          {dataset.name}
+                        </option>
+                      ))}
+                    </select>
+                  </label>
+                ),
+              )}
             </div>
           </Panel>
         ) : null}
@@ -147,13 +167,37 @@ export function AnalysisControls({ activeTab = "sample" }: { activeTab?: Analysi
             <h3 className="mb-1 font-bold text-slate-700">VB set</h3>
             <ResultGrid rows={[["EVBM", formatNumber(analysis.ups?.vbEvbm), "eV"]]} />
             <h3 className="mb-1 mt-3 font-bold text-slate-700">IP set</h3>
-            <ResultGrid
-              rows={[
-                ["EVBM", formatNumber(analysis.ups?.ipEvbm), "eV"],
-                ["Ecut-off", formatNumber(analysis.ups?.ecutoff), "eV"],
-                ["IP", formatNumber(analysis.ups?.ip), "eV"],
-              ]}
-            />
+            <div className="grid gap-2">
+              {(analysis.ups?.ipResults ?? []).map((result) => (
+                <div
+                  key={result.datasetId}
+                  className="rounded border border-slate-200 bg-white p-2"
+                >
+                  <div className="mb-1 truncate font-semibold text-slate-700">
+                    {result.datasetName}
+                  </div>
+                  <label className="mb-1 grid grid-cols-[118px_1fr_34px] items-center gap-2">
+                    <span className="font-semibold text-slate-600">Applied bias</span>
+                    <input
+                      className="min-w-0 rounded border border-slate-300 bg-white px-2 py-1"
+                      inputMode="decimal"
+                      value={result.appliedVoltage}
+                      onChange={(event) =>
+                        setUpsIpAppliedVoltage(result.datasetId, Number(event.currentTarget.value))
+                      }
+                    />
+                    <span className="text-slate-500">V</span>
+                  </label>
+                  <ResultGrid
+                    rows={[
+                      ["EVBM", formatNumber(result.ipEvbm), "eV"],
+                      ["Ecut-off", formatNumber(result.ecutoff), "eV"],
+                      ["IP", formatNumber(result.ip), "eV"],
+                    ]}
+                  />
+                </div>
+              ))}
+            </div>
           </Panel>
         ) : null}
 
@@ -216,6 +260,38 @@ export function AnalysisControls({ activeTab = "sample" }: { activeTab?: Analysi
         {tab === "band" ? (
           <Panel title="Band Diagram">
             <label className="mb-2 grid grid-cols-[118px_1fr_34px] items-center gap-2">
+              <span className="font-semibold text-slate-600">IP source</span>
+              <select
+                className="min-w-0 rounded border border-slate-300 bg-white px-2 py-1"
+                value={bandIpSourceValue(analysis.bandIpSource)}
+                onChange={(event) => {
+                  const value = event.currentTarget.value;
+                  if (value === "average" || value === "zero-voltage-extrapolated") {
+                    setBandIpSource({ mode: value });
+                  } else {
+                    setBandIpSource({ mode: "dataset", datasetId: value.replace("dataset:", "") });
+                  }
+                }}
+              >
+                <option
+                  disabled={
+                    (analysis.ups?.ipResults ?? []).filter((result) => Number.isFinite(result.ip))
+                      .length < 2
+                  }
+                  value="zero-voltage-extrapolated"
+                >
+                  0 V extrapolated
+                </option>
+                <option value="average">Average</option>
+                {(analysis.ups?.ipResults ?? []).map((result) => (
+                  <option key={result.datasetId} value={`dataset:${result.datasetId}`}>
+                    {result.datasetName}
+                  </option>
+                ))}
+              </select>
+              <span className="text-slate-500">IP</span>
+            </label>
+            <label className="mb-2 grid grid-cols-[118px_1fr_34px] items-center gap-2">
               <span className="font-semibold text-slate-600">
                 E<sub>VBM</sub>
               </span>
@@ -266,6 +342,38 @@ export function AnalysisControls({ activeTab = "sample" }: { activeTab?: Analysi
       </div>
     </div>
   );
+}
+
+function DatasetMultiSelect({
+  datasets,
+  selectedIds,
+  onChange,
+}: {
+  datasets: readonly SpectrumDataset[];
+  selectedIds: readonly string[];
+  onChange: (ids: string[]) => void;
+}) {
+  const byId = new Map(datasets.map((dataset) => [dataset.id, dataset.name]));
+  return (
+    <MultiSelectField
+      ariaLabel="UPS IP datasets"
+      options={datasets.map((dataset) => dataset.id)}
+      values={[...selectedIds]}
+      placeholder="Select UPS IP datasets"
+      labelForOption={(id) => byId.get(id) ?? id}
+      onChange={onChange}
+    />
+  );
+}
+
+function bandIpSourceValue(source: AnalysisState["bandIpSource"]): string {
+  if (!source) {
+    return "dataset:";
+  }
+  if (source.mode === "dataset") {
+    return `dataset:${source.datasetId ?? ""}`;
+  }
+  return source.mode;
 }
 
 function FragmentWithElements({

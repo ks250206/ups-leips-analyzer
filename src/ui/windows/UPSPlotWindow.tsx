@@ -1,4 +1,5 @@
 import { useMemo, useState } from "react";
+import { calculateBiasDependence } from "../../domain/analysis";
 import type { FitRange, FitTarget } from "../../domain/types";
 import { useProjectStore } from "../../store/projectStore";
 import type { ContextMenuItem } from "../ContextMenu";
@@ -108,8 +109,11 @@ export function UPSVBPlotWindow() {
 export function UPSIPPlotWindow() {
   const project = useProjectStore((state) => state.project);
   const activeFitTarget = useProjectStore((state) => state.activeFitTarget);
-  const setFitRange = useProjectStore((state) => state.setFitRange);
-  const setUpsIpPlotViewport = useProjectStore((state) => state.setUpsIpPlotViewport);
+  const setUpsIpFitRange = useProjectStore((state) => state.setUpsIpFitRange);
+  const setUpsIpPlotViewportForDataset = useProjectStore(
+    (state) => state.setUpsIpPlotViewportForDataset,
+  );
+  const setActiveUpsIpDatasetId = useProjectStore((state) => state.setActiveUpsIpDatasetId);
   const setPlotCursorStyle = useProjectStore((state) => state.setPlotCursorStyle);
   const [viewport, setViewport] = useState<PlotViewport>({});
   const [viewportRequest, setViewportRequest] = useState<
@@ -119,11 +123,20 @@ export function UPSIPPlotWindow() {
     evbm?: PlotViewport;
     cutoff?: PlotViewport;
   }>({});
-  const ipDataset = project.datasets.find(
-    (dataset) => dataset.id === project.analysis.selection.upsIpDatasetId,
-  );
+  const ipDatasetIds = project.analysis.selection.upsIpDatasetIds ?? [];
+  const activeId =
+    project.ui?.activeUpsIpDatasetId && ipDatasetIds.includes(project.ui.activeUpsIpDatasetId)
+      ? project.ui.activeUpsIpDatasetId
+      : ipDatasetIds[0];
+  const ipDataset = project.datasets.find((dataset) => dataset.id === activeId);
   const ups = project.analysis.ups;
-  const persistedViewport = project.ui?.upsIpPlotViewport ?? {};
+  const ipResult = ups?.ipResults.find((result) => result.datasetId === activeId);
+  const fitRanges = activeId
+    ? (project.analysis.upsIpFitRangesByDatasetId?.[activeId] ?? defaultIpRanges())
+    : defaultIpRanges();
+  const persistedViewport = activeId
+    ? (project.ui?.upsIpPlotViewportsByDatasetId?.[activeId] ?? project.ui?.upsIpPlotViewport ?? {})
+    : {};
   const persistedViewportKey = JSON.stringify(persistedViewport);
 
   const series = useMemo<PlotSeries[]>(() => {
@@ -131,13 +144,13 @@ export function UPSIPPlotWindow() {
     if (ipDataset) {
       items.push(datasetSeries(ipDataset, "#dc2626"));
     }
-    if (ups) {
-      const extent = ipDataset ? xExtent(ipDataset.points) : project.analysis.fitRanges.upsIpEdge;
+    if (ipResult) {
+      const extent = ipDataset ? xExtent(ipDataset.points) : fitRanges.cutoffEdge;
       items.push(
         lineFitSeries(
           "IP VBM edge",
-          ups.ipVbmEdge,
-          project.analysis.fitRanges.upsIpVbmEdge,
+          ipResult.ipVbmEdge,
+          fitRanges.ipVbmEdge,
           "#7c3aed",
           extent,
           "VBM edge",
@@ -146,8 +159,8 @@ export function UPSIPPlotWindow() {
       items.push(
         lineFitSeries(
           "IP VBM BG",
-          ups.ipVbmBackground,
-          project.analysis.fitRanges.upsIpVbmBackground,
+          ipResult.ipVbmBackground,
+          fitRanges.ipVbmBackground,
           "#0f766e",
           extent,
           "VBM BG",
@@ -156,8 +169,8 @@ export function UPSIPPlotWindow() {
       items.push(
         lineFitSeries(
           "Cut-off edge",
-          ups.cutoffEdge,
-          project.analysis.fitRanges.upsIpEdge,
+          ipResult.cutoffEdge,
+          fitRanges.cutoffEdge,
           "#f97316",
           extent,
           "cut-off edge",
@@ -166,8 +179,8 @@ export function UPSIPPlotWindow() {
       items.push(
         lineFitSeries(
           "Cut-off BG",
-          ups.cutoffBackground,
-          project.analysis.fitRanges.upsIpBackground,
+          ipResult.cutoffBackground,
+          fitRanges.cutoffBackground,
           "#15803d",
           extent,
           "cut-off BG",
@@ -175,70 +188,62 @@ export function UPSIPPlotWindow() {
       );
     }
     return items;
-  }, [ipDataset, project.analysis.fitRanges, ups]);
+  }, [fitRanges, ipDataset, ipResult]);
 
   const markers = useMemo<PlotMarker[]>(
     () =>
-      ups
+      ipResult
         ? [
             {
-              x: ups.ipEvbm,
-              label: `VBM ${formatNumber(ups.ipEvbm, 2)} eV`,
+              x: ipResult.ipEvbm,
+              label: `VBM ${formatNumber(ipResult.ipEvbm, 2)} eV`,
               color: "#7c3aed",
             },
             {
-              x: ups.ecutoff,
-              label: `Cut-off ${formatNumber(ups.ecutoff, 2)} eV`,
+              x: ipResult.ecutoff,
+              label: `Cut-off ${formatNumber(ipResult.ecutoff, 2)} eV`,
               color: "#dc2626",
             },
           ]
         : [],
-    [ups],
+    [ipResult],
   );
   const rangeBands = useMemo<PlotRangeBand[]>(
     () => [
       {
         id: "ups-ip-vbm-edge",
-        ...project.analysis.fitRanges.upsIpVbmEdge,
+        ...fitRanges.ipVbmEdge,
         label: "VBM edge",
         color: "#7c3aed",
       },
       {
         id: "ups-ip-vbm-bg",
-        ...project.analysis.fitRanges.upsIpVbmBackground,
+        ...fitRanges.ipVbmBackground,
         label: "VBM BG",
         color: "#0f766e",
       },
       {
         id: "ups-ip-edge",
-        ...project.analysis.fitRanges.upsIpEdge,
+        ...fitRanges.cutoffEdge,
         label: "cut-off edge",
         color: "#f97316",
       },
       {
         id: "ups-ip-bg",
-        ...project.analysis.fitRanges.upsIpBackground,
+        ...fitRanges.cutoffBackground,
         label: "cut-off BG",
         color: "#15803d",
       },
     ],
-    [activeFitTarget, project.analysis.fitRanges],
+    [activeFitTarget, fitRanges],
   );
   const evbmFallbackViewport = useMemo(
-    () =>
-      viewportAroundRanges([
-        project.analysis.fitRanges.upsIpVbmEdge,
-        project.analysis.fitRanges.upsIpVbmBackground,
-      ]),
-    [project.analysis.fitRanges.upsIpVbmBackground, project.analysis.fitRanges.upsIpVbmEdge],
+    () => viewportAroundRanges([fitRanges.ipVbmEdge, fitRanges.ipVbmBackground]),
+    [fitRanges.ipVbmBackground, fitRanges.ipVbmEdge],
   );
   const cutoffFallbackViewport = useMemo(
-    () =>
-      viewportAroundRanges([
-        project.analysis.fitRanges.upsIpEdge,
-        project.analysis.fitRanges.upsIpBackground,
-      ]),
-    [project.analysis.fitRanges.upsIpBackground, project.analysis.fitRanges.upsIpEdge],
+    () => viewportAroundRanges([fitRanges.cutoffEdge, fitRanges.cutoffBackground]),
+    [fitRanges.cutoffBackground, fitRanges.cutoffEdge],
   );
   const contextItems = useMemo<ContextMenuItem[]>(
     () => [
@@ -276,31 +281,181 @@ export function UPSIPPlotWindow() {
   );
 
   return (
-    <SpectrumPlot
-      title="UPS IP"
-      xLabel="Binding Energy / eV"
-      yLabel="Intensity / a.u."
-      series={series}
-      markers={markers}
-      rangeBands={rangeBands}
-      xDirection="reverse"
-      viewportRequest={
-        viewportRequest ?? {
-          id: `${project.id}-${project.analysis.selection.upsIpDatasetId ?? "none"}-${persistedViewportKey}`,
-          viewport: persistedViewport,
-        }
-      }
-      onViewportChange={(next) => {
-        setViewport(next);
-        setUpsIpPlotViewport(next);
-      }}
-      cursorStyle={project.ui?.cursorStyles?.upsIp ?? "point"}
-      onCursorStyleChange={(style) => setPlotCursorStyle("upsIp", style)}
-      extraContextMenuItems={contextItems}
-      onSelectRange={(range) => setFitRange(ipTarget(activeFitTarget), range)}
-      onRangeBandChange={(target, range) => setFitRange(target as FitTarget, range)}
-    />
+    <div className="flex h-full flex-col bg-white">
+      <div className="flex shrink-0 gap-1 border-b border-slate-200 bg-slate-50 px-2 py-1 text-[11px]">
+        {ipDatasetIds.length > 0 ? (
+          ipDatasetIds.map((datasetId) => {
+            const dataset = project.datasets.find((item) => item.id === datasetId);
+            const result = ups?.ipResults.find((item) => item.datasetId === datasetId);
+            return (
+              <button
+                key={datasetId}
+                className={
+                  datasetId === activeId
+                    ? "rounded bg-slate-800 px-2 py-1 font-semibold text-white"
+                    : "rounded border border-slate-300 bg-white px-2 py-1 text-slate-700 hover:bg-slate-100"
+                }
+                type="button"
+                onClick={() => setActiveUpsIpDatasetId(datasetId)}
+              >
+                {dataset?.name ?? datasetId} ({formatNumber(result?.appliedVoltage, 2)} V)
+              </button>
+            );
+          })
+        ) : (
+          <span className="px-1 py-1 text-slate-500">No UPS IP dataset selected</span>
+        )}
+      </div>
+      <div className="min-h-0 flex-1">
+        <SpectrumPlot
+          title="UPS IP"
+          xLabel="Binding Energy / eV"
+          yLabel="Intensity / a.u."
+          series={series}
+          markers={markers}
+          rangeBands={rangeBands}
+          xDirection="reverse"
+          viewportRequest={
+            viewportRequest ?? {
+              id: `${project.id}-${activeId ?? "none"}-${persistedViewportKey}`,
+              viewport: persistedViewport,
+            }
+          }
+          onViewportChange={(next) => {
+            setViewport(next);
+            if (activeId) {
+              setUpsIpPlotViewportForDataset(activeId, next);
+            }
+          }}
+          cursorStyle={project.ui?.cursorStyles?.upsIp ?? "point"}
+          onCursorStyleChange={(style) => setPlotCursorStyle("upsIp", style)}
+          extraContextMenuItems={contextItems}
+          onSelectRange={(range) => {
+            if (activeId) {
+              setUpsIpFitRange(activeId, ipTarget(activeFitTarget), range);
+            }
+          }}
+          onRangeBandChange={(target, range) => {
+            if (activeId) {
+              setUpsIpFitRange(activeId, target as FitTarget, range);
+            }
+          }}
+        />
+      </div>
+    </div>
   );
+}
+
+export function UPSBiasDependenceWindow() {
+  const project = useProjectStore((state) => state.project);
+  const [tab, setTab] = useState<"ecutoff" | "evbm" | "ip">("ecutoff");
+  const ipResults = project.analysis.ups?.ipResults ?? [];
+  const config = {
+    ecutoff: { label: "Binding energy of Ecutoff / eV", field: "ecutoff", color: "#ef4444" },
+    evbm: { label: "Binding energy of EVBM / eV", field: "ipEvbm", color: "#f97316" },
+    ip: { label: "Ionization potential (IP) / eV", field: "ip", color: "#dc2626" },
+  }[tab] as {
+    label: string;
+    field: "ecutoff" | "ipEvbm" | "ip";
+    color: string;
+  };
+  const points = ipResults.map((result) => ({
+    x: result.appliedVoltage,
+    y: result[config.field],
+  }));
+  const dependence = calculateBiasDependence(
+    points.map((point) => ({ voltage: point.x, value: point.y })),
+  );
+  const series = useMemo<PlotSeries[]>(() => {
+    const items: PlotSeries[] = [
+      {
+        name: config.label,
+        color: config.color,
+        points,
+        width: 0,
+      },
+    ];
+    if (dependence && points.length >= 2) {
+      const min = Math.min(...points.map((point) => point.x));
+      const max = Math.max(...points.map((point) => point.x));
+      items.push({
+        name: "linear fit",
+        color: config.color,
+        points: [
+          { x: min, y: dependence.slope * min + dependence.intercept },
+          { x: max, y: dependence.slope * max + dependence.intercept },
+        ],
+        dash: [5, 3],
+        width: 1.5,
+        affectsScale: false,
+        fitLabel: `y = ${formatNumber(dependence.slope, 3)}x + ${formatNumber(
+          dependence.intercept,
+          3,
+        )} eV`,
+      });
+    }
+    return items;
+  }, [config.color, config.label, dependence, points]);
+  const annotations = useMemo(
+    () =>
+      dependence
+        ? [
+            {
+              type: "text" as const,
+              label: `0 V: ${formatNumber(dependence.valueAtZero, 3)} eV`,
+              color: "#111827",
+              xFraction: 0.55,
+              yFraction: 0.2,
+              fontSize: 13,
+              anchor: "middle" as const,
+            },
+          ]
+        : [],
+    [dependence],
+  );
+
+  return (
+    <div className="flex h-full flex-col bg-white">
+      <div className="flex shrink-0 gap-1 border-b border-slate-200 bg-slate-50 px-2 py-1 text-[11px]">
+        {[
+          ["ecutoff", "Cutoff"],
+          ["evbm", "EVBM"],
+          ["ip", "IP"],
+        ].map(([id, label]) => (
+          <button
+            key={id}
+            className={
+              tab === id
+                ? "rounded bg-slate-800 px-2 py-1 font-semibold text-white"
+                : "rounded border border-slate-300 bg-white px-2 py-1 text-slate-700 hover:bg-slate-100"
+            }
+            type="button"
+            onClick={() => setTab(id as typeof tab)}
+          >
+            {label}
+          </button>
+        ))}
+      </div>
+      <div className="min-h-0 flex-1">
+        <SpectrumPlot
+          title="UPS Bias Dependence"
+          xLabel="Applied Bias / V"
+          yLabel={config.label}
+          series={series}
+          annotations={annotations}
+        />
+      </div>
+    </div>
+  );
+}
+
+function defaultIpRanges() {
+  return {
+    ipVbmEdge: { min: 0.55, max: 1.7 },
+    ipVbmBackground: { min: -3.4, max: -1.6 },
+    cutoffEdge: { min: 9.0, max: 11.4 },
+    cutoffBackground: { min: 12.2, max: 15.2 },
+  };
 }
 
 function viewportAroundRanges(ranges: readonly FitRange[]): PlotViewport {

@@ -1,9 +1,11 @@
 import {
   calculateLEIPSResult,
   calculateREELSResult,
-  calculateUPSResult,
+  assembleUPSResult,
+  calculateUPSIPResult,
   createBandDiagram,
 } from "./analysis";
+import { lineIntersection, linearFit } from "./fit";
 import type { AnalysisState, FitRanges, Point, SpectrumDataset } from "./types";
 
 export const DEFAULT_FIT_RANGES: FitRanges = {
@@ -23,7 +25,9 @@ export const DEFAULT_FIT_RANGES: FitRanges = {
 export function createDemoDatasets(): SpectrumDataset[] {
   return [
     createUpsVbDataset(),
-    createUpsIpDataset(),
+    createUpsIpDataset("demo-ups-ip-minus10", "Demo UPS IP -10V", -10, 0),
+    createUpsIpDataset("demo-ups-ip-minus7", "Demo UPS IP -7V", -7, -0.2),
+    createUpsIpDataset("demo-ups-ip-minus5", "Demo UPS IP -5V", -5, -0.35),
     createLeetDataset(),
     createLeetDerDataset(),
     createLeipsDataset(),
@@ -34,7 +38,9 @@ export function createDemoDatasets(): SpectrumDataset[] {
 export function createInitialAnalysis(datasets: readonly SpectrumDataset[]): AnalysisState {
   const selection = {
     upsVbDatasetId: findByKind(datasets, "ups-vb")?.id,
-    upsIpDatasetId: findByKind(datasets, "ups-ip")?.id,
+    upsIpDatasetIds: datasets
+      .filter((dataset) => dataset.kind === "ups-ip")
+      .map((dataset) => dataset.id),
     leetDatasetId: findByKind(datasets, "leet")?.id,
     leetDerDatasetId: findByKind(datasets, "leet-der")?.id,
     leipsDatasetId: findByKind(datasets, "leips")?.id,
@@ -52,24 +58,35 @@ export function createInitialAnalysis(datasets: readonly SpectrumDataset[]): Ana
   };
 
   const vbDataset = findById(datasets, selection.upsVbDatasetId);
-  const ipDataset = findById(datasets, selection.upsIpDatasetId);
+  const ipDatasets = selection.upsIpDatasetIds
+    .map((id) => findById(datasets, id))
+    .filter((dataset): dataset is SpectrumDataset => Boolean(dataset));
   const leetDerDataset = findById(datasets, selection.leetDerDatasetId);
   const leipsDataset = findById(datasets, selection.leipsDatasetId);
   const reelsDataset = findById(datasets, selection.reelsDatasetId);
-  if (!vbDataset || !ipDataset || !leetDerDataset || !leipsDataset) {
+  if (!vbDataset || ipDatasets.length === 0 || !leetDerDataset || !leipsDataset) {
     return base;
   }
 
-  const ups = calculateUPSResult({
-    vbDataset,
-    ipDataset,
-    vbEdgeRange: DEFAULT_FIT_RANGES.upsVbEdge,
-    vbBackgroundRange: DEFAULT_FIT_RANGES.upsVbBackground,
-    ipVbmEdgeRange: DEFAULT_FIT_RANGES.upsIpVbmEdge,
-    ipVbmBackgroundRange: DEFAULT_FIT_RANGES.upsIpVbmBackground,
-    cutoffEdgeRange: DEFAULT_FIT_RANGES.upsIpEdge,
-    cutoffBackgroundRange: DEFAULT_FIT_RANGES.upsIpBackground,
-    photonEnergy: 21.22,
+  const vbEdge = linearFit(vbDataset.points, DEFAULT_FIT_RANGES.upsVbEdge);
+  const vbBackground = linearFit(vbDataset.points, DEFAULT_FIT_RANGES.upsVbBackground);
+  const ups = assembleUPSResult({
+    vbEvbm: lineIntersection(vbEdge, vbBackground),
+    vbEdge,
+    vbBackground,
+    ipResults: ipDatasets.map((dataset) =>
+      calculateUPSIPResult({
+        dataset,
+        ranges: {
+          ipVbmEdge: DEFAULT_FIT_RANGES.upsIpVbmEdge,
+          ipVbmBackground: DEFAULT_FIT_RANGES.upsIpVbmBackground,
+          cutoffEdge: DEFAULT_FIT_RANGES.upsIpEdge,
+          cutoffBackground: DEFAULT_FIT_RANGES.upsIpBackground,
+        },
+        appliedVoltage: Number(dataset.metadata.appliedVoltage),
+        photonEnergy: 21.22,
+      }),
+    ),
   });
   const leips = calculateLEIPSResult({
     leetDerDataset,
@@ -124,17 +141,25 @@ function createUpsVbDataset(): SpectrumDataset {
   );
 }
 
-function createUpsIpDataset(): SpectrumDataset {
+function createUpsIpDataset(
+  id = "demo-ups-ip",
+  name = "Demo UPS IP",
+  appliedVoltage = 0,
+  shift = 0,
+): SpectrumDataset {
   return createDataset(
-    "demo-ups-ip",
-    "Demo UPS IP",
+    id,
+    name,
     "ups-ip",
     range(-4, 16, 0.05).map((x) => {
-      const vbmEdge = x > 0.56 && x < 4.6 ? 2.3 * (x - 0.56) : 0;
-      const cutoffEdge = x >= 11.86 ? 2.4 * (x - 11.86) : 0;
+      const ipVbm = 0.56 + shift;
+      const cutoff = 11.86 + appliedVoltage * -0.45;
+      const vbmEdge = x > ipVbm && x < 4.6 ? 2.3 * (x - ipVbm) : 0;
+      const cutoffEdge = x >= cutoff ? 2.4 * (x - cutoff) : 0;
       const y = 0.7 + vbmEdge + cutoffEdge + (x > 8 ? ripple(x, 0.16) : 0);
       return { x, y: Math.max(0, y) };
     }),
+    { appliedVoltage: String(appliedVoltage), appliedVoltageSource: "metadata" },
   );
 }
 
@@ -201,6 +226,7 @@ function createDataset(
   name: string,
   kind: SpectrumDataset["kind"],
   points: Point[],
+  metadata: Record<string, string> = {},
 ): SpectrumDataset {
   return {
     id,
@@ -215,7 +241,7 @@ function createDataset(
           : "Binding Energy / eV",
     yLabel: "Intensity / a.u.",
     points,
-    metadata: { fixture: "synthetic" },
+    metadata: { fixture: "synthetic", ...metadata },
   };
 }
 

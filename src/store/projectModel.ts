@@ -1,42 +1,61 @@
 import {
   calculateLEIPSResult,
   calculateREELSResult,
-  calculateUPSResult,
+  assembleUPSResult,
+  calculateBiasDependence,
+  calculateUPSIPResult,
   convertBiasToVacuumEnergy,
   convertKineticToLoss,
   createBandDiagram,
 } from "../domain/analysis";
 import { CUSTOM_BANDPASS_TYPE, bandpassEnergy } from "../domain/constants";
 import { DEFAULT_FIT_RANGES } from "../domain/demoData";
+import { lineIntersection, linearFit } from "../domain/fit";
 import { normalizeSampleInfo } from "../domain/sampleInfo";
-import type { AnalysisState, FitRange, FitTarget, Point, SpectrumDataset } from "../domain/types";
+import type {
+  AnalysisState,
+  BandIpSource,
+  FitRange,
+  FitTarget,
+  Point,
+  SpectrumDataset,
+  UPSIPFitRanges,
+  UPSIPResult,
+} from "../domain/types";
 import type { ProjectSnapshot } from "./projectTypes";
 
 export function recalculateProject(project: ProjectSnapshot): ProjectSnapshot {
   const analysis = project.analysis;
   const vbDataset = findDataset(project.datasets, analysis.selection.upsVbDatasetId);
-  const ipDataset = findDataset(project.datasets, analysis.selection.upsIpDatasetId);
+  const ipDatasetIds = selectedUpsIpDatasetIds(analysis.selection);
+  const ipDatasets = ipDatasetIds
+    .map((datasetId) => findDataset(project.datasets, datasetId))
+    .filter((dataset): dataset is SpectrumDataset => Boolean(dataset));
   const leetDerDataset = findDataset(project.datasets, analysis.selection.leetDerDatasetId);
   const leipsDataset = findDataset(project.datasets, analysis.selection.leipsDatasetId);
   const reelsDataset = findDataset(project.datasets, analysis.selection.reelsDatasetId);
   const errors: string[] = [];
 
-  const ups =
-    vbDataset && ipDataset
-      ? safeCalculate("UPS", errors, () =>
-          calculateUPSResult({
-            vbDataset,
-            ipDataset,
-            vbEdgeRange: analysis.fitRanges.upsVbEdge,
-            vbBackgroundRange: analysis.fitRanges.upsVbBackground,
-            ipVbmEdgeRange: analysis.fitRanges.upsIpVbmEdge,
-            ipVbmBackgroundRange: analysis.fitRanges.upsIpVbmBackground,
-            cutoffEdgeRange: analysis.fitRanges.upsIpEdge,
-            cutoffBackgroundRange: analysis.fitRanges.upsIpBackground,
-            photonEnergy: analysis.photonEnergy,
-          }),
-        )
-      : undefined;
+  const ups = vbDataset
+    ? safeCalculate("UPS", errors, () => {
+        const vbEdge = linearFitForProject(vbDataset, analysis.fitRanges.upsVbEdge);
+        const vbBackground = linearFitForProject(vbDataset, analysis.fitRanges.upsVbBackground);
+        const vbEvbm = lineIntersectionForProject(vbEdge, vbBackground);
+        const ipResults = ipDatasets
+          .map((dataset) =>
+            safeCalculate(`UPS IP ${dataset.name}`, errors, () =>
+              calculateUPSIPResult({
+                dataset,
+                ranges: upsIpRangesForDataset(analysis, dataset.id),
+                appliedVoltage: appliedVoltageForDataset(analysis, dataset),
+                photonEnergy: analysis.photonEnergy,
+              }),
+            ),
+          )
+          .filter((result): result is UPSIPResult => Boolean(result));
+        return assembleUPSResult({ vbEvbm, vbEdge, vbBackground, ipResults });
+      })
+    : undefined;
   const leips =
     leetDerDataset && leipsDataset
       ? safeCalculate("LEIPS", errors, () =>
@@ -63,7 +82,7 @@ export function recalculateProject(project: ProjectSnapshot): ProjectSnapshot {
             vbDataset,
             leipsEvacPoints: leips.leipsEvacPoints,
             efMinusEvbm,
-            ip: ups.ip,
+            ip: resolveBandIp(ups.ipResults, analysis.bandIpSource),
             ea: leips.ea,
           }),
         )
@@ -135,6 +154,10 @@ export function normalizeProject(project: ProjectSnapshot): ProjectSnapshot {
         ...DEFAULT_FIT_RANGES,
         ...project.analysis.fitRanges,
       },
+      selection: normalizeSelection(project.analysis.selection),
+      upsIpFitRangesByDatasetId: normalizeUpsIpFitRanges(project),
+      upsIpConfigsByDatasetId: normalizeUpsIpConfigs(project),
+      bandIpSource: project.analysis.bandIpSource ?? { mode: "dataset" },
     },
   };
 }
@@ -159,9 +182,21 @@ export function autoSelectDatasets(
   current: AnalysisState["selection"],
   preferred: readonly SpectrumDataset[] = [],
 ): AnalysisState["selection"] {
+  const currentIpIds = selectedUpsIpDatasetIds(current).filter((datasetId) =>
+    datasets.some((dataset) => dataset.id === datasetId && dataset.kind === "ups-ip"),
+  );
+  const preferredIpIds = preferred
+    .filter((dataset) => dataset.kind === "ups-ip")
+    .map((dataset) => dataset.id);
+  const allIpIds =
+    preferredIpIds.length > 0
+      ? preferredIpIds
+      : currentIpIds.length > 0
+        ? currentIpIds
+        : datasets.filter((dataset) => dataset.kind === "ups-ip").map((dataset) => dataset.id);
   return {
     upsVbDatasetId: pickDatasetId("ups-vb", datasets, current.upsVbDatasetId, preferred),
-    upsIpDatasetId: pickDatasetId("ups-ip", datasets, current.upsIpDatasetId, preferred),
+    upsIpDatasetIds: allIpIds,
     leetDatasetId: pickDatasetId("leet", datasets, current.leetDatasetId, preferred),
     leetDerDatasetId: pickDatasetId("leet-der", datasets, current.leetDerDatasetId, preferred),
     leipsDatasetId: pickDatasetId("leips", datasets, current.leipsDatasetId, preferred),
@@ -241,6 +276,128 @@ function safeCalculate<T>(label: string, errors: string[], calculate: () => T): 
     errors.push(`${label}: ${error instanceof Error ? error.message : String(error)}`);
     return undefined;
   }
+}
+
+function linearFitForProject(dataset: SpectrumDataset, range: FitRange) {
+  return linearFit(dataset.points, range);
+}
+
+function lineIntersectionForProject(
+  left: ReturnType<typeof linearFit>,
+  right: ReturnType<typeof linearFit>,
+) {
+  return lineIntersection(left, right);
+}
+
+export function selectedUpsIpDatasetIds(selection: AnalysisState["selection"]): string[] {
+  if (Array.isArray(selection.upsIpDatasetIds)) {
+    return selection.upsIpDatasetIds.filter(Boolean);
+  }
+  return selection.upsIpDatasetId ? [selection.upsIpDatasetId] : [];
+}
+
+export function defaultUpsIpRanges(): UPSIPFitRanges {
+  return {
+    ipVbmEdge: DEFAULT_FIT_RANGES.upsIpVbmEdge,
+    ipVbmBackground: DEFAULT_FIT_RANGES.upsIpVbmBackground,
+    cutoffEdge: DEFAULT_FIT_RANGES.upsIpEdge,
+    cutoffBackground: DEFAULT_FIT_RANGES.upsIpBackground,
+  };
+}
+
+export function upsIpRangesForDataset(analysis: AnalysisState, datasetId: string): UPSIPFitRanges {
+  return analysis.upsIpFitRangesByDatasetId?.[datasetId] ?? defaultUpsIpRanges();
+}
+
+export function appliedVoltageForDataset(
+  analysis: AnalysisState,
+  dataset: SpectrumDataset,
+): number {
+  const configured = analysis.upsIpConfigsByDatasetId?.[dataset.id]?.appliedVoltage;
+  if (configured !== undefined && Number.isFinite(configured)) {
+    return configured;
+  }
+  const parsed = Number(dataset.metadata.appliedVoltage);
+  return Number.isFinite(parsed) ? parsed : 0;
+}
+
+export function resolveBandIp(
+  ipResults: readonly UPSIPResult[],
+  source: BandIpSource | undefined,
+): number {
+  const finiteResults = ipResults.filter((result) => Number.isFinite(result.ip));
+  const resolvedSource = source ?? { mode: "dataset" };
+  if (resolvedSource.mode === "average") {
+    return average(finiteResults.map((result) => result.ip));
+  }
+  if (resolvedSource.mode === "zero-voltage-extrapolated") {
+    const dependence = calculateBiasDependence(
+      finiteResults.map((result) => ({
+        voltage: result.appliedVoltage,
+        value: result.ip,
+      })),
+    );
+    if (!dependence) {
+      throw new Error("Band: 0 V extrapolated IP requires at least two valid UPS IP datasets.");
+    }
+    return dependence.valueAtZero;
+  }
+  return (
+    finiteResults.find((result) => result.datasetId === resolvedSource.datasetId)?.ip ??
+    finiteResults[0]?.ip ??
+    Number.NaN
+  );
+}
+
+function average(values: readonly number[]): number {
+  const finite = values.filter(Number.isFinite);
+  if (finite.length === 0) {
+    return Number.NaN;
+  }
+  return finite.reduce((sum, value) => sum + value, 0) / finite.length;
+}
+
+function normalizeSelection(selection: AnalysisState["selection"]): AnalysisState["selection"] {
+  const upsIpDatasetIds = selectedUpsIpDatasetIds(selection);
+  return {
+    upsVbDatasetId: selection.upsVbDatasetId,
+    upsIpDatasetIds,
+    leetDatasetId: selection.leetDatasetId,
+    leetDerDatasetId: selection.leetDerDatasetId,
+    leipsDatasetId: selection.leipsDatasetId,
+    reelsDatasetId: selection.reelsDatasetId,
+  };
+}
+
+function normalizeUpsIpFitRanges(project: ProjectSnapshot): Record<string, UPSIPFitRanges> {
+  const current = project.analysis.upsIpFitRangesByDatasetId ?? {};
+  const ids = selectedUpsIpDatasetIds(project.analysis.selection);
+  const next: Record<string, UPSIPFitRanges> = { ...current };
+  for (const id of ids) {
+    next[id] = next[id] ?? {
+      ipVbmEdge: project.analysis.fitRanges?.upsIpVbmEdge ?? DEFAULT_FIT_RANGES.upsIpVbmEdge,
+      ipVbmBackground:
+        project.analysis.fitRanges?.upsIpVbmBackground ?? DEFAULT_FIT_RANGES.upsIpVbmBackground,
+      cutoffEdge: project.analysis.fitRanges?.upsIpEdge ?? DEFAULT_FIT_RANGES.upsIpEdge,
+      cutoffBackground:
+        project.analysis.fitRanges?.upsIpBackground ?? DEFAULT_FIT_RANGES.upsIpBackground,
+    };
+  }
+  return next;
+}
+
+function normalizeUpsIpConfigs(
+  project: ProjectSnapshot,
+): NonNullable<AnalysisState["upsIpConfigsByDatasetId"]> {
+  const current = project.analysis.upsIpConfigsByDatasetId ?? {};
+  const next = { ...current };
+  for (const id of selectedUpsIpDatasetIds(project.analysis.selection)) {
+    const dataset = findDataset(project.datasets, id);
+    next[id] = next[id] ?? {
+      appliedVoltage: dataset ? appliedVoltageForDataset(project.analysis, dataset) : 0,
+    };
+  }
+  return next;
 }
 
 function pickDatasetId(

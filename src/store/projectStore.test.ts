@@ -2,7 +2,12 @@ import { beforeEach, describe, expect, test } from "vite-plus/test";
 import { createDemoDatasets } from "../domain/demoData";
 import type { FitTarget } from "../domain/types";
 import { DEFAULT_CATALOG_ID, DEFAULT_CATALOG_NAME, exportProjectJson } from "./projectDb";
-import { readLastOpenedWorkspace, writeLastOpenedWorkspace } from "./lastOpenedWorkspace";
+import {
+  LAST_OPENED_WORKSPACE_KEY,
+  clearLastOpenedWorkspace,
+  readLastOpenedWorkspace,
+  writeLastOpenedWorkspace,
+} from "./lastOpenedWorkspace";
 import { fitRangeKey, useProjectStore } from "./projectStore";
 
 const TARGETS: FitTarget[] = [
@@ -41,8 +46,9 @@ describe("project store", () => {
 
     useProjectStore.getState().loadDemo();
 
-    expect(useProjectStore.getState().project.datasets).toHaveLength(6);
+    expect(useProjectStore.getState().project.datasets).toHaveLength(8);
     expect(useProjectStore.getState().project.analysis.ups).toBeDefined();
+    expect(useProjectStore.getState().project.analysis.ups?.ipResults).toHaveLength(3);
     expect(useProjectStore.getState().project.analysis.reels).toBeDefined();
   });
 
@@ -126,18 +132,120 @@ describe("project store", () => {
 
   test("persists plot viewports in project UI state", () => {
     const viewport = { x: { min: -4, max: 2 }, y: { min: 0, max: 10 } };
+    const ipId = useProjectStore.getState().project.analysis.selection.upsIpDatasetIds?.[0];
+    expect(ipId).toBeDefined();
 
     useProjectStore.getState().setBandDiagramViewport(viewport);
     useProjectStore.getState().setUpsVbPlotViewport(viewport);
     useProjectStore.getState().setUpsIpPlotViewport(viewport);
+    useProjectStore.getState().setUpsIpPlotViewportForDataset(ipId!, viewport);
     useProjectStore.getState().setLeipsPlotViewport(viewport);
     useProjectStore.getState().setLeipsEvacPlotViewport(viewport);
 
     expect(useProjectStore.getState().project.ui?.bandDiagramViewport).toEqual(viewport);
     expect(useProjectStore.getState().project.ui?.upsVbPlotViewport).toEqual(viewport);
     expect(useProjectStore.getState().project.ui?.upsIpPlotViewport).toEqual(viewport);
+    expect(useProjectStore.getState().project.ui?.upsIpPlotViewportsByDatasetId?.[ipId!]).toEqual(
+      viewport,
+    );
     expect(useProjectStore.getState().project.ui?.leipsPlotViewport).toEqual(viewport);
     expect(useProjectStore.getState().project.ui?.leipsEvacPlotViewport).toEqual(viewport);
+  });
+
+  test("stores per-IP applied voltage and fit ranges", () => {
+    const ipId = useProjectStore.getState().project.analysis.selection.upsIpDatasetIds?.[0];
+    expect(ipId).toBeDefined();
+
+    useProjectStore.getState().setUpsIpAppliedVoltage(ipId!, -12.5);
+    useProjectStore.getState().setUpsIpFitRange(ipId!, "ups-ip-edge", { min: 7, max: 8 });
+
+    const analysis = useProjectStore.getState().project.analysis;
+    expect(analysis.upsIpConfigsByDatasetId?.[ipId!]?.appliedVoltage).toBe(-12.5);
+    expect(analysis.upsIpFitRangesByDatasetId?.[ipId!]?.cutoffEdge).toEqual({ min: 7, max: 8 });
+    expect(
+      analysis.ups?.ipResults.find((result) => result.datasetId === ipId)?.appliedVoltage,
+    ).toBe(-12.5);
+  });
+
+  test("selects multiple UPS IP datasets explicitly", () => {
+    const ipIds = useProjectStore
+      .getState()
+      .project.datasets.filter((dataset) => dataset.kind === "ups-ip")
+      .map((dataset) => dataset.id);
+
+    useProjectStore.getState().assignUpsIpDatasets(ipIds.slice(0, 2));
+
+    const analysis = useProjectStore.getState().project.analysis;
+    expect(analysis.selection.upsIpDatasetIds).toEqual(ipIds.slice(0, 2));
+    expect(analysis.ups?.ipResults.map((result) => result.datasetId)).toEqual(ipIds.slice(0, 2));
+  });
+
+  test("toggles UPS IP dataset selection through the generic assignment action", () => {
+    const first = useProjectStore.getState().project.analysis.selection.upsIpDatasetIds?.[0];
+    expect(first).toBeDefined();
+
+    useProjectStore.getState().assignDataset("upsIpDatasetIds", first!);
+
+    expect(useProjectStore.getState().project.analysis.selection.upsIpDatasetIds).not.toContain(
+      first,
+    );
+  });
+
+  test("resolves Band IP source from average, dataset and 0 V extrapolation", () => {
+    const ipResults = useProjectStore.getState().project.analysis.ups?.ipResults ?? [];
+    expect(ipResults.length).toBeGreaterThanOrEqual(2);
+
+    useProjectStore.getState().setBandIpSource({ mode: "average" });
+    const averageIp = useProjectStore.getState().project.analysis.band?.ip;
+    expect(averageIp).toBeGreaterThan(0);
+
+    useProjectStore
+      .getState()
+      .setBandIpSource({ mode: "dataset", datasetId: ipResults[0]?.datasetId });
+    expect(useProjectStore.getState().project.analysis.band?.ip).toBeCloseTo(ipResults[0]?.ip ?? 0);
+
+    useProjectStore.getState().setBandIpSource({ mode: "zero-voltage-extrapolated" });
+    expect(useProjectStore.getState().project.analysis.band?.ip).toBeGreaterThan(0);
+  });
+
+  test("keeps Band unavailable when 0 V IP extrapolation has fewer than two points", () => {
+    const first = useProjectStore.getState().project.analysis.selection.upsIpDatasetIds?.[0];
+    expect(first).toBeDefined();
+
+    useProjectStore.getState().assignUpsIpDatasets([first!]);
+    useProjectStore.getState().setBandIpSource({ mode: "zero-voltage-extrapolated" });
+
+    expect(useProjectStore.getState().project.analysis.band).toBeUndefined();
+    expect(useProjectStore.getState().project.analysis.error).toContain("0 V extrapolated IP");
+  });
+
+  test("migrates legacy single UPS IP selection and viewport", () => {
+    const project = useProjectStore.getState().project;
+    const ipId = project.analysis.selection.upsIpDatasetIds?.[0];
+    expect(ipId).toBeDefined();
+    useProjectStore.getState().importProject(
+      exportProjectJson({
+        ...project,
+        analysis: {
+          ...project.analysis,
+          selection: {
+            ...project.analysis.selection,
+            upsIpDatasetId: ipId,
+            upsIpDatasetIds: undefined,
+          },
+          upsIpFitRangesByDatasetId: undefined,
+        },
+        ui: {
+          ...project.ui,
+          upsIpPlotViewport: { x: { min: 1, max: 2 } },
+          upsIpPlotViewportsByDatasetId: undefined,
+        },
+      } as never),
+    );
+
+    const imported = useProjectStore.getState().project;
+    expect(imported.analysis.selection.upsIpDatasetIds).toEqual([ipId]);
+    expect(imported.analysis.upsIpFitRangesByDatasetId?.[ipId!]).toBeDefined();
   });
 
   test("persists per-plot cursor styles and sample info", () => {
@@ -230,7 +338,7 @@ describe("project store", () => {
 
     await useProjectStore.getState().loadSavedProject(savedId);
     expect(useProjectStore.getState().project.name).toBe("Saved Copy");
-    expect(useProjectStore.getState().project.datasets).toHaveLength(6);
+    expect(useProjectStore.getState().project.datasets).toHaveLength(8);
   });
 
   test("returns save-as requirement when saving an unsaved new project", async () => {
@@ -318,6 +426,28 @@ describe("project store", () => {
     expect(useProjectStore.getState().activeCatalog.name).toBe(catalogName);
     expect(useProjectStore.getState().project.name).toBe("Restored Project");
     expect(useProjectStore.getState().isProjectUnsaved).toBe(false);
+  });
+
+  test("handles empty, invalid and cleared last-opened workspace references", () => {
+    clearLastOpenedWorkspace();
+    expect(readLastOpenedWorkspace()).toBeUndefined();
+
+    localStorage.setItem(LAST_OPENED_WORKSPACE_KEY, JSON.stringify({ projectId: "missing" }));
+    expect(readLastOpenedWorkspace()).toBeUndefined();
+
+    localStorage.setItem(LAST_OPENED_WORKSPACE_KEY, "{");
+    expect(readLastOpenedWorkspace()).toBeUndefined();
+  });
+
+  test("toggles utility windows", () => {
+    useProjectStore.getState().toggleHelpWindow();
+    expect(useProjectStore.getState().project.windows.some((window) => window.id === "help")).toBe(
+      true,
+    );
+    useProjectStore.getState().toggleHelpWindow();
+    expect(useProjectStore.getState().project.windows.some((window) => window.id === "help")).toBe(
+      false,
+    );
   });
 
   test("save as overwrites a saved project with the same name", async () => {
@@ -421,7 +551,11 @@ describe("project store", () => {
     ).toBe(false);
     const selection = useProjectStore.getState().project.analysis.selection;
     expect(selection.upsVbDatasetId).toBe("loaded-demo-ups-vb");
-    expect(selection.upsIpDatasetId).toBe("loaded-demo-ups-ip");
+    expect(selection.upsIpDatasetIds).toEqual([
+      "loaded-demo-ups-ip-minus10",
+      "loaded-demo-ups-ip-minus7",
+      "loaded-demo-ups-ip-minus5",
+    ]);
     expect(selection.leetDatasetId).toBe("loaded-demo-leet");
     expect(selection.leetDerDatasetId).toBe("loaded-demo-leet-der");
     expect(selection.leipsDatasetId).toBe("loaded-demo-leips");

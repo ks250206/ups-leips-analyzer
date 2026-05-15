@@ -59,6 +59,20 @@ export interface GaussianFitResult {
   pointsUsed: number;
 }
 
+export interface UPSIPResult {
+  datasetId: string;
+  datasetName: string;
+  appliedVoltage: number;
+  ipEvbm: number;
+  ecutoff: number;
+  ip: number;
+  photonEnergy: number;
+  ipVbmEdge: LineFitResult;
+  ipVbmBackground: LineFitResult;
+  cutoffEdge: LineFitResult;
+  cutoffBackground: LineFitResult;
+}
+
 export interface UPSResult {
   vbEvbm: number;
   ipEvbm: number;
@@ -72,6 +86,7 @@ export interface UPSResult {
   ipVbmBackground: LineFitResult;
   cutoffEdge: LineFitResult;
   cutoffBackground: LineFitResult;
+  ipResults: UPSIPResult[];
 }
 
 export interface LEIPSResult {
@@ -118,8 +133,26 @@ export interface FitRanges {
   reelsBackground: FitRange;
 }
 
+export interface UPSIPFitRanges {
+  ipVbmEdge: FitRange;
+  ipVbmBackground: FitRange;
+  cutoffEdge: FitRange;
+  cutoffBackground: FitRange;
+}
+
+export interface UPSIPConfig {
+  appliedVoltage: number;
+}
+
+export type BandIpSource =
+  | { mode: "zero-voltage-extrapolated" }
+  | { mode: "dataset"; datasetId?: string }
+  | { mode: "average" };
+
 export interface AnalysisSelection {
   upsVbDatasetId?: string;
+  upsIpDatasetIds?: string[];
+  /** @deprecated migrated to upsIpDatasetIds */
   upsIpDatasetId?: string;
   leetDatasetId?: string;
   leetDerDatasetId?: string;
@@ -130,6 +163,9 @@ export interface AnalysisSelection {
 export interface AnalysisState {
   selection: AnalysisSelection;
   fitRanges: FitRanges;
+  upsIpFitRangesByDatasetId?: Record<string, UPSIPFitRanges>;
+  upsIpConfigsByDatasetId?: Record<string, UPSIPConfig>;
+  bandIpSource?: BandIpSource;
   bandpassType: number;
   customBandpassEnergy?: number;
   photonEnergy: number;

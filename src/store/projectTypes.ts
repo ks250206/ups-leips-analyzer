@@ -10,6 +10,7 @@ export interface WindowLayout {
     | "ups"
     | "ups-vb"
     | "ups-ip"
+    | "ups-bias"
     | "leips"
     | "leips-evac"
     | "reels"
@@ -56,6 +57,15 @@ export interface ProjectUiState {
     y?: UiScaleRange;
     y2?: UiScaleRange;
   };
+  upsIpPlotViewportsByDatasetId?: Record<
+    string,
+    {
+      x?: UiScaleRange;
+      y?: UiScaleRange;
+      y2?: UiScaleRange;
+    }
+  >;
+  activeUpsIpDatasetId?: string;
   leipsPlotViewport?: {
     x?: UiScaleRange;
     y?: UiScaleRange;

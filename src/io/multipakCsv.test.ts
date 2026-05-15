@@ -1,5 +1,5 @@
 import { describe, expect, test } from "vite-plus/test";
-import { inferSpectrumKind, parseMultiPakCsv } from "./multipakCsv";
+import { inferAppliedVoltage, inferSpectrumKind, parseMultiPakCsv } from "./multipakCsv";
 
 const CSV = `2
 no area description
@@ -18,6 +18,39 @@ describe("parseMultiPakCsv", () => {
     expect(datasets[0]?.kind).toBe("ups-ip");
     expect(datasets[0]?.points[0]).toEqual({ x: 16.4, y: 880 });
     expect(datasets[1]?.name).toContain("#4");
+    expect(datasets[0]?.metadata.appliedVoltage).toBe("0");
+    expect(datasets[0]?.metadata.appliedVoltageSource).toBe("default");
+  });
+
+  test("infers applied voltage from series, metadata, filename and default", () => {
+    expect(
+      inferAppliedVoltage({
+        seriesName: "IP-5V",
+        metadataText: "",
+        sourceName: "sample.csv",
+      }),
+    ).toEqual({ value: -5, source: "metadata" });
+    expect(
+      inferAppliedVoltage({
+        seriesName: "",
+        metadataText: "spectrum IP+3.5V",
+        sourceName: "sample.csv",
+      }),
+    ).toEqual({ value: 3.5, source: "metadata" });
+    expect(
+      inferAppliedVoltage({
+        seriesName: "",
+        metadataText: "",
+        sourceName: "sample_IP_5V.csv",
+      }),
+    ).toEqual({ value: 5, source: "filename" });
+    expect(
+      inferAppliedVoltage({
+        seriesName: "",
+        metadataText: "",
+        sourceName: "sample.csv",
+      }),
+    ).toEqual({ value: 0, source: "default" });
   });
 
   test("infers spectrum kinds from filenames", () => {

@@ -128,5 +128,15 @@ export function defaultWindows(): WindowLayout[] {
       height: 360,
       zIndex: 11,
     },
+    {
+      id: "ups-bias",
+      title: "UPS Bias Dependence",
+      kind: "ups-bias",
+      x: 308,
+      y: 1200,
+      width: 560,
+      height: 340,
+      zIndex: 12,
+    },
   ];
 }
