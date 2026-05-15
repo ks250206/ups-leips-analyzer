@@ -106,6 +106,49 @@ describe("project store", () => {
     expect(analysis.leips?.bandpassEnergy).toBe(5.12);
   });
 
+  test("persists band diagram viewport in project UI state", () => {
+    const viewport = { x: { min: -4, max: 2 }, y: { min: 0, max: 10 } };
+
+    useProjectStore.getState().setBandDiagramViewport(viewport);
+
+    expect(useProjectStore.getState().project.ui?.bandDiagramViewport).toEqual(viewport);
+  });
+
+  test("resets individual and all window geometry to defaults", () => {
+    const state = useProjectStore.getState();
+    state.updateWindow("ups-vb", { x: 999, y: 888, width: 333, height: 222 });
+
+    state.resetWindowPosition("ups-vb");
+    expect(
+      useProjectStore.getState().project.windows.find((window) => window.id === "ups-vb"),
+    ).toMatchObject({
+      x: 308,
+      y: 26,
+      width: 333,
+      height: 222,
+    });
+
+    state.resetWindowSize("ups-vb");
+    expect(
+      useProjectStore.getState().project.windows.find((window) => window.id === "ups-vb"),
+    ).toMatchObject({
+      width: 560,
+      height: 330,
+    });
+
+    state.updateWindow("ups-ip", { x: 999, y: 888, width: 333, height: 222 });
+    state.resetAllWindowPositions();
+    state.resetAllWindowSizes();
+    expect(
+      useProjectStore.getState().project.windows.find((window) => window.id === "ups-ip"),
+    ).toMatchObject({
+      x: 878,
+      y: 26,
+      width: 560,
+      height: 330,
+    });
+  });
+
   test("creates, saves as and loads projects", async () => {
     const state = useProjectStore.getState();
     await state.saveProjectAs("Saved Copy");

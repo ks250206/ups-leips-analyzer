@@ -1,4 +1,4 @@
-import { useMemo } from "react";
+import { useMemo, useState } from "react";
 import { convertBiasToVacuumEnergy } from "../../domain/analysis";
 import { BANDPASS_OPTIONS, CUSTOM_BANDPASS_TYPE } from "../../domain/constants";
 import type { FitTarget, Point, SpectrumDataset } from "../../domain/types";
@@ -10,6 +10,7 @@ import {
   gaussianSeries,
   lineFitSeries,
   type PlotMarker,
+  type PlotAnnotation,
   type PlotRangeBand,
   type PlotSeries,
   xExtent,
@@ -22,6 +23,8 @@ export function LEIPSPlotWindow() {
   const setBandpassType = useProjectStore((state) => state.setBandpassType);
   const setCustomBandpassEnergy = useProjectStore((state) => state.setCustomBandpassEnergy);
   const activeFitTarget = useProjectStore((state) => state.activeFitTarget);
+  const [customOpen, setCustomOpen] = useState(false);
+  const [customValue, setCustomValue] = useState("");
   const leetDataset = project.datasets.find(
     (dataset) => dataset.id === project.analysis.selection.leetDatasetId,
   );
@@ -96,12 +99,14 @@ export function LEIPSPlotWindow() {
               project.analysis.bandpassType === CUSTOM_BANDPASS_TYPE
                 ? `Custom ${formatNumber(project.analysis.customBandpassEnergy, 2)} eV ✓`
                 : "Custom band pass",
-            action: () =>
-              setCustomBandpassEnergy(
+            action: () => {
+              const value =
                 project.analysis.customBandpassEnergy ??
-                  project.analysis.leips?.bandpassEnergy ??
-                  resolvedBandpassEnergy(project.analysis),
-              ),
+                project.analysis.leips?.bandpassEnergy ??
+                resolvedBandpassEnergy(project.analysis);
+              setCustomValue(String(value));
+              setCustomOpen(true);
+            },
           },
         ],
       },
@@ -109,21 +114,80 @@ export function LEIPSPlotWindow() {
     [project.analysis, setBandpassType, setCustomBandpassEnergy],
   );
 
+  const annotations = useMemo<PlotAnnotation[]>(() => {
+    const items: PlotAnnotation[] = [
+      { type: "text", label: "LEET(der)", color: "#2563eb", xFraction: 0.18, yFraction: 0.16 },
+      { type: "text", label: "LEET", color: "#16a34a", xFraction: 0.52, yFraction: 0.16 },
+      { type: "text", label: "LEIPS", color: "#dc2626", xFraction: 0.86, yFraction: 0.16 },
+    ];
+    if (leips) {
+      items.push({
+        type: "x-arrow",
+        label: `+${formatNumber(leips.bandpassEnergy, 2)} eV`,
+        color: "#111827",
+        x1: leips.ePeak,
+        x2: leips.vacuumLevel,
+        yFraction: 0.42,
+        fontSize: 24,
+      });
+    }
+    return items;
+  }, [leips]);
+
   return (
-    <SpectrumPlot
-      title="LEET / LEET(der) / LEIPS"
-      xLabel="Applied Bias Vbias / V"
-      yLabel="Intensity / a.u."
-      yRightLabel="LEIPS Intensity / a.u."
-      series={series}
-      markers={markers}
-      rangeBands={rangeBands}
-      marginVariant="leips"
-      xDirection="normal"
-      extraContextMenuItems={contextItems}
-      onSelectRange={(range) => setFitRange("leet-der-peak", range)}
-      onRangeBandChange={(target, range) => setFitRange(target as FitTarget, range)}
-    />
+    <div className="relative h-full">
+      <SpectrumPlot
+        title="LEET / LEET(der) / LEIPS"
+        xLabel="Applied Bias Vbias / V"
+        yLabel="Intensity / a.u."
+        yRightLabel="LEIPS Intensity / a.u."
+        series={series}
+        markers={markers}
+        rangeBands={rangeBands}
+        annotations={annotations}
+        marginVariant="leips"
+        xDirection="normal"
+        extraContextMenuItems={contextItems}
+        onSelectRange={(range) => setFitRange("leet-der-peak", range)}
+        onRangeBandChange={(target, range) => setFitRange(target as FitTarget, range)}
+      />
+      {customOpen ? (
+        <div className="absolute inset-0 z-50 flex items-center justify-center bg-slate-950/20">
+          <form
+            className="w-64 rounded border border-slate-300 bg-white p-3 text-xs shadow-xl"
+            onSubmit={(event) => {
+              event.preventDefault();
+              setCustomBandpassEnergy(Number(customValue));
+              setCustomOpen(false);
+            }}
+          >
+            <h3 className="mb-2 text-sm font-bold text-slate-800">Custom band pass</h3>
+            <label className="grid grid-cols-[1fr_24px] items-center gap-2">
+              <input
+                className="rounded border border-slate-300 px-2 py-1 font-mono"
+                autoFocus
+                inputMode="decimal"
+                value={customValue}
+                onChange={(event) => setCustomValue(event.currentTarget.value)}
+              />
+              <span>eV</span>
+            </label>
+            <div className="mt-3 flex justify-end gap-2">
+              <button
+                className="rounded border border-slate-300 px-2 py-1"
+                type="button"
+                onClick={() => setCustomOpen(false)}
+              >
+                Cancel
+              </button>
+              <button className="rounded bg-slate-950 px-2 py-1 text-white" type="submit">
+                Apply
+              </button>
+            </div>
+          </form>
+        </div>
+      ) : null}
+    </div>
   );
 }
 

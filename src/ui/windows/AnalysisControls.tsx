@@ -1,5 +1,5 @@
 import { BANDPASS_OPTIONS, CUSTOM_BANDPASS_TYPE } from "../../domain/constants";
-import { useState, type ReactNode } from "react";
+import { useEffect, useState, type ReactNode } from "react";
 import type { AnalysisSelection, FitRange, FitTarget, SpectrumDataset } from "../../domain/types";
 import { fitRangeKey, useProjectStore } from "../../store/projectStore";
 import { formatNumber, formatRange } from "../format";
@@ -32,7 +32,9 @@ const DATASET_SLOTS: Array<{
   { slot: "leipsDatasetId", label: "LEIPS", filter: (dataset) => dataset.kind === "leips" },
 ];
 
-export function AnalysisControls() {
+type AnalysisTab = "data" | "ups" | "leips" | "band" | "fit";
+
+export function AnalysisControls({ activeTab = "data" }: { activeTab?: AnalysisTab }) {
   const project = useProjectStore((state) => state.project);
   const activeFitTarget = useProjectStore((state) => state.activeFitTarget);
   const assignDataset = useProjectStore((state) => state.assignDataset);
@@ -43,7 +45,8 @@ export function AnalysisControls() {
   const setEfMinusEvbm = useProjectStore((state) => state.setEfMinusEvbm);
   const recalculate = useProjectStore((state) => state.recalculate);
   const analysis = project.analysis;
-  const [tab, setTab] = useState<"data" | "ups" | "leips" | "band" | "fit">("ups");
+  const [tab, setTab] = useState<AnalysisTab>(activeTab);
+  useEffect(() => setTab(activeTab), [activeTab]);
 
   return (
     <div className="flex h-full flex-col bg-slate-100 text-xs">

@@ -162,7 +162,7 @@ export function UPSIPPlotWindow() {
         ? [
             {
               x: ups.ipEvbm,
-              label: `EVBM ${formatNumber(ups.ipEvbm, 2)} eV`,
+              label: `VBM ${formatNumber(ups.ipEvbm, 2)} eV`,
               color: "#7c3aed",
             },
             {

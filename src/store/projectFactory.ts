@@ -13,6 +13,7 @@ export function createEmptyProject(): ProjectSnapshot {
     datasets: [],
     selectedDatasetId: undefined,
     analysis: createInitialAnalysis([]),
+    ui: {},
     windows: defaultWindows(),
     createdAt: now,
     updatedAt: now,
@@ -28,13 +29,14 @@ export function createDemoProject(): ProjectSnapshot {
     datasets,
     selectedDatasetId: datasets[0]?.id,
     analysis: createInitialAnalysis(datasets),
+    ui: {},
     windows: defaultWindows(),
     createdAt: now,
     updatedAt: now,
   };
 }
 
-function defaultWindows(): WindowLayout[] {
+export function defaultWindows(): WindowLayout[] {
   return [
     {
       id: "browser",

@@ -13,6 +13,7 @@
 - `src/store/projectFactory.ts`: 空Project、demo Project、初期dataset/window生成。
 - `src/store/projectModel.ts`: 解析再計算、dataset auto selection、fit range migration、Project JSON変換。
 - `src/store/windowModel.ts`: workspace window生成とdefault layout。
+- `ProjectSnapshot.ui`: Band Diagram viewportなどProjectと一緒に復元したいUI state。
 - `src/ui/Workspace.tsx`: workspace viewport、background pan/context menu、window frame配置、modal open state。
 - `src/ui/workspace/WorkspaceMenu.tsx`: TopBar/background context menuの共通menu definition。
 - `src/ui/workspace/WorkspaceWindows.tsx`: window kindごとのtitle/icon/render/context menu/help window。

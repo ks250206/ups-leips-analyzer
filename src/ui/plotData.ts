@@ -34,6 +34,26 @@ export interface PlotRangeBand {
   cursorLabels?: readonly [string, string];
 }
 
+export type PlotAnnotation =
+  | {
+      type: "text";
+      label: string;
+      color: string;
+      xFraction: number;
+      yFraction: number;
+      fontSize?: number;
+      anchor?: "start" | "middle" | "end";
+    }
+  | {
+      type: "x-arrow";
+      label: string;
+      color: string;
+      x1: number;
+      x2: number;
+      yFraction: number;
+      fontSize?: number;
+    };
+
 export function lineFitSeries(
   name: string,
   fit: LineFitResult,

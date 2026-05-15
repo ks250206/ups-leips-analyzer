@@ -9,11 +9,12 @@ import {
 } from "react";
 import { exportProjectGzip, exportProjectJson, importProjectBytes } from "../store/projectDb";
 import { useProjectStore } from "../store/projectStore";
-import type { ProjectRecord } from "../store/projectTypes";
+import type { ProjectRecord, WindowLayout } from "../store/projectTypes";
 import { ContextMenu, useContextMenu } from "./ContextMenu";
 import { buildMenuGroups, TopBar } from "./workspace/WorkspaceMenu";
 import { DeleteProjectModal, LoadProjectModal, SaveAsModal } from "./workspace/WorkspaceModals";
 import {
+  type AnalysisControlTab,
   iconForWindow,
   renderWindow,
   titleForWindow,
@@ -25,6 +26,10 @@ export function Workspace() {
   const project = useProjectStore((state) => state.project);
   const updateWindow = useProjectStore((state) => state.updateWindow);
   const focusWindow = useProjectStore((state) => state.focusWindow);
+  const resetWindowPosition = useProjectStore((state) => state.resetWindowPosition);
+  const resetWindowSize = useProjectStore((state) => state.resetWindowSize);
+  const resetAllWindowPositions = useProjectStore((state) => state.resetAllWindowPositions);
+  const resetAllWindowSizes = useProjectStore((state) => state.resetAllWindowSizes);
   const recalculate = useProjectStore((state) => state.recalculate);
   const newProject = useProjectStore((state) => state.newProject);
   const saveCurrentProject = useProjectStore((state) => state.saveCurrentProject);
@@ -39,6 +44,7 @@ export function Workspace() {
   const { menu, openMenu, closeMenu } = useContextMenu();
   const [viewport, setViewport] = useState({ x: 0, y: 0, scale: 1 });
   const [activeWindowId, setActiveWindowId] = useState<string>();
+  const [analysisTab, setAnalysisTab] = useState<AnalysisControlTab>("data");
   const [saveAsOpen, setSaveAsOpen] = useState(false);
   const [deleteOpen, setDeleteOpen] = useState(false);
   const [loadProjectOpen, setLoadProjectOpen] = useState(false);
@@ -50,7 +56,12 @@ export function Workspace() {
   const windows = useMemo(() => project.windows, [project.windows]);
   const resetWorkspaceView = () => setViewport({ x: 0, y: 0, scale: 1 });
   const focusAndActivateWindow = (id: string) => {
+    const window = project.windows.find((item) => item.id === id);
     setActiveWindowId(id);
+    const nextTab = tabForWindowKind(window?.kind);
+    if (nextTab) {
+      setAnalysisTab(nextTab);
+    }
     focusWindow(id);
   };
   const refreshRecentProjects = () => {
@@ -88,6 +99,10 @@ export function Workspace() {
       },
       newProject,
       resetWorkspaceView,
+      resetAllWindowPositions,
+      resetAllWindowSizes,
+      resetWindowPosition,
+      resetWindowSize,
       saveAsProject: () => setSaveAsOpen(true),
       saveCurrentProject: () => {
         void saveCurrentProject().then(refreshRecentProjects);
@@ -227,11 +242,13 @@ export function Workspace() {
                 assignDataset,
                 datasets: project.datasets,
                 recalculate,
+                resetWindowPosition,
+                resetWindowSize,
                 selection: project.analysis.selection,
               })}
               isActive={activeWindowId === window.id}
             >
-              {renderWindow(window)}
+              {renderWindow(window, analysisTab)}
             </WindowFrame>
           ))}
         </div>
@@ -275,4 +292,23 @@ export function Workspace() {
       ) : null}
     </main>
   );
+}
+
+function tabForWindowKind(kind: WindowLayout["kind"] | undefined): AnalysisControlTab | undefined {
+  switch (kind) {
+    case "ups":
+    case "ups-vb":
+    case "ups-ip":
+      return "ups";
+    case "leips":
+    case "leips-evac":
+      return "leips";
+    case "band":
+      return "band";
+    case "browser":
+    case "table":
+      return "data";
+    default:
+      return undefined;
+  }
 }

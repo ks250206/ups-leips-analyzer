@@ -24,12 +24,26 @@ export interface WindowLayout {
   minimized?: boolean;
 }
 
+export interface UiScaleRange {
+  min: number;
+  max: number;
+}
+
+export interface ProjectUiState {
+  bandDiagramViewport?: {
+    x?: UiScaleRange;
+    y?: UiScaleRange;
+    y2?: UiScaleRange;
+  };
+}
+
 export interface ProjectSnapshot {
   id: string;
   name: string;
   datasets: SpectrumDataset[];
   selectedDatasetId?: string;
   analysis: AnalysisState;
+  ui?: ProjectUiState;
   windows: WindowLayout[];
   createdAt: string;
   updatedAt: string;

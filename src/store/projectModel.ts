@@ -104,6 +104,7 @@ export function fitRangeKey(target: FitTarget): keyof AnalysisState["fitRanges"]
 export function normalizeProject(project: ProjectSnapshot): ProjectSnapshot {
   return {
     ...project,
+    ui: project.ui ?? {},
     analysis: {
       ...project.analysis,
       customBandpassEnergy: project.analysis.customBandpassEnergy ?? 4.77,

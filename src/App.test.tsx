@@ -19,9 +19,7 @@ describe("App", () => {
   test("renders the analyzer workspace without loading demo data initially", async () => {
     render(<App />);
     expect(screen.getByText("UPS-LEIPS Analyzer")).toBeTruthy();
-    expect(screen.getByText("UPS spectra analysis")).toBeTruthy();
-    expect(screen.getByText("VB set")).toBeTruthy();
-    expect(screen.getByText("IP set")).toBeTruthy();
+    expect(screen.getByText("Datasets")).toBeTruthy();
     expect(screen.getAllByText("UPS VB").length).toBeGreaterThan(0);
     expect(screen.getAllByText("UPS IP").length).toBeGreaterThan(0);
     expect(await screen.findAllByText("UPS-LEIPS Band Diagram")).toHaveLength(1);
@@ -103,6 +101,8 @@ describe("App", () => {
     fireEvent.pointerDown(document.body);
     await user.click(screen.getByRole("button", { name: "Windows" }));
     expect(screen.getAllByText("Data Browser").length).toBeGreaterThan(1);
+    expect(screen.getByText("Reset all window positions")).toBeTruthy();
+    expect(screen.getByText("Reset all window sizes")).toBeTruthy();
     fireEvent.pointerDown(document.body);
     await user.click(screen.getByRole("button", { name: "Help" }));
     expect(screen.getByText("About UPS-LEIPS Analyzer")).toBeTruthy();
@@ -115,6 +115,7 @@ describe("App", () => {
     expect(screen.queryByRole("button", { name: "SVG" })).toBeNull();
 
     fireEvent.contextMenu(screen.getByLabelText("UPS IP plot"));
+    expect(screen.getByText("Hide cursor ranges")).toBeTruthy();
     expect(screen.getByText("Reset view")).toBeTruthy();
     expect(screen.getByText("Export PNG")).toBeTruthy();
     expect(screen.getByText("Export SVG")).toBeTruthy();
@@ -126,6 +127,20 @@ describe("App", () => {
     expect(screen.getByText("Filter")).toBeTruthy();
     fireEvent.mouseEnter(screen.getByText("Filter"));
     expect(screen.getByText("Band pass 1_4.77 eV ✓")).toBeTruthy();
+    await user.click(screen.getByText("Custom band pass"));
+    expect(screen.getByRole("heading", { name: "Custom band pass" })).toBeTruthy();
+  });
+
+  test("focuses analysis tabs from related plot windows", async () => {
+    useProjectStore.getState().loadDemo();
+    render(<App />);
+
+    expect(screen.getByText("Datasets")).toBeTruthy();
+    fireEvent.pointerDown(screen.getByText(/UPS VB -/));
+    expect(await screen.findByText("UPS spectra analysis")).toBeTruthy();
+
+    fireEvent.pointerDown(screen.getByText(/LEIPS Plot -/));
+    expect(await screen.findByText("LEIPS spectra analysis")).toBeTruthy();
   });
 
   test("shows workspace context menu and removes active cursor badges", async () => {

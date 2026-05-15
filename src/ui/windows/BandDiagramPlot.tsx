@@ -45,8 +45,8 @@ export function IgorBandDiagramPlot({
   const arrowId = useId();
   const { menu, openMenu, closeMenu } = useContextMenu();
   const [drag, setDrag] = useState<BandDragState | undefined>();
-  const size = { width: 860, height: 620 };
-  const plot = { left: 96, top: 58, right: 34, bottom: 96 };
+  const size = { width: 860, height: 700 };
+  const plot = { left: 96, top: 58, right: 34, bottom: 94 };
   const plotRight = size.width - plot.right;
   const plotBottom = size.height - plot.bottom;
   const plotWidth = plotRight - plot.left;
@@ -223,7 +223,7 @@ export function IgorBandDiagramPlot({
                 <text
                   fill="black"
                   fontFamily="Arial, Helvetica, sans-serif"
-                  fontSize={20}
+                  fontSize={24}
                   fontWeight={700}
                   textAnchor="middle"
                   x={x}

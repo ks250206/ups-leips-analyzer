@@ -1,7 +1,7 @@
 import { useEffect, useId, useMemo, useRef, useState } from "react";
 import type { FitRange } from "../../domain/types";
 import { ContextMenu, type ContextMenuItem, useContextMenu } from "../ContextMenu";
-import type { PlotMarker, PlotRangeBand, PlotSeries } from "../plotData";
+import type { PlotAnnotation, PlotMarker, PlotRangeBand, PlotSeries } from "../plotData";
 import {
   clampPlotPosition,
   createPlotScales,
@@ -19,7 +19,14 @@ import {
   type PlotViewport,
 } from "./SpectrumPlotModel";
 import { NoDataPlot, SelectionOverlay } from "./SpectrumPlotChrome";
-import { CursorHandles, MarkerLine, PlotAxes, RangeBand, SeriesPath } from "./SpectrumPlotParts";
+import {
+  CursorHandles,
+  MarkerLine,
+  PlotAnnotations,
+  PlotAxes,
+  RangeBand,
+  SeriesPath,
+} from "./SpectrumPlotParts";
 import { exportPng, exportSvg } from "./plotExport";
 
 export type { PlotGeometry, PlotScaleRange, PlotScales, PlotViewport } from "./SpectrumPlotModel";
@@ -53,6 +60,7 @@ interface SpectrumPlotProps {
   series: PlotSeries[];
   markers?: PlotMarker[];
   rangeBands?: PlotRangeBand[];
+  annotations?: PlotAnnotation[];
   xDirection?: "normal" | "reverse";
   viewportRequest?: { id: number; viewport: PlotViewport };
   extraContextMenuItems?: ContextMenuItem[];
@@ -72,6 +80,7 @@ export function SpectrumPlot({
   series,
   markers = EMPTY_MARKERS,
   rangeBands = EMPTY_RANGE_BANDS,
+  annotations = [],
   xDirection = "normal",
   viewportRequest,
   extraContextMenuItems = [],
@@ -87,6 +96,7 @@ export function SpectrumPlot({
   const [size, setSize] = useState(DEFAULT_SIZE);
   const [viewport, setViewport] = useState<PlotViewport>({});
   const [drag, setDrag] = useState<DragState | undefined>();
+  const [showCursorRanges, setShowCursorRanges] = useState(true);
   const { menu, openMenu, closeMenu } = useContextMenu();
   const hasData = series.some((item) => item.points.length > 0);
 
@@ -102,6 +112,11 @@ export function SpectrumPlot({
       ...(extraContextMenuItems.length > 0
         ? ([...extraContextMenuItems, { type: "separator" }] as ContextMenuItem[])
         : []),
+      {
+        type: "item",
+        label: showCursorRanges ? "Hide cursor ranges" : "Show cursor ranges",
+        action: () => setShowCursorRanges((current) => !current),
+      },
       { type: "item", label: "Reset view", action: () => updateViewport({}) },
       {
         type: "item",
@@ -262,6 +277,17 @@ export function SpectrumPlot({
               y={geometry.top}
             />
           </clipPath>
+          <marker
+            id="plot-arrow"
+            markerHeight="8"
+            markerWidth="8"
+            orient="auto"
+            refX="7"
+            refY="4"
+            viewBox="0 0 8 8"
+          >
+            <path d="M 0 0 L 8 4 L 0 8 z" fill="black" />
+          </marker>
         </defs>
         <PlotAxes
           geometry={geometry}
@@ -273,15 +299,17 @@ export function SpectrumPlot({
           yRightLabel={yRightLabel}
         />
         <g clipPath={`url(#${clipId})`}>
-          {rangeBands.map((band) => (
-            <RangeBand
-              key={band.id ?? `${band.label}-${band.min}-${band.max}`}
-              band={band}
-              geometry={geometry}
-              onRangeBandChange={onRangeBandChange}
-              xScale={xScale}
-            />
-          ))}
+          {showCursorRanges
+            ? rangeBands.map((band) => (
+                <RangeBand
+                  key={band.id ?? `${band.label}-${band.min}-${band.max}`}
+                  band={band}
+                  geometry={geometry}
+                  onRangeBandChange={onRangeBandChange}
+                  xScale={xScale}
+                />
+              ))
+            : null}
           {series.map((item) => (
             <SeriesPath
               key={item.name}
@@ -311,6 +339,7 @@ export function SpectrumPlot({
             onRangeBandChange={onRangeBandChange}
           />
         ))}
+        <PlotAnnotations annotations={annotations} geometry={geometry} xScale={xScale} />
         <SelectionOverlay drag={drag} geometry={geometry} selection={selection} />
       </svg>
       <ContextMenu menu={menu} onClose={closeMenu} />

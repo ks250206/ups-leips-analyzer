@@ -19,7 +19,9 @@ import { LEIPSEvacPlotWindow, LEIPSPlotWindow } from "../windows/LEIPSPlotWindow
 import { ProjectListWindow } from "../windows/ProjectListWindow";
 import { UPSIPPlotWindow, UPSVBPlotWindow } from "../windows/UPSPlotWindow";
 
-export function renderWindow(window: WindowLayout) {
+export type AnalysisControlTab = "data" | "ups" | "leips" | "band" | "fit";
+
+export function renderWindow(window: WindowLayout, analysisTab: AnalysisControlTab = "data") {
   switch (window.kind) {
     case "browser":
       return <DataBrowser />;
@@ -37,7 +39,7 @@ export function renderWindow(window: WindowLayout) {
     case "band":
       return <BandDiagramWindow />;
     case "controls":
-      return <AnalysisControls />;
+      return <AnalysisControls activeTab={analysisTab} />;
     case "help":
       return <HelpWindow />;
     case "projects":
@@ -93,19 +95,35 @@ export function windowContextItems(
     assignDataset: (slot: keyof AnalysisSelection, datasetId: string) => void;
     datasets: readonly SpectrumDataset[];
     recalculate: () => void;
+    resetWindowPosition: (id: string) => void;
+    resetWindowSize: (id: string) => void;
     selection: AnalysisSelection;
   },
 ): ContextMenuItem[] {
+  const resetItems: ContextMenuItem[] = [
+    { type: "separator" },
+    {
+      type: "item",
+      label: "Reset window position",
+      action: () => actions.resetWindowPosition(window.id),
+    },
+    {
+      type: "item",
+      label: "Reset window size",
+      action: () => actions.resetWindowSize(window.id),
+    },
+  ];
   switch (window.kind) {
     case "browser":
     case "controls":
     case "table":
-      return [{ type: "item", label: "Recalculate", action: actions.recalculate }];
+      return [{ type: "item", label: "Recalculate", action: actions.recalculate }, ...resetItems];
     case "ups-vb":
       return [
         datasetSubmenu("UPS VB dataset", "upsVbDatasetId", "ups-vb", actions),
         { type: "separator" },
         { type: "item", label: "Recalculate", action: actions.recalculate },
+        ...resetItems,
       ];
     case "ups":
     case "ups-ip":
@@ -113,6 +131,7 @@ export function windowContextItems(
         datasetSubmenu("UPS IP dataset", "upsIpDatasetId", "ups-ip", actions),
         { type: "separator" },
         { type: "item", label: "Recalculate", action: actions.recalculate },
+        ...resetItems,
       ];
     case "leips":
       return [
@@ -121,15 +140,17 @@ export function windowContextItems(
         datasetSubmenu("LEIPS dataset", "leipsDatasetId", "leips", actions),
         { type: "separator" },
         { type: "item", label: "Recalculate", action: actions.recalculate },
+        ...resetItems,
       ];
     case "leips-evac":
       return [
         datasetSubmenu("LEIPS dataset", "leipsDatasetId", "leips", actions),
         { type: "separator" },
         { type: "item", label: "Recalculate", action: actions.recalculate },
+        ...resetItems,
       ];
     default:
-      return [];
+      return resetItems.slice(1);
   }
 }
 

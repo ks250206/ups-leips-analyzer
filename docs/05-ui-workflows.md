@@ -12,6 +12,10 @@ IGOR Proの複数グラフ/操作パネル画面とSciSpace風ワークベンチ
 - Band Diagram: UPSとLEIPSをEnergy relative to Ef/eVで重ね、IGOR Pro風の大きいUPS/LEIPSラベル、VBM/CBM/Vacuum levelの縦線、IP/EA/Egの両矢印を表示する。調整欄はplot下に固定幅のcompact controlとして置き、UPS+/LEIPS+は各スペクトル強度レンジに対するpercent offsetとして扱う。IP/EA/Eg indicatorのfont sizeとarrow scaleは数値入力で調整できる。
 - Band DiagramのUPS/LEIPS annotationはseriesより上に描画し、曲線と重なる部分を白いhaloで隠して読めるようにする。VBM/CBM/Vacuum levelとEgのsubscriptもFont入力に追従する。
 - Analysis Controls: dataset割当、fit範囲、bandpass、計算結果。bandpassは固定候補に加えてcustom値を入力できる。
+- Analysis Controlsは初期表示をData tabにし、plot/windowを選択したときは関連tab（UPS/LEIPS/Band/Data）へ同期する。
+- 各plotのcontext menuにはcursor range表示のtoggle、Reset view、Export PNG/SVGを置く。LEIPS PlotのFilter > Custom band passはmodalで任意値を入力する。
+- Window context menuとWindows menuからwindow position/sizeをdefault layoutへ戻せる。Windows menuには全window position/size resetも置く。
+- Band Diagramのplot viewportはProject stateに保存し、Project save/load/import/exportで復元する。
 - Top menu: Project/View/Windows/Helpを配置し、背景右クリックでも同じメニュー構成を表示する。ひとつのmenuを開いた状態で別menuにhoverした場合は、その列のmenuへ切り替える。Recent projectなどのsubmenuは対象行へhoverしたときだけ展開する。
 - Plot context menuはplot固有項目を先に出し、Reset view / Export PNG / Export SVGは末尾に配置する。
 

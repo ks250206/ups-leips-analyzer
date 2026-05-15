@@ -1,7 +1,7 @@
 import type { ScaleLinear } from "d3-scale";
 import { line } from "d3-shape";
 import type { FitRange, Point } from "../../domain/types";
-import type { PlotMarker, PlotRangeBand, PlotSeries } from "../plotData";
+import type { PlotAnnotation, PlotMarker, PlotRangeBand, PlotSeries } from "../plotData";
 import {
   formatTickParts,
   shouldRenderSeriesInXDomain,
@@ -315,6 +315,64 @@ export function CursorHandles({
                 startHandleDrag(event, geometry, xScale, band, handle.side, onRangeBandChange);
               }}
             />
+          </g>
+        );
+      })}
+    </g>
+  );
+}
+
+export function PlotAnnotations({
+  annotations,
+  geometry,
+  xScale,
+}: {
+  annotations: readonly PlotAnnotation[];
+  geometry: PlotGeometry;
+  xScale: ScaleLinear<number, number>;
+}) {
+  return (
+    <g>
+      {annotations.map((annotation, index) => {
+        if (annotation.type === "text") {
+          return (
+            <text
+              key={`text-${annotation.label}-${index}`}
+              fill={annotation.color}
+              fontSize={annotation.fontSize ?? 30}
+              fontWeight={700}
+              textAnchor={annotation.anchor ?? "middle"}
+              x={geometry.left + geometry.plotWidth * annotation.xFraction}
+              y={geometry.top + geometry.plotHeight * annotation.yFraction}
+            >
+              {annotation.label}
+            </text>
+          );
+        }
+        const x1 = xScale(annotation.x1);
+        const x2 = xScale(annotation.x2);
+        const y = geometry.top + geometry.plotHeight * annotation.yFraction;
+        return (
+          <g key={`arrow-${annotation.label}-${index}`}>
+            <line
+              markerEnd="url(#plot-arrow)"
+              stroke={annotation.color}
+              strokeWidth={2.5}
+              x1={x1}
+              x2={x2}
+              y1={y}
+              y2={y}
+            />
+            <text
+              fill={annotation.color}
+              fontSize={annotation.fontSize ?? 24}
+              fontWeight={700}
+              textAnchor="middle"
+              x={(x1 + x2) / 2}
+              y={y - 10}
+            >
+              {annotation.label}
+            </text>
           </g>
         );
       })}

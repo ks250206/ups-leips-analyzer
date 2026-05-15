@@ -11,7 +11,7 @@ import {
   recalculateProject,
   touchProject,
 } from "./projectModel";
-import { createDemoProject, createEmptyProject } from "./projectFactory";
+import { createDemoProject, createEmptyProject, defaultWindows } from "./projectFactory";
 import {
   deleteProject,
   findProjectByName,
@@ -20,7 +20,7 @@ import {
   loadProject,
   saveProject,
 } from "./projectDb";
-import type { ProjectRecord, ProjectSnapshot, WindowLayout } from "./projectTypes";
+import type { ProjectRecord, ProjectSnapshot, ProjectUiState, WindowLayout } from "./projectTypes";
 import { toggleUtilityWindow } from "./windowModel";
 
 export { createInitialProject } from "./projectFactory";
@@ -39,8 +39,13 @@ interface ProjectStore {
   setCustomBandpassEnergy: (energy: number) => void;
   setEfMinusEvbm: (value: number) => void;
   setActiveFitTarget: (target: FitTarget) => void;
+  setBandDiagramViewport: (viewport: ProjectUiState["bandDiagramViewport"]) => void;
   updateWindow: (id: string, patch: Partial<WindowLayout>) => void;
   focusWindow: (id: string) => void;
+  resetWindowPosition: (id: string) => void;
+  resetWindowSize: (id: string) => void;
+  resetAllWindowPositions: () => void;
+  resetAllWindowSizes: () => void;
   toggleHelpWindow: () => void;
   toggleProjectsWindow: () => void;
   recalculate: () => void;
@@ -171,6 +176,14 @@ export const useProjectStore = create<ProjectStore>((set, get) => ({
   setActiveFitTarget: (target) => {
     set({ activeFitTarget: target });
   },
+  setBandDiagramViewport: (viewport) => {
+    set((state) => ({
+      project: touchProject({
+        ...state.project,
+        ui: { ...state.project.ui, bandDiagramViewport: viewport },
+      }),
+    }));
+  },
   updateWindow: (id, patch) => {
     set((state) => ({
       project: touchProject({
@@ -194,6 +207,68 @@ export const useProjectStore = create<ProjectStore>((set, get) => ({
           windows: state.project.windows.map((window) =>
             window.id === id ? { ...window, zIndex: nextZ } : window,
           ),
+        }),
+      };
+    });
+  },
+  resetWindowPosition: (id) => {
+    set((state) => {
+      const defaults = defaultWindows();
+      return {
+        project: touchProject({
+          ...state.project,
+          windows: state.project.windows.map((window) => {
+            const defaultWindow = defaults.find((item) => item.id === window.id);
+            return window.id === id && defaultWindow
+              ? { ...window, x: defaultWindow.x, y: defaultWindow.y }
+              : window;
+          }),
+        }),
+      };
+    });
+  },
+  resetWindowSize: (id) => {
+    set((state) => {
+      const defaults = defaultWindows();
+      return {
+        project: touchProject({
+          ...state.project,
+          windows: state.project.windows.map((window) => {
+            const defaultWindow = defaults.find((item) => item.id === window.id);
+            return window.id === id && defaultWindow
+              ? { ...window, width: defaultWindow.width, height: defaultWindow.height }
+              : window;
+          }),
+        }),
+      };
+    });
+  },
+  resetAllWindowPositions: () => {
+    set((state) => {
+      const defaults = defaultWindows();
+      return {
+        project: touchProject({
+          ...state.project,
+          windows: state.project.windows.map((window) => {
+            const defaultWindow = defaults.find((item) => item.id === window.id);
+            return defaultWindow ? { ...window, x: defaultWindow.x, y: defaultWindow.y } : window;
+          }),
+        }),
+      };
+    });
+  },
+  resetAllWindowSizes: () => {
+    set((state) => {
+      const defaults = defaultWindows();
+      return {
+        project: touchProject({
+          ...state.project,
+          windows: state.project.windows.map((window) => {
+            const defaultWindow = defaults.find((item) => item.id === window.id);
+            return defaultWindow
+              ? { ...window, width: defaultWindow.width, height: defaultWindow.height }
+              : window;
+          }),
         }),
       };
     });

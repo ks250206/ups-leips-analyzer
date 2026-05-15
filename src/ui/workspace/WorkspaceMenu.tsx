@@ -93,6 +93,10 @@ export function buildMenuGroups(input: {
     loadProject: () => void;
     loadSavedProject: (id: string) => void;
     newProject: () => void;
+    resetAllWindowPositions: () => void;
+    resetAllWindowSizes: () => void;
+    resetWindowPosition: (id: string) => void;
+    resetWindowSize: (id: string) => void;
     resetWorkspaceView: () => void;
     saveAsProject: () => void;
     saveCurrentProject: () => void;
@@ -100,11 +104,36 @@ export function buildMenuGroups(input: {
     toggleProjectsWindow: () => void;
   };
 }): MenuGroup[] {
-  const windowsItems: ContextMenuItem[] = input.windows.map((window) => ({
-    type: "item",
-    label: window.title,
-    action: () => input.actions.focusWindow(window.id),
-  }));
+  const windowsItems: ContextMenuItem[] = [
+    {
+      type: "item",
+      label: "Reset all window positions",
+      action: input.actions.resetAllWindowPositions,
+    },
+    { type: "item", label: "Reset all window sizes", action: input.actions.resetAllWindowSizes },
+    { type: "separator" },
+    ...input.windows.map((window) => ({
+      type: "submenu" as const,
+      label: window.title,
+      items: [
+        {
+          type: "item" as const,
+          label: "Bring to front",
+          action: () => input.actions.focusWindow(window.id),
+        },
+        {
+          type: "item" as const,
+          label: "Reset position",
+          action: () => input.actions.resetWindowPosition(window.id),
+        },
+        {
+          type: "item" as const,
+          label: "Reset size",
+          action: () => input.actions.resetWindowSize(window.id),
+        },
+      ],
+    })),
+  ];
   if (!input.windows.some((window) => window.id === "help")) {
     windowsItems.push({
       type: "item",

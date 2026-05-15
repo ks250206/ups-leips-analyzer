@@ -10,6 +10,8 @@ import {
 
 export function BandDiagramWindow() {
   const band = useProjectStore((state) => state.project.analysis.band);
+  const persistedViewport = useProjectStore((state) => state.project.ui?.bandDiagramViewport);
+  const setBandDiagramViewport = useProjectStore((state) => state.setBandDiagramViewport);
   const [upsScale, setUpsScale] = useState(1);
   const [upsOffset, setUpsOffset] = useState(0);
   const [leipsScale, setLeipsScale] = useState(1);
@@ -30,7 +32,7 @@ export function BandDiagramWindow() {
   const bandDataSignature = useMemo(() => (band ? bandPlotDataSignature(band) : undefined), [band]);
   const [xMin, setXMin] = useState(bandXDomain.min);
   const [xMax, setXMax] = useState(bandXDomain.max);
-  const [viewport, setViewport] = useState<BandViewport>({});
+  const [viewport, setViewport] = useState<BandViewport>(persistedViewport ?? {});
   const applyAutoScale = useCallback(() => {
     if (!band) {
       setViewport({});
@@ -47,7 +49,8 @@ export function BandDiagramWindow() {
     setXMin(Number(next.x.min.toFixed(3)));
     setXMax(Number(next.x.max.toFixed(3)));
     setViewport(next);
-  }, [band, bandXDomain, leipsOffset, leipsScale, upsOffset, upsScale]);
+    setBandDiagramViewport(next);
+  }, [band, bandXDomain, leipsOffset, leipsScale, setBandDiagramViewport, upsOffset, upsScale]);
 
   useEffect(() => {
     if (!band || !bandDataSignature) {
@@ -55,27 +58,32 @@ export function BandDiagramWindow() {
       setXMin(bandXDomain.min);
       setXMax(bandXDomain.max);
       setViewport({});
+      setBandDiagramViewport(undefined);
       return;
     }
     if (lastBandDataSignature.current === bandDataSignature) {
       return;
     }
     lastBandDataSignature.current = bandDataSignature;
-    const next = createBandAutoViewport({
-      band,
-      xDomain: bandXDomain,
-      upsScale: 1,
-      upsOffset: 0,
-      leipsScale: 1,
-      leipsOffset: 0,
-    });
-    setXMin(bandXDomain.min);
-    setXMax(bandXDomain.max);
+    const next =
+      persistedViewport ??
+      createBandAutoViewport({
+        band,
+        xDomain: bandXDomain,
+        upsScale: 1,
+        upsOffset: 0,
+        leipsScale: 1,
+        leipsOffset: 0,
+      });
+    setXMin(next.x?.min ?? bandXDomain.min);
+    setXMax(next.x?.max ?? bandXDomain.max);
     setViewport(next);
-  }, [band, bandDataSignature, bandXDomain]);
+    setBandDiagramViewport(next);
+  }, [band, bandDataSignature, bandXDomain, persistedViewport, setBandDiagramViewport]);
 
   const handleViewportChange = (next: BandViewport) => {
     setViewport(next);
+    setBandDiagramViewport(next);
     if (next.x) {
       setXMin(Number(next.x.min.toFixed(3)));
       setXMax(Number(next.x.max.toFixed(3)));
