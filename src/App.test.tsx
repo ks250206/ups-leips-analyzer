@@ -256,7 +256,7 @@ describe("App", () => {
     fireEvent.contextMenu(screen.getByLabelText("REELS plot"));
     expect(screen.getByText("REELS BG mode")).toBeTruthy();
     fireEvent.mouseEnter(screen.getByText("REELS BG mode"));
-    await user.click(screen.getByText("Single point y=const"));
+    expect(screen.getByText("✓ Single point y=const")).toBeTruthy();
     expect(screen.getByLabelText("BG single point cursor")).toBeTruthy();
     expect(screen.queryByText(/Eg \d+\.\d+ eV/)).toBeNull();
     expect(document.body.textContent).toContain("Eg=");

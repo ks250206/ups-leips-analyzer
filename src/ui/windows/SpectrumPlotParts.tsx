@@ -21,6 +21,7 @@ export function PlotAxes({
   largeAxisLabels,
   scales,
   xLabel,
+  xLabelBottomPadding,
   yLabel,
   yRightLabel,
 }: {
@@ -29,6 +30,7 @@ export function PlotAxes({
   largeAxisLabels: boolean;
   scales: PlotScales;
   xLabel: string;
+  xLabelBottomPadding?: number;
   yLabel: string;
   yRightLabel?: string;
 }) {
@@ -122,7 +124,7 @@ export function PlotAxes({
         fontWeight={labelWeight}
         textAnchor="middle"
         x={geometry.left + geometry.plotWidth / 2}
-        y={geometry.plotBottom + (largeAxisLabels ? 54 : 28)}
+        y={geometry.height - (xLabelBottomPadding ?? (largeAxisLabels ? 8 : 4))}
       >
         <AxisLabelText label={xLabel} largeAxisLabels={largeAxisLabels} />
       </text>

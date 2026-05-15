@@ -110,6 +110,7 @@ export function createInitialAnalysis(datasets: readonly SpectrumDataset[]): Ana
         edgeRange: DEFAULT_FIT_RANGES.reelsEdge,
         backgroundRange: DEFAULT_FIT_RANGES.reelsBackground,
         incidentEnergy: base.reelsIncidentEnergy,
+        backgroundMode: "single-point",
       })
     : undefined;
 

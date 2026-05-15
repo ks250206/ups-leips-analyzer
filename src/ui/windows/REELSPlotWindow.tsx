@@ -27,7 +27,7 @@ export function REELSPlotWindow() {
   const reels = project.analysis.reels;
   const persistedViewport = project.ui?.reelsPlotViewport ?? {};
   const persistedViewportKey = JSON.stringify(persistedViewport);
-  const reelsBackgroundMode = project.ui?.reelsBackgroundMode ?? "fit-range";
+  const reelsBackgroundMode = project.ui?.reelsBackgroundMode ?? "single-point";
   const lossDataset = useMemo(
     () =>
       reelsDataset

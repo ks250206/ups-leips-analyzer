@@ -62,6 +62,7 @@ interface SpectrumPlotProps {
   hideYTicks?: boolean;
   largeAxisLabels?: boolean;
   marginVariant?: "normal" | "leips";
+  xLabelBottomPadding?: number;
   series: PlotSeries[];
   markers?: PlotMarker[];
   rangeBands?: PlotRangeBand[];
@@ -84,6 +85,7 @@ export function SpectrumPlot({
   hideYTicks = false,
   largeAxisLabels = false,
   marginVariant = "normal",
+  xLabelBottomPadding,
   series,
   markers = EMPTY_MARKERS,
   rangeBands = EMPTY_RANGE_BANDS,
@@ -329,6 +331,7 @@ export function SpectrumPlot({
           largeAxisLabels={largeAxisLabels}
           scales={scales}
           xLabel={xLabel}
+          xLabelBottomPadding={xLabelBottomPadding}
           yLabel={yLabel}
           yRightLabel={yRightLabel}
         />

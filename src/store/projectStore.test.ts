@@ -200,6 +200,16 @@ describe("project store", () => {
     expect(normalized.windows.find((window) => window.id === "reels")?.y).toBe(1110);
   });
 
+  test("normalizes missing REELS background mode to single point", () => {
+    const project = useProjectStore.getState().project;
+    const normalized = normalizeProject({
+      ...project,
+      ui: { ...project.ui, reelsBackgroundMode: undefined },
+    });
+
+    expect(normalized.ui?.reelsBackgroundMode).toBe("single-point");
+  });
+
   test("stores per-IP applied voltage and fit ranges", () => {
     const ipId = useProjectStore.getState().project.analysis.selection.upsIpDatasetIds?.[0];
     expect(ipId).toBeDefined();

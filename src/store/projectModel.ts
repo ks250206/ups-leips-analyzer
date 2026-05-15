@@ -95,7 +95,7 @@ export function recalculateProject(project: ProjectSnapshot): ProjectSnapshot {
           edgeRange: analysis.fitRanges.reelsEdge,
           backgroundRange: analysis.fitRanges.reelsBackground,
           incidentEnergy: analysis.reelsIncidentEnergy,
-          backgroundMode: project.ui?.reelsBackgroundMode,
+          backgroundMode: project.ui?.reelsBackgroundMode ?? "single-point",
         }),
       )
     : undefined;
@@ -147,6 +147,7 @@ export function normalizeProject(project: ProjectSnapshot): ProjectSnapshot {
     windows: normalizeWindows(project.windows),
     ui: {
       ...project.ui,
+      reelsBackgroundMode: project.ui?.reelsBackgroundMode ?? "single-point",
       sampleInfo: normalizeSampleInfo(project.ui?.sampleInfo),
     },
     analysis: {

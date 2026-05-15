@@ -171,6 +171,7 @@ export function LEIPSPlotWindow() {
         rangeBands={rangeBands}
         annotations={annotations}
         marginVariant="leips"
+        xLabelBottomPadding={12}
         xDirection="normal"
         viewportRequest={{
           id: `${project.id}-${project.analysis.selection.leipsDatasetId ?? "none"}-${persistedViewportKey}`,
@@ -323,6 +324,7 @@ export function LEIPSEvacPlotWindow() {
       markers={markers}
       rangeBands={rangeBands}
       marginVariant="leips"
+      xLabelBottomPadding={12}
       xDirection="reverse"
       viewportRequest={{
         id: `${project.id}-${project.analysis.selection.leipsDatasetId ?? "none"}-${persistedViewportKey}`,
