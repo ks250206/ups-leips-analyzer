@@ -1,0 +1,83 @@
+import type { ReactNode } from "react";
+import type { IgorBandModel } from "./bandDiagramModel";
+
+export function BandVerticalLine({
+  model,
+  value,
+  label,
+  labelY,
+  fontSize,
+}: {
+  model: IgorBandModel;
+  value: number;
+  label: string;
+  labelY: number;
+  fontSize: number;
+}) {
+  const x = model.xScale(value);
+  return (
+    <g>
+      <line
+        stroke="black"
+        strokeDasharray="14 10"
+        strokeWidth={3}
+        x1={x}
+        x2={x}
+        y1={model.plotTop + 90}
+        y2={model.plotBottom - 8}
+      />
+      <text
+        fill="black"
+        fontSize={fontSize}
+        textAnchor="middle"
+        transform={`rotate(90 ${x + 12} ${labelY})`}
+        x={x + 12}
+        y={labelY}
+      >
+        {label}
+      </text>
+    </g>
+  );
+}
+
+export function BandArrow({
+  model,
+  x1,
+  x2,
+  y,
+  label,
+  arrowId,
+  fontSize,
+  arrowScale,
+}: {
+  model: IgorBandModel;
+  x1: number;
+  x2: number;
+  y: number;
+  label: ReactNode;
+  arrowId: string;
+  fontSize: number;
+  arrowScale: number;
+}) {
+  const left = model.xScale(x1);
+  const right = model.xScale(x2);
+  const start = Math.min(left, right);
+  const end = Math.max(left, right);
+  return (
+    <g>
+      <line
+        markerEnd={`url(#${arrowId})`}
+        markerStart={`url(#${arrowId})`}
+        stroke="black"
+        strokeWidth={Math.max(1, 3 * arrowScale)}
+        x1={start}
+        x2={end}
+        y1={y}
+        y2={y}
+      />
+      <text fill="black" fontSize={fontSize} textAnchor="middle" x={(start + end) / 2} y={y - 18}>
+        {label}
+      </text>
+    </g>
+  );
+}

@@ -3,9 +3,11 @@ import {
   bandPlotDataSignature,
   createBandAutoViewport,
   createIgorBandModel,
+} from "./bandDiagramModel";
+import {
   nextIgorBandViewportAfterDrag,
   nextIgorBandViewportAfterWheel,
-} from "./BandDiagramWindow";
+} from "./bandDiagramInteraction";
 
 const BAND = {
   efMinusEvbm: 1,
