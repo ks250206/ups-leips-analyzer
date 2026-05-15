@@ -75,9 +75,10 @@ export function LEIPSPlotWindow() {
         ...project.analysis.fitRanges.leetDerPeak,
         label: "peak",
         color: "#2563eb",
+        cursorSeriesName: leetDerDataset?.name,
       },
     ],
-    [activeFitTarget, project.analysis.fitRanges.leetDerPeak],
+    [activeFitTarget, leetDerDataset, project.analysis.fitRanges.leetDerPeak],
   );
   const contextItems = useMemo<ContextMenuItem[]>(
     () => [

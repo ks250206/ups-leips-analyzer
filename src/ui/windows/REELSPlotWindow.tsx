@@ -6,6 +6,7 @@ import { formatNumber } from "../format";
 import {
   datasetSeries,
   lineFitSeries,
+  type PlotAnnotation,
   type PlotMarker,
   type PlotRangeBand,
   type PlotSeries,
@@ -70,9 +71,33 @@ export function REELSPlotWindow() {
       reels
         ? [
             {
+              x: 0,
+              label: "0 eV",
+              color: "#111827",
+            },
+            {
               x: reels.bandGap,
               label: `Eg ${formatNumber(reels.bandGap, 2)} eV`,
               color: "#111827",
+            },
+          ]
+        : [],
+    [reels],
+  );
+
+  const annotations = useMemo<PlotAnnotation[]>(
+    () =>
+      reels
+        ? [
+            {
+              type: "x-arrow",
+              label: `Eg=${formatNumber(reels.bandGap, 2)} eV`,
+              color: "#111827",
+              x1: 0,
+              x2: reels.bandGap,
+              yFraction: 0.32,
+              fontSize: 14,
+              strokeWidth: 1.3,
             },
           ]
         : [],
@@ -109,6 +134,7 @@ export function REELSPlotWindow() {
       series={series}
       markers={markers}
       rangeBands={rangeBands}
+      annotations={annotations}
       xDirection="reverse"
       onSelectRange={(range) => {
         if (activeFitTarget === "reels-bg" || activeFitTarget === "reels-edge") {

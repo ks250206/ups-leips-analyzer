@@ -11,6 +11,7 @@ import { exportProjectGzip, exportProjectJson, importProjectBytes } from "../sto
 import { useProjectStore } from "../store/projectStore";
 import type { ProjectRecord, WindowLayout } from "../store/projectTypes";
 import { ContextMenu, useContextMenu } from "./ContextMenu";
+import { ToastViewport, useToastStore } from "./Toast";
 import { buildMenuGroups, TopBar } from "./workspace/WorkspaceMenu";
 import { DeleteProjectModal, LoadProjectModal, SaveAsModal } from "./workspace/WorkspaceModals";
 import {
@@ -50,6 +51,7 @@ export function Workspace() {
   const [loadProjectOpen, setLoadProjectOpen] = useState(false);
   const importInputRef = useRef<HTMLInputElement>(null);
   const [recentProjects, setRecentProjects] = useState<ProjectRecord[]>([]);
+  const pushToast = useToastStore((state) => state.pushToast);
   const panStart = useRef<{ x: number; y: number; originX: number; originY: number } | undefined>(
     undefined,
   );
@@ -68,21 +70,35 @@ export function Workspace() {
     void listRecentProjects().then(setRecentProjects);
   };
   const exportProject = () => {
-    const compressed = exportProjectGzip(project);
-    const blob = new Blob([compressed.slice().buffer as ArrayBuffer], { type: "application/gzip" });
-    const url = URL.createObjectURL(blob);
-    const anchor = document.createElement("a");
-    anchor.href = url;
-    anchor.download = `${project.name.replace(/[^a-z0-9]+/gi, "-").toLowerCase()}.upsleips.json.gz`;
-    anchor.click();
-    URL.revokeObjectURL(url);
+    try {
+      const compressed = exportProjectGzip(project);
+      const blob = new Blob([compressed.slice().buffer as ArrayBuffer], {
+        type: "application/gzip",
+      });
+      const url = URL.createObjectURL(blob);
+      const anchor = document.createElement("a");
+      anchor.href = url;
+      anchor.download = `${project.name
+        .replace(/[^a-z0-9]+/gi, "-")
+        .toLowerCase()}.upsleips.json.gz`;
+      anchor.click();
+      URL.revokeObjectURL(url);
+      pushToast("Project exported.", "success");
+    } catch (caught) {
+      pushToast(errorMessage("Project export failed", caught), "error");
+    }
   };
   const importProjectFile = async (files: FileList | null) => {
     const file = files?.[0];
     if (!file) {
       return;
     }
-    importProject(exportProjectJson(importProjectBytes(await file.arrayBuffer())));
+    try {
+      importProject(exportProjectJson(importProjectBytes(await file.arrayBuffer())));
+      pushToast(`Project imported from ${file.name}.`, "success");
+    } catch (caught) {
+      pushToast(errorMessage("Project import failed", caught), "error");
+    }
   };
   const menuGroups = buildMenuGroups({
     project,
@@ -95,7 +111,13 @@ export function Workspace() {
       importProject: () => importInputRef.current?.click(),
       loadProject: () => setLoadProjectOpen(true),
       loadSavedProject: (id) => {
-        void loadSavedProject(id);
+        void loadSavedProject(id)
+          .then(() => {
+            pushToast("Project loaded.", "success");
+          })
+          .catch((caught: unknown) => {
+            pushToast(errorMessage("Project load failed", caught), "error");
+          });
       },
       newProject,
       resetWorkspaceView,
@@ -105,7 +127,14 @@ export function Workspace() {
       resetWindowSize,
       saveAsProject: () => setSaveAsOpen(true),
       saveCurrentProject: () => {
-        void saveCurrentProject().then(refreshRecentProjects);
+        void saveCurrentProject()
+          .then(() => {
+            refreshRecentProjects();
+            pushToast("Project saved.", "success");
+          })
+          .catch((caught: unknown) => {
+            pushToast(errorMessage("Project save failed", caught), "error");
+          });
       },
       toggleHelpWindow,
       toggleProjectsWindow,
@@ -259,10 +288,15 @@ export function Workspace() {
           defaultName={project.name}
           onCancel={() => setSaveAsOpen(false)}
           onSave={(name) => {
-            void saveProjectAs(name).then(() => {
-              refreshRecentProjects();
-              setSaveAsOpen(false);
-            });
+            void saveProjectAs(name)
+              .then(() => {
+                refreshRecentProjects();
+                setSaveAsOpen(false);
+                pushToast("Project saved.", "success");
+              })
+              .catch((caught: unknown) => {
+                pushToast(errorMessage("Project save failed", caught), "error");
+              });
           }}
         />
       ) : null}
@@ -283,15 +317,25 @@ export function Workspace() {
           projects={recentProjects}
           onCancel={() => setLoadProjectOpen(false)}
           onLoad={(id) => {
-            void loadSavedProject(id).then(() => {
-              refreshRecentProjects();
-              setLoadProjectOpen(false);
-            });
+            void loadSavedProject(id)
+              .then(() => {
+                refreshRecentProjects();
+                setLoadProjectOpen(false);
+                pushToast("Project loaded.", "success");
+              })
+              .catch((caught: unknown) => {
+                pushToast(errorMessage("Project load failed", caught), "error");
+              });
           }}
         />
       ) : null}
+      <ToastViewport />
     </main>
   );
+}
+
+function errorMessage(prefix: string, caught: unknown): string {
+  return `${prefix}: ${caught instanceof Error ? caught.message : String(caught)}`;
 }
 
 function tabForWindowKind(kind: WindowLayout["kind"] | undefined): AnalysisControlTab | undefined {

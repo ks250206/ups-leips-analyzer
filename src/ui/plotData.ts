@@ -33,6 +33,7 @@ export interface PlotRangeBand {
   label: string;
   color: string;
   cursorLabels?: readonly [string, string];
+  cursorSeriesName?: string;
 }
 
 export type PlotAnnotation =

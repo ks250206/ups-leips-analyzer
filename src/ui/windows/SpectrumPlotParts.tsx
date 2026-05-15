@@ -515,15 +515,29 @@ function seriesForCursorBand(
   band: PlotRangeBand,
 ): PlotSeries | undefined {
   const candidates = series.filter((item) => item.affectsScale !== false && item.points.length > 0);
+  if (band.cursorSeriesName) {
+    const expected = normalizeSeriesName(band.cursorSeriesName);
+    const selected = candidates.find((item) => normalizeSeriesName(item.name) === expected);
+    if (selected) {
+      return selected;
+    }
+  }
   if (band.id?.startsWith("leet-der")) {
     return (
-      candidates.find((item) => item.name.toLowerCase().includes("leet(der)")) ?? candidates[0]
+      candidates.find((item) => {
+        const name = normalizeSeriesName(item.name);
+        return name.includes("leetder") || (name.includes("leet") && name.includes("der"));
+      }) ?? candidates[0]
     );
   }
   if (band.id?.startsWith("leips")) {
     return candidates.find((item) => item.yAxis === "right") ?? candidates[0];
   }
   return candidates[0];
+}
+
+function normalizeSeriesName(name: string): string {
+  return name.toLowerCase().replace(/[^a-z0-9]+/g, "");
 }
 
 function cursorYForValue(series: PlotSeries | undefined, x: number): number {

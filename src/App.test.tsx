@@ -3,6 +3,17 @@ import userEvent from "@testing-library/user-event";
 import { afterEach, beforeEach, describe, expect, test } from "vite-plus/test";
 import App from "./App";
 import { createInitialProject, useProjectStore } from "./store/projectStore";
+import { useToastStore } from "./ui/Toast";
+
+const CSV = `2
+no area description
+VB
+1,1
+file#
+6.0,16
+5.9,15
+5.8,14
+`;
 
 describe("App", () => {
   beforeEach(() => {
@@ -10,6 +21,7 @@ describe("App", () => {
       activeFitTarget: "ups-vb-edge",
       project: createInitialProject(),
     });
+    useToastStore.setState({ messages: [] });
   });
 
   afterEach(() => {
@@ -38,6 +50,19 @@ describe("App", () => {
     expect(screen.getByText("Dropdown file field for MultiPak CSVs.")).toBeTruthy();
     expect(screen.getAllByText("Load CSV data to render this plot.").length).toBeGreaterThan(0);
     expect(screen.getByRole("button", { name: /Load CSVs/ })).toBeTruthy();
+  });
+
+  test("shows a toast after loading CSV datasets", async () => {
+    const user = userEvent.setup();
+    render(<App />);
+
+    await user.upload(
+      screen.getByLabelText("Load CSV files"),
+      new File([CSV], "toast_UPS_VB.csv", { type: "text/csv" }),
+    );
+
+    expect(await screen.findByText("Loaded 1 dataset.")).toBeTruthy();
+    expect(screen.getAllByText("toast_UPS_VB").length).toBeGreaterThan(0);
   });
 
   test("keeps the empty workspace interactive", async () => {
@@ -140,6 +165,7 @@ describe("App", () => {
     expect(screen.getByText("Band pass 1_4.77 eV ✓")).toBeTruthy();
     await user.click(screen.getByText("Custom band pass"));
     expect(screen.getByRole("heading", { name: "Custom band pass" })).toBeTruthy();
+    expect(screen.getAllByText(/Eg=/).length).toBeGreaterThan(0);
   });
 
   test("focuses analysis tabs from related plot windows", async () => {

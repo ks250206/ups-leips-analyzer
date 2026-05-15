@@ -2,11 +2,13 @@ import { ChevronDown, FileUp } from "lucide-react";
 import { useRef, useState } from "react";
 import { parseMultiPakCsv } from "../../io/multipakCsv";
 import { useProjectStore } from "../../store/projectStore";
+import { useToastStore } from "../Toast";
 
 export function DataBrowser() {
   const project = useProjectStore((state) => state.project);
   const addDatasets = useProjectStore((state) => state.addDatasets);
   const selectDataset = useProjectStore((state) => state.selectDataset);
+  const pushToast = useToastStore((state) => state.pushToast);
   const csvInputRef = useRef<HTMLInputElement>(null);
   const [error, setError] = useState<string>();
 
@@ -20,9 +22,13 @@ export function DataBrowser() {
       const parsed = await Promise.all(
         files.map(async (file) => parseMultiPakCsv(await file.text(), { sourceName: file.name })),
       );
-      addDatasets(parsed.flat());
+      const datasets = parsed.flat();
+      addDatasets(datasets);
+      pushToast(`Loaded ${datasets.length} dataset${datasets.length === 1 ? "" : "s"}.`, "success");
     } catch (caught) {
-      setError(caught instanceof Error ? caught.message : String(caught));
+      const message = caught instanceof Error ? caught.message : String(caught);
+      setError(message);
+      pushToast(`CSV load failed: ${message}`, "error");
     }
   }
 
