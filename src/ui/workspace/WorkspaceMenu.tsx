@@ -20,6 +20,7 @@ export function TopBar({
 }) {
   const project = useProjectStore((state) => state.project);
   const activeCatalog = useProjectStore((state) => state.activeCatalog);
+  const sampleInfo = project.ui?.sampleInfo;
   const { menu, openMenu, closeMenu } = useContextMenu();
   const [activeMenu, setActiveMenu] = useState<string>();
   const buttonRefs = useRef(new Map<string, HTMLButtonElement>());
@@ -36,9 +37,9 @@ export function TopBar({
 
   return (
     <header className="absolute inset-x-0 top-0 z-50 flex h-10 items-center justify-between border-b border-slate-300 bg-slate-950 px-3 text-sm text-slate-100">
-      <div className="flex items-center gap-3">
+      <div className="flex min-w-0 items-center gap-3">
         <Activity size={16} className="text-cyan-300" />
-        <h1 className="font-semibold">UPS-LEIPS Analyzer</h1>
+        <h1 className="shrink-0 font-semibold">UPS-LEIPS Analyzer</h1>
         {menuGroups.map((group) => (
           <button
             key={group.label}
@@ -65,12 +66,17 @@ export function TopBar({
             {group.label}
           </button>
         ))}
-        <span className="rounded bg-slate-800 px-2 py-0.5 text-xs text-slate-300">
-          {activeCatalog.name}
-        </span>
-        <span className="rounded bg-slate-800 px-2 py-0.5 text-xs text-slate-300">
-          {project.name}
-        </span>
+        <TopBarBadge label="Catalog" value={activeCatalog.name} />
+        <TopBarBadge label="Project" value={project.name} />
+        {sampleInfo?.sampleName ? (
+          <TopBarBadge label="Sample" value={sampleInfo.sampleName} />
+        ) : null}
+        {sampleInfo?.sampleState ? (
+          <TopBarBadge label="State" value={sampleInfo.sampleState} />
+        ) : null}
+        {sampleInfo?.nominalComposition ? (
+          <TopBarBadge label="Composition" value={sampleInfo.nominalComposition} />
+        ) : null}
       </div>
       <div className="flex items-center gap-2">
         <span className="rounded border border-slate-700 px-2 py-1 text-xs text-slate-300">
@@ -79,6 +85,20 @@ export function TopBar({
       </div>
       <ContextMenu menu={menu} onClose={closeTopMenu} />
     </header>
+  );
+}
+
+function TopBarBadge({ label, value }: { label: string; value: string }) {
+  return (
+    <span
+      className="flex max-w-[220px] items-center overflow-hidden rounded border border-slate-700 bg-slate-900 text-xs shadow-sm"
+      title={`${label}: ${value}`}
+    >
+      <span className="shrink-0 border-r border-slate-700 bg-slate-800 px-1.5 py-0.5 font-semibold text-slate-400">
+        {label}
+      </span>
+      <span className="truncate px-2 py-0.5 text-slate-100">{value}</span>
+    </span>
   );
 }
 

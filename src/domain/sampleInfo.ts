@@ -87,7 +87,7 @@ export const SAMPLE_INFO_FIELDS: readonly SampleInfoFieldDefinition[] = [
   { field: "sampleName", label: "試料名", kind: "text", placeholder: "Sample-001" },
   {
     field: "sampleState",
-    label: "sample state",
+    label: "試料状態表記",
     kind: "text",
     placeholder: "initial, 1st charge, Ar etched",
   },

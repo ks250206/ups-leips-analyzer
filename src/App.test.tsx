@@ -44,7 +44,7 @@ describe("App", () => {
     expect(screen.getByText("Sample Info")).toBeTruthy();
     const tabButtons = screen.getAllByRole("button").map((button) => button.textContent ?? "");
     expect(tabButtons.indexOf("Sample")).toBeLessThan(tabButtons.indexOf("Data"));
-    expect(screen.getByLabelText("sample state")).toBeTruthy();
+    expect(screen.getByLabelText("試料状態表記")).toBeTruthy();
     expect(screen.getAllByText("UPS VB").length).toBeGreaterThan(0);
     expect(screen.getAllByText("UPS IP").length).toBeGreaterThan(0);
     expect(screen.getAllByText("REELS Plot").length).toBeGreaterThan(0);
@@ -104,6 +104,8 @@ describe("App", () => {
     expect(screen.getByRole("button", { name: "Catalogs" })).toBeTruthy();
     expect(screen.getByRole("button", { name: "Projects" })).toBeTruthy();
     expect(screen.queryByRole("button", { name: "Project" })).toBeNull();
+    expect(screen.getByText("Catalog")).toBeTruthy();
+    expect(screen.getByText("Project")).toBeTruthy();
     expect(screen.getByText("Default Catalog")).toBeTruthy();
 
     await user.click(screen.getByRole("button", { name: "Catalogs" }));
@@ -278,10 +280,17 @@ describe("App", () => {
     expect(screen.getByText("Sample Info")).toBeTruthy();
     expect(screen.queryByRole("button", { name: "Sample Info" })).toBeNull();
     expect(screen.getByPlaceholderText("initial, 1st charge, Ar etched")).toBeTruthy();
-    expect(screen.getByLabelText("sample state").getAttribute("autocomplete")).toBe("off");
+    expect(screen.getByLabelText("試料状態表記").getAttribute("autocomplete")).toBe("off");
+    await user.type(screen.getByLabelText("試料名"), "LPSCl-001");
     await user.type(screen.getByLabelText("組成(仕込)"), "Li6PS5Cl");
     expect(screen.getByDisplayValue("Li, P, S, Cl")).toBeTruthy();
-    await user.type(screen.getByLabelText("sample state"), "pellet");
+    await user.type(screen.getByLabelText("試料状態表記"), "initial");
+    expect(screen.getAllByText("Sample").length).toBeGreaterThan(1);
+    expect(screen.getByText("LPSCl-001")).toBeTruthy();
+    expect(screen.getByText("State")).toBeTruthy();
+    expect(screen.getByText("initial")).toBeTruthy();
+    expect(screen.getByText("Composition")).toBeTruthy();
+    expect(screen.getByText("Li6PS5Cl")).toBeTruthy();
     const basePressureInput = screen.getByLabelText("到達真空度 (Pa)");
     await user.type(basePressureInput, "abc");
     expect(screen.getByText("Enter a positive pressure value, e.g. 6.7E-8.")).toBeTruthy();

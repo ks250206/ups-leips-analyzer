@@ -157,6 +157,7 @@ describe("project store", () => {
     expect(useProjectStore.getState().project.ui?.cursorStyles?.upsIp).toBe("range");
     expect(useProjectStore.getState().project.ui?.sampleInfo?.sampleName).toBe("sample-a");
     expect(useProjectStore.getState().project.ui?.sampleInfo?.sampleState).toBe("pellet");
+    expect(useProjectStore.getState().project.ui?.sampleInfo?.nominalComposition).toBe("Li6PS5Cl");
     expect(useProjectStore.getState().project.ui?.sampleInfo?.batteryIonSpecies).toEqual([
       "Li+",
       "Na+",
