@@ -1,4 +1,5 @@
 export const DEFAULT_PHOTON_ENERGY_EV = 21.22;
+export const CUSTOM_BANDPASS_TYPE = 0;
 
 export const BANDPASS_OPTIONS = [
   { type: 1, label: "1_4.77 eV", energy: 4.77 },

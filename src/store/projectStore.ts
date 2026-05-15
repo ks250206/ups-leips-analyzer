@@ -5,7 +5,7 @@ import {
   convertBiasToVacuumEnergy,
   createBandDiagram,
 } from "../domain/analysis";
-import { bandpassEnergy } from "../domain/constants";
+import { CUSTOM_BANDPASS_TYPE, bandpassEnergy } from "../domain/constants";
 import { createDemoDatasets, createInitialAnalysis, DEFAULT_FIT_RANGES } from "../domain/demoData";
 import type { AnalysisState, FitRange, FitTarget, Point, SpectrumDataset } from "../domain/types";
 import {
@@ -28,6 +28,7 @@ interface ProjectStore {
   assignDataset: (slot: keyof AnalysisState["selection"], datasetId: string) => void;
   setFitRange: (target: FitTarget, range: FitRange) => void;
   setBandpassType: (type: number) => void;
+  setCustomBandpassEnergy: (energy: number) => void;
   setEfMinusEvbm: (value: number) => void;
   setActiveFitTarget: (target: FitTarget) => void;
   updateWindow: (id: string, patch: Partial<WindowLayout>) => void;
@@ -63,6 +64,7 @@ export const useProjectStore = create<ProjectStore>((set, get) => ({
         state.project.analysis.fitRanges,
         datasets,
         state.project.analysis.bandpassType,
+        state.project.analysis.customBandpassEnergy,
       );
       const project = touchProject({
         ...state.project,
@@ -85,6 +87,7 @@ export const useProjectStore = create<ProjectStore>((set, get) => ({
         state.project.analysis.fitRanges,
         [],
         state.project.analysis.bandpassType,
+        state.project.analysis.customBandpassEnergy,
       );
       const project = touchProject({
         ...state.project,
@@ -116,10 +119,34 @@ export const useProjectStore = create<ProjectStore>((set, get) => ({
         state.project.analysis.fitRanges,
         [],
         type,
+        state.project.analysis.customBandpassEnergy,
       );
       const project = touchProject({
         ...state.project,
         analysis: { ...state.project.analysis, bandpassType: type, fitRanges },
+      });
+      return { project: recalculateProject(project) };
+    });
+  },
+  setCustomBandpassEnergy: (energy) => {
+    set((state) => {
+      const customBandpassEnergy = Number.isFinite(energy) ? energy : 0;
+      const fitRanges = autoFitRanges(
+        state.project.datasets,
+        state.project.analysis.selection,
+        state.project.analysis.fitRanges,
+        [],
+        CUSTOM_BANDPASS_TYPE,
+        customBandpassEnergy,
+      );
+      const project = touchProject({
+        ...state.project,
+        analysis: {
+          ...state.project.analysis,
+          bandpassType: CUSTOM_BANDPASS_TYPE,
+          customBandpassEnergy,
+          fitRanges,
+        },
       });
       return { project: recalculateProject(project) };
     });
@@ -305,6 +332,7 @@ export function recalculateProject(project: ProjectSnapshot): ProjectSnapshot {
             edgeRange: analysis.fitRanges.leipsEdge,
             backgroundRange: analysis.fitRanges.leipsBackground,
             bandpassType: analysis.bandpassType,
+            bandpassEnergyEv: resolvedBandpassEnergy(analysis),
           }),
         )
       : undefined;
@@ -376,6 +404,7 @@ function normalizeProject(project: ProjectSnapshot): ProjectSnapshot {
     ...project,
     analysis: {
       ...project.analysis,
+      customBandpassEnergy: project.analysis.customBandpassEnergy ?? 4.77,
       fitRanges: {
         ...DEFAULT_FIT_RANGES,
         ...project.analysis.fitRanges,
@@ -432,6 +461,7 @@ function autoFitRanges(
   current: AnalysisState["fitRanges"],
   preferred: readonly SpectrumDataset[],
   bandpassType: number,
+  customBandpassEnergy?: number,
 ): AnalysisState["fitRanges"] {
   const leetDerDataset =
     preferred.find((dataset) => dataset.kind === "leet-der") ??
@@ -446,7 +476,12 @@ function autoFitRanges(
       : current.leetDerPeak;
   const leipsEvacPoints =
     leetDerDataset && leipsDataset
-      ? estimateLeipsEvacPoints(leetDerDataset, leipsDataset, leetDerPeak, bandpassType)
+      ? estimateLeipsEvacPoints(
+          leetDerDataset,
+          leipsDataset,
+          leetDerPeak,
+          resolvedBandpassEnergy({ bandpassType, customBandpassEnergy }),
+        )
       : [];
   return {
     ...current,
@@ -478,7 +513,7 @@ function estimateLeipsEvacPoints(
   leetDerDataset: SpectrumDataset,
   leipsDataset: SpectrumDataset,
   peakRange: FitRange,
-  bandpassType: number,
+  bandpass: number,
 ): Point[] {
   const selected = leetDerDataset.points.filter(
     (point) => point.x >= peakRange.min && point.x <= peakRange.max,
@@ -490,7 +525,16 @@ function estimateLeipsEvacPoints(
   const peakPoint = peakCandidates.reduce((currentMax, point) =>
     point.y > currentMax.y ? point : currentMax,
   );
-  return convertBiasToVacuumEnergy(leipsDataset.points, peakPoint.x + bandpassEnergy(bandpassType));
+  return convertBiasToVacuumEnergy(leipsDataset.points, peakPoint.x + bandpass);
+}
+
+export function resolvedBandpassEnergy(input: {
+  bandpassType: number;
+  customBandpassEnergy?: number;
+}): number {
+  return input.bandpassType === CUSTOM_BANDPASS_TYPE
+    ? (input.customBandpassEnergy ?? 0)
+    : bandpassEnergy(input.bandpassType);
 }
 
 function rangeWithFallback(
@@ -646,10 +690,10 @@ function defaultWindows(): WindowLayout[] {
       id: "band",
       title: "UPS-LEIPS Band Diagram",
       kind: "band",
-      x: 878,
+      x: 308,
       y: 728,
-      width: 680,
-      height: 520,
+      width: 560,
+      height: 350,
       zIndex: 10,
     },
   ];

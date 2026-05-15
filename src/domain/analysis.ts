@@ -66,9 +66,10 @@ export function calculateLEIPSResult(input: {
   edgeRange: FitRange;
   backgroundRange: FitRange;
   bandpassType: number;
+  bandpassEnergyEv?: number;
 }): LEIPSResult {
   const peakFit = gaussianFit(input.leetDerDataset.points, input.peakRange);
-  const bandpass = bandpassEnergy(input.bandpassType);
+  const bandpass = input.bandpassEnergyEv ?? bandpassEnergy(input.bandpassType);
   const vacuumLevel = peakFit.center + bandpass;
   const leipsEvacPoints = convertBiasToVacuumEnergy(input.leipsDataset.points, vacuumLevel);
   const leipsEdge = linearFit(leipsEvacPoints, input.edgeRange);

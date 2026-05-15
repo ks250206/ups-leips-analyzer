@@ -111,6 +111,7 @@ export interface AnalysisState {
   selection: AnalysisSelection;
   fitRanges: FitRanges;
   bandpassType: number;
+  customBandpassEnergy?: number;
   photonEnergy: number;
   efMinusEvbm: number;
   ups?: UPSResult;

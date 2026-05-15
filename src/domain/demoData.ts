@@ -36,6 +36,7 @@ export function createInitialAnalysis(datasets: readonly SpectrumDataset[]): Ana
     selection,
     fitRanges: DEFAULT_FIT_RANGES,
     bandpassType: 1,
+    customBandpassEnergy: 4.77,
     photonEnergy: 21.22,
     efMinusEvbm: 0.56,
   };

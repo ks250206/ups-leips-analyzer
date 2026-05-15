@@ -20,6 +20,7 @@ import {
 } from "react";
 import { exportProjectGzip, exportProjectJson, importProjectBytes } from "../store/projectDb";
 import { useProjectStore } from "../store/projectStore";
+import type { AnalysisSelection, SpectrumDataset } from "../domain/types";
 import type { ProjectRecord, WindowLayout } from "../store/projectTypes";
 import { ContextMenu, type ContextMenuItem, useContextMenu } from "./ContextMenu";
 import { AnalysisControls } from "./windows/AnalysisControls";
@@ -42,11 +43,13 @@ export function Workspace() {
   const loadSavedProject = useProjectStore((state) => state.loadSavedProject);
   const listRecentProjects = useProjectStore((state) => state.listRecentProjects);
   const importProject = useProjectStore((state) => state.importProject);
+  const assignDataset = useProjectStore((state) => state.assignDataset);
   const deleteCurrentProject = useProjectStore((state) => state.deleteCurrentProject);
   const toggleHelpWindow = useProjectStore((state) => state.toggleHelpWindow);
   const toggleProjectsWindow = useProjectStore((state) => state.toggleProjectsWindow);
   const { menu, openMenu, closeMenu } = useContextMenu();
   const [viewport, setViewport] = useState({ x: 0, y: 0, scale: 1 });
+  const [activeWindowId, setActiveWindowId] = useState<string>();
   const [saveAsOpen, setSaveAsOpen] = useState(false);
   const [deleteOpen, setDeleteOpen] = useState(false);
   const [loadProjectOpen, setLoadProjectOpen] = useState(false);
@@ -56,8 +59,11 @@ export function Workspace() {
     undefined,
   );
   const windows = useMemo(() => project.windows, [project.windows]);
-  const maxWindowZ = useMemo(() => Math.max(...windows.map((window) => window.zIndex)), [windows]);
   const resetWorkspaceView = () => setViewport({ x: 0, y: 0, scale: 1 });
+  const focusAndActivateWindow = (id: string) => {
+    setActiveWindowId(id);
+    focusWindow(id);
+  };
   const refreshRecentProjects = () => {
     void listRecentProjects().then(setRecentProjects);
   };
@@ -85,7 +91,7 @@ export function Workspace() {
     actions: {
       deleteProject: () => setDeleteOpen(true),
       exportProject,
-      focusWindow,
+      focusWindow: focusAndActivateWindow,
       importProject: () => importInputRef.current?.click(),
       loadProject: () => setLoadProjectOpen(true),
       loadSavedProject: (id) => {
@@ -136,6 +142,7 @@ export function Workspace() {
     if (event.button !== 0 || !isBackground) {
       return;
     }
+    setActiveWindowId(undefined);
     panStart.current = {
       x: event.clientX,
       y: event.clientY,
@@ -221,11 +228,19 @@ export function Workspace() {
               key={window.id}
               icon={iconForWindow(window.kind)}
               scale={viewport.scale}
-              window={window}
-              onFocus={() => focusWindow(window.id)}
+              window={{
+                ...window,
+                title: titleForWindow(window, project.datasets, project.analysis.selection),
+              }}
+              onFocus={() => focusAndActivateWindow(window.id)}
               onChange={(patch) => updateWindow(window.id, patch)}
-              contextMenuItems={windowContextItems(window, { recalculate })}
-              isActive={window.zIndex === maxWindowZ}
+              contextMenuItems={windowContextItems(window, {
+                assignDataset,
+                datasets: project.datasets,
+                recalculate,
+                selection: project.analysis.selection,
+              })}
+              isActive={activeWindowId === window.id}
             >
               {renderWindow(window)}
             </WindowFrame>
@@ -469,9 +484,43 @@ function iconForWindow(kind: WindowLayout["kind"]) {
   }
 }
 
+function titleForWindow(
+  window: WindowLayout,
+  datasets: readonly SpectrumDataset[],
+  selection: AnalysisSelection,
+): string {
+  switch (window.kind) {
+    case "ups-vb":
+      return appendDatasetName(window.title, datasets, selection.upsVbDatasetId);
+    case "ups-ip":
+    case "ups":
+      return appendDatasetName(window.title, datasets, selection.upsIpDatasetId);
+    case "leips":
+      return appendDatasetName(window.title, datasets, selection.leipsDatasetId);
+    case "leips-evac":
+      return appendDatasetName(window.title, datasets, selection.leipsDatasetId);
+    default:
+      return window.title;
+  }
+}
+
+function appendDatasetName(
+  title: string,
+  datasets: readonly SpectrumDataset[],
+  datasetId: string | undefined,
+): string {
+  const datasetName = datasets.find((dataset) => dataset.id === datasetId)?.name;
+  return datasetName ? `${title} - ${datasetName}` : title;
+}
+
 function windowContextItems(
   window: WindowLayout,
-  actions: { recalculate: () => void },
+  actions: {
+    assignDataset: (slot: keyof AnalysisSelection, datasetId: string) => void;
+    datasets: readonly SpectrumDataset[];
+    recalculate: () => void;
+    selection: AnalysisSelection;
+  },
 ): ContextMenuItem[] {
   switch (window.kind) {
     case "browser":
@@ -480,9 +529,61 @@ function windowContextItems(
       return [{ type: "item", label: "Recalculate", action: actions.recalculate }];
     case "table":
       return [{ type: "item", label: "Recalculate", action: actions.recalculate }];
+    case "ups-vb":
+      return [
+        datasetSubmenu("UPS VB dataset", "upsVbDatasetId", "ups-vb", actions),
+        { type: "separator" },
+        { type: "item", label: "Recalculate", action: actions.recalculate },
+      ];
+    case "ups":
+    case "ups-ip":
+      return [
+        datasetSubmenu("UPS IP dataset", "upsIpDatasetId", "ups-ip", actions),
+        { type: "separator" },
+        { type: "item", label: "Recalculate", action: actions.recalculate },
+      ];
+    case "leips":
+      return [
+        datasetSubmenu("LEET dataset", "leetDatasetId", "leet", actions),
+        datasetSubmenu("LEET(der) dataset", "leetDerDatasetId", "leet-der", actions),
+        datasetSubmenu("LEIPS dataset", "leipsDatasetId", "leips", actions),
+        { type: "separator" },
+        { type: "item", label: "Recalculate", action: actions.recalculate },
+      ];
+    case "leips-evac":
+      return [
+        datasetSubmenu("LEIPS dataset", "leipsDatasetId", "leips", actions),
+        { type: "separator" },
+        { type: "item", label: "Recalculate", action: actions.recalculate },
+      ];
     default:
       return [];
   }
+}
+
+function datasetSubmenu(
+  label: string,
+  slot: keyof AnalysisSelection,
+  kind: SpectrumDataset["kind"],
+  actions: {
+    assignDataset: (slot: keyof AnalysisSelection, datasetId: string) => void;
+    datasets: readonly SpectrumDataset[];
+    selection: AnalysisSelection;
+  },
+): ContextMenuItem {
+  const datasets = actions.datasets.filter((dataset) => dataset.kind === kind);
+  return {
+    type: "submenu",
+    label,
+    items:
+      datasets.length > 0
+        ? datasets.map((dataset) => ({
+            type: "item",
+            label: dataset.id === actions.selection[slot] ? `${dataset.name} ✓` : dataset.name,
+            action: () => actions.assignDataset(slot, dataset.id),
+          }))
+        : [{ type: "item", label: "No matching datasets", disabled: true }],
+  };
 }
 
 function HelpWindow() {

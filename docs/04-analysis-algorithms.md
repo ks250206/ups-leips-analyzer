@@ -33,6 +33,8 @@ LEET(der)の選択範囲に対して、offset、amplitude、center、sigmaを推
 | 6    |      5.79 |
 | 7    |      3.70 |
 
+任意値を使う場合はcustom bandpass modeとして入力値をそのまま`bandpassEnergy`に使う。
+
 ```text
 Evac = Epeak + bandpassEnergy
 EnergyFromEvac = Evac - Vbias

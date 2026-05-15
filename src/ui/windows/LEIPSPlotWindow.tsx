@@ -1,8 +1,8 @@
 import { useMemo } from "react";
 import { convertBiasToVacuumEnergy } from "../../domain/analysis";
-import { BANDPASS_OPTIONS, bandpassEnergy } from "../../domain/constants";
+import { BANDPASS_OPTIONS, CUSTOM_BANDPASS_TYPE } from "../../domain/constants";
 import type { FitTarget, Point, SpectrumDataset } from "../../domain/types";
-import { useProjectStore } from "../../store/projectStore";
+import { resolvedBandpassEnergy, useProjectStore } from "../../store/projectStore";
 import type { ContextMenuItem } from "../ContextMenu";
 import { formatNumber } from "../format";
 import {
@@ -20,6 +20,7 @@ export function LEIPSPlotWindow() {
   const project = useProjectStore((state) => state.project);
   const setFitRange = useProjectStore((state) => state.setFitRange);
   const setBandpassType = useProjectStore((state) => state.setBandpassType);
+  const setCustomBandpassEnergy = useProjectStore((state) => state.setCustomBandpassEnergy);
   const activeFitTarget = useProjectStore((state) => state.activeFitTarget);
   const leetDataset = project.datasets.find(
     (dataset) => dataset.id === project.analysis.selection.leetDatasetId,
@@ -80,17 +81,32 @@ export function LEIPSPlotWindow() {
       {
         type: "submenu",
         label: "Filter",
-        items: BANDPASS_OPTIONS.map((option) => ({
-          type: "item",
-          label:
-            option.type === project.analysis.bandpassType
-              ? `Band pass ${option.label} ✓`
-              : `Band pass ${option.label}`,
-          action: () => setBandpassType(option.type),
-        })),
+        items: [
+          ...BANDPASS_OPTIONS.map((option) => ({
+            type: "item" as const,
+            label:
+              option.type === project.analysis.bandpassType
+                ? `Band pass ${option.label} ✓`
+                : `Band pass ${option.label}`,
+            action: () => setBandpassType(option.type),
+          })),
+          {
+            type: "item",
+            label:
+              project.analysis.bandpassType === CUSTOM_BANDPASS_TYPE
+                ? `Custom ${formatNumber(project.analysis.customBandpassEnergy, 2)} eV ✓`
+                : "Custom band pass",
+            action: () =>
+              setCustomBandpassEnergy(
+                project.analysis.customBandpassEnergy ??
+                  project.analysis.leips?.bandpassEnergy ??
+                  resolvedBandpassEnergy(project.analysis),
+              ),
+          },
+        ],
       },
     ],
-    [project.analysis.bandpassType, setBandpassType],
+    [project.analysis, setBandpassType, setCustomBandpassEnergy],
   );
 
   return (
@@ -129,15 +145,9 @@ export function LEIPSEvacPlotWindow() {
         leetDerDataset,
         leipsDataset,
         project.analysis.fitRanges.leetDerPeak,
-        project.analysis.bandpassType,
+        resolvedBandpassEnergy(project.analysis),
       ),
-    [
-      leetDerDataset,
-      leips,
-      leipsDataset,
-      project.analysis.bandpassType,
-      project.analysis.fitRanges.leetDerPeak,
-    ],
+    [leetDerDataset, leips, leipsDataset, project.analysis, project.analysis.fitRanges.leetDerPeak],
   );
 
   const series = useMemo<PlotSeries[]>(() => {
@@ -228,7 +238,7 @@ function estimateLeipsEvacPoints(
   leetDerDataset: SpectrumDataset | undefined,
   leipsDataset: SpectrumDataset | undefined,
   peakRange: { min: number; max: number },
-  bandpassType: number,
+  bandpass: number,
 ): Point[] {
   if (!leetDerDataset || !leipsDataset) {
     return [];
@@ -244,5 +254,5 @@ function estimateLeipsEvacPoints(
   if (!peakPoint) {
     return [];
   }
-  return convertBiasToVacuumEnergy(leipsDataset.points, peakPoint.x + bandpassEnergy(bandpassType));
+  return convertBiasToVacuumEnergy(leipsDataset.points, peakPoint.x + bandpass);
 }

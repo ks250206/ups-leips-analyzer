@@ -97,6 +97,15 @@ describe("project store", () => {
     );
   });
 
+  test("uses a custom LEIPS bandpass energy", () => {
+    useProjectStore.getState().setCustomBandpassEnergy(5.12);
+
+    const analysis = useProjectStore.getState().project.analysis;
+    expect(analysis.bandpassType).toBe(0);
+    expect(analysis.customBandpassEnergy).toBe(5.12);
+    expect(analysis.leips?.bandpassEnergy).toBe(5.12);
+  });
+
   test("creates, saves as and loads projects", async () => {
     const state = useProjectStore.getState();
     await state.saveProjectAs("Saved Copy");

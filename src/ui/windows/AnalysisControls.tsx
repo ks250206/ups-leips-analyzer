@@ -1,4 +1,4 @@
-import { BANDPASS_OPTIONS } from "../../domain/constants";
+import { BANDPASS_OPTIONS, CUSTOM_BANDPASS_TYPE } from "../../domain/constants";
 import { useState, type ReactNode } from "react";
 import type { AnalysisSelection, FitRange, FitTarget, SpectrumDataset } from "../../domain/types";
 import { fitRangeKey, useProjectStore } from "../../store/projectStore";
@@ -39,6 +39,7 @@ export function AnalysisControls() {
   const setFitRange = useProjectStore((state) => state.setFitRange);
   const setActiveFitTarget = useProjectStore((state) => state.setActiveFitTarget);
   const setBandpassType = useProjectStore((state) => state.setBandpassType);
+  const setCustomBandpassEnergy = useProjectStore((state) => state.setCustomBandpassEnergy);
   const setEfMinusEvbm = useProjectStore((state) => state.setEfMinusEvbm);
   const recalculate = useProjectStore((state) => state.recalculate);
   const analysis = project.analysis;
@@ -132,8 +133,21 @@ export function AnalysisControls() {
                     {option.label}
                   </option>
                 ))}
+                <option value={CUSTOM_BANDPASS_TYPE}>Custom</option>
               </select>
             </label>
+            {analysis.bandpassType === CUSTOM_BANDPASS_TYPE ? (
+              <label className="mb-2 grid grid-cols-[110px_1fr_34px] items-center gap-2">
+                <span className="font-semibold text-slate-600">Custom</span>
+                <input
+                  className="rounded border border-slate-300 bg-white px-2 py-1"
+                  inputMode="decimal"
+                  value={analysis.customBandpassEnergy ?? ""}
+                  onChange={(event) => setCustomBandpassEnergy(Number(event.currentTarget.value))}
+                />
+                <span className="text-slate-500">eV</span>
+              </label>
+            ) : null}
             <ResultGrid
               rows={[
                 ["Epeak", formatNumber(analysis.leips?.ePeak), "V"],

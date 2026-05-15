@@ -125,6 +125,9 @@ export function SpectrumPlot({
   };
   const openPlotContextMenu = (x: number, y: number) =>
     openMenu(x, y, [
+      ...(extraContextMenuItems.length > 0
+        ? ([...extraContextMenuItems, { type: "separator" }] as ContextMenuItem[])
+        : []),
       { type: "item", label: "Reset view", action: () => updateViewport({}) },
       {
         type: "item",
@@ -138,9 +141,6 @@ export function SpectrumPlot({
         action: () => exportSvg(svgRef.current, title),
         disabled: !hasData,
       },
-      ...(extraContextMenuItems.length > 0
-        ? ([{ type: "separator" }, ...extraContextMenuItems] as ContextMenuItem[])
-        : []),
     ]);
 
   useEffect(() => {

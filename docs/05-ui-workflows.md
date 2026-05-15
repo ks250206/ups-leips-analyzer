@@ -8,10 +8,12 @@ IGOR Proの複数グラフ/操作パネル画面とSciSpace風ワークベンチ
 - Table: 選択datasetをTanStack Table + Virtualで表示。
 - UPS Plot: VB/IPスペクトル、fit line、VBM/cut-off marker。
 - LEIPS Plot: LEET、LEET(der)、LEIPS、ガウスfit、真空準位marker、EA marker。
+- UPS VB、UPS IP、LEIPS Plot、LEIPS vs Energy from Evac.のwindow titleには現在割当中の主dataset名を表示する。window titlebar/context menuからAnalysis Controls Data tabと同じdataset割当を変更できる。
 - Band Diagram: UPSとLEIPSをEnergy relative to Ef/eVで重ね、IGOR Pro風の大きいUPS/LEIPSラベル、VBM/CBM/Vacuum levelの縦線、IP/EA/Egの両矢印を表示する。調整欄はplot下に固定幅のcompact controlとして置き、UPS+/LEIPS+は各スペクトル強度レンジに対するpercent offsetとして扱う。IP/EA/Eg indicatorのfont sizeとarrow scaleは数値入力で調整できる。
 - Band DiagramのUPS/LEIPS annotationは曲線と重なっても読めるように白いhaloを付ける。
-- Analysis Controls: dataset割当、fit範囲、bandpass、計算結果。
+- Analysis Controls: dataset割当、fit範囲、bandpass、計算結果。bandpassは固定候補に加えてcustom値を入力できる。
 - Top menu: Project/View/Windows/Helpを配置し、背景右クリックでも同じメニュー構成を表示する。ひとつのmenuを開いた状態で別menuにhoverした場合は、その列のmenuへ切り替える。Recent projectなどのsubmenuは対象行へhoverしたときだけ展開する。
+- Plot context menuはplot固有項目を先に出し、Reset view / Export PNG / Export SVGは末尾に配置する。
 
 ## Cursor / Range Selection
 
@@ -22,6 +24,7 @@ plot上でドラッグ選択したx範囲を、現在アクティブなfit範囲
 - View > Reset viewでワークスペースの位置と拡大率を初期値へ戻す。
 - Windows menuは選択したwindowを最前面に移動する。
 - Help menuはalertではなく英語の専用Help windowをtoggle表示する。Windows menuにもHelpを表示する。
+- 背景クリック時はwindowのactive highlightだけを解除し、z-indexの重ね順は維持する。
 - 通常plotとBand Diagramはホイール/Shiftホイール/Altドラッグ/ダブルクリックでズーム、パン、リセットを行う。
 - 最前面windowは濃いborder、やや大きいshadow、淡いringでactive状態を示す。
 - Band DiagramのAutoとdouble click resetは、その時点のX/Y/Y2 min/maxを明示的なviewport値として固定する。domain計算はpath生成を伴わない軽量helperで行う。これによりUPS+/LEIPS+のpercent offsetを変えてもautoscaleが追従せず、plot上の見かけのoffsetとして反映される。
