@@ -133,28 +133,27 @@ export const useProjectStore = create<ProjectStore>((set, get) => ({
   },
   setDatasetKind: (datasetId, kind) => {
     set((state) => {
-      let preferred: SpectrumDataset[] = [];
+      let changed = false;
       const datasets = state.project.datasets.map((dataset) => {
         if (dataset.id !== datasetId) {
           return dataset;
         }
-        const updated = {
+        changed = true;
+        return {
           ...dataset,
           kind,
           xLabel: axisLabelForDatasetKind(kind),
         };
-        preferred = [updated];
-        return updated;
       });
-      if (preferred.length === 0) {
+      if (!changed) {
         return state;
       }
-      const selection = autoSelectDatasets(datasets, state.project.analysis.selection, preferred);
+      const selection = keepOnlyMatchingSelections(datasets, state.project.analysis.selection);
       const fitRanges = autoFitRanges(
         datasets,
         selection,
         state.project.analysis.fitRanges,
-        preferred,
+        [],
         state.project.analysis.bandpassType,
         state.project.analysis.customBandpassEnergy,
         state.project.analysis.reelsIncidentEnergy,
@@ -522,3 +521,28 @@ export const useProjectStore = create<ProjectStore>((set, get) => ({
     set({ project: recalculateProject(normalizeProject(importProjectJson(json))) });
   },
 }));
+
+const SELECTION_KIND: Record<keyof AnalysisState["selection"], SpectrumDataset["kind"]> = {
+  upsVbDatasetId: "ups-vb",
+  upsIpDatasetId: "ups-ip",
+  leetDatasetId: "leet",
+  leetDerDatasetId: "leet-der",
+  leipsDatasetId: "leips",
+  reelsDatasetId: "reels",
+};
+
+function keepOnlyMatchingSelections(
+  datasets: readonly SpectrumDataset[],
+  selection: AnalysisState["selection"],
+): AnalysisState["selection"] {
+  const next: AnalysisState["selection"] = {};
+  for (const [slot, kind] of Object.entries(SELECTION_KIND) as Array<
+    [keyof AnalysisState["selection"], SpectrumDataset["kind"]]
+  >) {
+    const datasetId = selection[slot];
+    if (datasets.some((dataset) => dataset.id === datasetId && dataset.kind === kind)) {
+      next[slot] = datasetId;
+    }
+  }
+  return next;
+}

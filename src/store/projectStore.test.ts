@@ -275,7 +275,7 @@ describe("project store", () => {
     expect(project.analysis.ups).toBeUndefined();
   });
 
-  test("changes dataset kind and reassigns the matching analysis slot", () => {
+  test("changes dataset kind without assigning it to an analysis slot", () => {
     const state = useProjectStore.getState();
     const leips = state.project.datasets.find((dataset) => dataset.kind === "leips")!;
 
@@ -285,7 +285,7 @@ describe("project store", () => {
     const changed = project.datasets.find((dataset) => dataset.id === leips.id)!;
     expect(changed.kind).toBe("reels");
     expect(changed.xLabel).toBe("Kinetic Energy / eV");
-    expect(project.analysis.selection.reelsDatasetId).toBe(leips.id);
+    expect(project.analysis.selection.reelsDatasetId).not.toBe(leips.id);
     expect(project.analysis.selection.leipsDatasetId).toBeUndefined();
   });
 

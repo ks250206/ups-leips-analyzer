@@ -221,6 +221,8 @@ describe("App", () => {
     await user.click(screen.getByRole("button", { name: "Sample" }));
     expect(screen.getByText("Sample Info")).toBeTruthy();
     expect(screen.queryByRole("button", { name: "Sample Info" })).toBeNull();
+    expect(screen.getByPlaceholderText("initial, 1st charge, Ar etched")).toBeTruthy();
+    expect(screen.getByLabelText("sample state").getAttribute("autocomplete")).toBe("off");
     await user.type(screen.getByLabelText("組成(仕込)"), "Li6PS5Cl");
     expect(screen.getByDisplayValue("Li, P, S, Cl")).toBeTruthy();
     await user.type(screen.getByLabelText("sample state"), "pellet");
@@ -262,6 +264,8 @@ describe("App", () => {
     await user.click(screen.getByText("reels"));
     expect(await screen.findByText("Changed browser_UPS_VB role to reels.")).toBeTruthy();
     expect(screen.getByText("reels")).toBeTruthy();
+    expect(screen.getByText("reels").className).toContain("bg-slate-200");
+    expect(useProjectStore.getState().project.analysis.selection.reelsDatasetId).toBeUndefined();
 
     await user.click(screen.getByLabelText("Open browser_UPS_VB dataset menu"));
     await user.click(screen.getByText("Delete dataset"));

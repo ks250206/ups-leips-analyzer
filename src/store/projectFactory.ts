@@ -55,7 +55,7 @@ export function defaultWindows(): WindowLayout[] {
       x: 1460,
       y: 26,
       width: 420,
-      height: 760,
+      height: 1062,
       zIndex: 9,
     },
     {

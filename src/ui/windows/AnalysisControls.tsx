@@ -374,9 +374,11 @@ function SampleInfoFieldRow({
         <span className="grid gap-1">
           <input
             aria-invalid={hasBasePressureError || undefined}
+            autoComplete="off"
             className={
               hasBasePressureError ? `${commonClass} border-red-400 bg-red-50` : commonClass
             }
+            name={`ups-leips-${definition.field}`}
             type={definition.kind === "date" ? "date" : "text"}
             value={validatesBasePressure ? draftValue : stringValue}
             placeholder={definition.placeholder}

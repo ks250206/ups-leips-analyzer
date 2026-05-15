@@ -142,37 +142,13 @@ export function DataBrowser() {
       </div>
       <div className="min-h-0 flex-1 overflow-auto">
         {project.datasets.map((dataset) => (
-          <div
+          <DatasetRow
             key={dataset.id}
-            className="flex w-full items-center gap-1 border-b border-slate-200 hover:bg-cyan-50"
-            onContextMenu={(event) => {
-              event.preventDefault();
-              event.stopPropagation();
-              openDatasetMenu(dataset, event.clientX, event.clientY);
-            }}
-          >
-            <button
-              className="flex min-w-0 flex-1 items-center justify-between gap-2 px-2 py-1.5 text-left"
-              type="button"
-              onClick={() => selectDataset(dataset.id)}
-            >
-              <span className="min-w-0 truncate">{dataset.name}</span>
-              <span className="rounded bg-slate-200 px-1.5 py-0.5 text-[10px] uppercase text-slate-600">
-                {dataset.kind}
-              </span>
-            </button>
-            <button
-              aria-label={`Open ${dataset.name} dataset menu`}
-              className="mr-1 rounded p-1 text-slate-500 hover:bg-white hover:text-slate-800"
-              type="button"
-              onClick={(event) => {
-                event.stopPropagation();
-                openDatasetMenu(dataset, event.clientX, event.clientY);
-              }}
-            >
-              <MoreHorizontal size={13} />
-            </button>
-          </div>
+            assignment={assignmentForDataset(project.analysis.selection, dataset.id)}
+            dataset={dataset}
+            onMenu={openDatasetMenu}
+            onSelect={selectDataset}
+          />
         ))}
       </div>
       <div className="border-t border-slate-300 bg-white p-2 text-slate-600">
@@ -192,6 +168,85 @@ export function DataBrowser() {
       ) : null}
     </div>
   );
+}
+
+function DatasetRow({
+  assignment,
+  dataset,
+  onMenu,
+  onSelect,
+}: {
+  assignment: DatasetAssignment | undefined;
+  dataset: SpectrumDataset;
+  onMenu: (dataset: SpectrumDataset, x: number, y: number) => void;
+  onSelect: (datasetId: string) => void;
+}) {
+  return (
+    <div
+      className="flex w-full items-center gap-1 border-b border-slate-200 hover:bg-cyan-50"
+      onContextMenu={(event) => {
+        event.preventDefault();
+        event.stopPropagation();
+        onMenu(dataset, event.clientX, event.clientY);
+      }}
+    >
+      <button
+        className="flex min-w-0 flex-1 items-center justify-between gap-2 px-2 py-1.5 text-left"
+        type="button"
+        onClick={() => onSelect(dataset.id)}
+      >
+        <span className="min-w-0 truncate">{dataset.name}</span>
+        <span
+          className={
+            assignment
+              ? `${assignment.className} rounded px-1.5 py-0.5 text-[10px] font-semibold uppercase`
+              : "rounded bg-slate-200 px-1.5 py-0.5 text-[10px] uppercase text-slate-600"
+          }
+          title={assignment ? `Assigned as ${assignment.label}` : "Not assigned in Analysis"}
+        >
+          {assignment?.label ?? dataset.kind}
+        </span>
+      </button>
+      <button
+        aria-label={`Open ${dataset.name} dataset menu`}
+        className="mr-1 rounded p-1 text-slate-500 hover:bg-white hover:text-slate-800"
+        type="button"
+        onClick={(event) => {
+          event.stopPropagation();
+          onMenu(dataset, event.clientX, event.clientY);
+        }}
+      >
+        <MoreHorizontal size={13} />
+      </button>
+    </div>
+  );
+}
+
+interface DatasetAssignment {
+  label: string;
+  className: string;
+}
+
+function assignmentForDataset(
+  selection: {
+    upsVbDatasetId?: string;
+    upsIpDatasetId?: string;
+    leetDatasetId?: string;
+    leetDerDatasetId?: string;
+    leipsDatasetId?: string;
+    reelsDatasetId?: string;
+  },
+  datasetId: string,
+): DatasetAssignment | undefined {
+  const assignments: Array<[string | undefined, DatasetAssignment]> = [
+    [selection.upsVbDatasetId, { label: "UPS-VB", className: "bg-blue-100 text-blue-700" }],
+    [selection.upsIpDatasetId, { label: "UPS-IP", className: "bg-rose-100 text-rose-700" }],
+    [selection.leetDatasetId, { label: "LEET", className: "bg-emerald-100 text-emerald-700" }],
+    [selection.leetDerDatasetId, { label: "LEET-der", className: "bg-indigo-100 text-indigo-700" }],
+    [selection.leipsDatasetId, { label: "LEIPS", className: "bg-red-100 text-red-700" }],
+    [selection.reelsDatasetId, { label: "REELS", className: "bg-slate-800 text-white" }],
+  ];
+  return assignments.find(([assignedId]) => assignedId === datasetId)?.[1];
 }
 
 function DeleteDatasetModal({

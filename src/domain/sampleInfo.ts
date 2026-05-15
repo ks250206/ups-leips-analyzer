@@ -85,7 +85,12 @@ export const SAMPLE_INFO_FIELDS: readonly SampleInfoFieldDefinition[] = [
     placeholder: "Yamada",
   },
   { field: "sampleName", label: "試料名", kind: "text", placeholder: "Sample-001" },
-  { field: "sampleState", label: "sample state", kind: "text", placeholder: "powder sample" },
+  {
+    field: "sampleState",
+    label: "sample state",
+    kind: "text",
+    placeholder: "initial, 1st charge, Ar etched",
+  },
   { field: "nominalComposition", label: "組成(仕込)", kind: "text", placeholder: "Li6PS5Cl" },
   { field: "crystalStructure", label: "結晶構造", kind: "text", placeholder: "argyrodite" },
   {
