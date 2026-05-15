@@ -168,6 +168,19 @@ describe("project store", () => {
     expect(normalized.windows.find((window) => window.id === "ups-bias")?.y).toBe(366);
   });
 
+  test("normalizes legacy UPS analysis width to the compact right-aligned layout", () => {
+    const project = useProjectStore.getState().project;
+    const normalized = normalizeProject({
+      ...project,
+      windows: project.windows.map((window) =>
+        window.id === "controls" ? { ...window, x: 1460, width: 420 } : window,
+      ),
+    });
+
+    expect(normalized.windows.find((window) => window.id === "controls")?.width).toBe(378);
+    expect(normalized.windows.find((window) => window.id === "controls")?.x).toBe(1502);
+  });
+
   test("stores per-IP applied voltage and fit ranges", () => {
     const ipId = useProjectStore.getState().project.analysis.selection.upsIpDatasetIds?.[0];
     expect(ipId).toBeDefined();

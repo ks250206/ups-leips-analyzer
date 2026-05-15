@@ -168,6 +168,10 @@ export function normalizeProject(project: ProjectSnapshot): ProjectSnapshot {
 function normalizeWindows(windows: ProjectSnapshot["windows"]): ProjectSnapshot["windows"] {
   const defaults = defaultWindows();
   return windows.map((window) => {
+    if (window.id === "controls" && window.width > 390) {
+      const defaultWindow = defaults.find((item) => item.id === "controls");
+      return defaultWindow ? { ...window, x: defaultWindow.x, width: defaultWindow.width } : window;
+    }
     if (window.id !== "ups-bias" || (window.width > 600 && window.y <= 728)) {
       return window;
     }
