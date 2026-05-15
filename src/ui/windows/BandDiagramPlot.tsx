@@ -1,7 +1,7 @@
 import { useId, useMemo, useRef, useState } from "react";
 import type { BandDiagramResult } from "../../domain/types";
 import { ContextMenu, useContextMenu } from "../ContextMenu";
-import { formatNumber } from "../format";
+import { formatNumber, formatSignificant } from "../format";
 import { exportPng, exportSvg } from "./plotExport";
 import { BandArrow, BandVerticalLine } from "./BandDiagramAnnotations";
 import { type BandDragState, type BandViewport, createIgorBandModel } from "./bandDiagramModel";
@@ -23,6 +23,7 @@ export function IgorBandDiagramPlot({
   leipsOffset,
   indicatorFontSize,
   indicatorArrowScale,
+  significantDigits,
   viewport,
   onResetView,
   onViewportChange,
@@ -35,6 +36,7 @@ export function IgorBandDiagramPlot({
   leipsOffset: number;
   indicatorFontSize: number;
   indicatorArrowScale: number;
+  significantDigits: number;
   viewport: BandViewport;
   onResetView: () => void;
   onViewportChange: (viewport: BandViewport) => void;
@@ -307,7 +309,7 @@ export function IgorBandDiagramPlot({
         />
         <BandVerticalLine
           fontSize={indicatorFontSize}
-          label={`Vacuum level (${formatNumber(band.vacuumRelativeToEf, 2)} eV)`}
+          label={`Vacuum level (${formatSignificant(band.vacuumRelativeToEf, significantDigits)} eV)`}
           labelY={plotBottom - 220}
           model={model}
           value={band.vacuumRelativeToEf}
@@ -315,7 +317,7 @@ export function IgorBandDiagramPlot({
         <BandArrow
           arrowId={arrowId}
           arrowHead="left"
-          label={`IP=${formatNumber(band.ip, 2)} eV`}
+          label={`IP=${formatSignificant(band.ip, significantDigits)} eV`}
           fontSize={indicatorFontSize}
           arrowScale={indicatorArrowScale}
           model={model}
@@ -326,7 +328,7 @@ export function IgorBandDiagramPlot({
         <BandArrow
           arrowId={arrowId}
           arrowHead="left"
-          label={`EA= ${formatNumber(band.ea, 2)} eV`}
+          label={`EA= ${formatSignificant(band.ea, significantDigits)} eV`}
           fontSize={indicatorFontSize}
           arrowScale={indicatorArrowScale}
           model={model}
@@ -342,7 +344,7 @@ export function IgorBandDiagramPlot({
               <tspan baselineShift="sub" fontSize={Math.max(10, indicatorFontSize * 0.65)}>
                 g
               </tspan>
-              = {formatNumber(band.eg, 2)} eV
+              = {formatSignificant(band.eg, significantDigits)} eV
             </>
           }
           fontSize={indicatorFontSize}

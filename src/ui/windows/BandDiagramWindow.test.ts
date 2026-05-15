@@ -12,6 +12,8 @@ import {
 import {
   DEFAULT_BAND_INDICATOR_ARROW_SCALE,
   DEFAULT_BAND_INDICATOR_FONT_SIZE,
+  DEFAULT_BAND_SIGNIFICANT_DIGITS,
+  clampSignificantDigits,
 } from "./BandDiagramWindow";
 
 const BAND = {
@@ -47,6 +49,9 @@ describe("Igor-style band diagram plot model", () => {
   test("uses compact default annotation controls", () => {
     expect(DEFAULT_BAND_INDICATOR_FONT_SIZE).toBe(30);
     expect(DEFAULT_BAND_INDICATOR_ARROW_SCALE).toBe(0.7);
+    expect(DEFAULT_BAND_SIGNIFICANT_DIGITS).toBe(4);
+    expect(clampSignificantDigits(2.2)).toBe(2);
+    expect(clampSignificantDigits(99)).toBe(8);
   });
 
   test("can render one-sided left arrowheads for IP and EA", () => {

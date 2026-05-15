@@ -45,6 +45,7 @@ export {
   shiftRangeByDelta,
   zoomRangeAt,
 } from "./SpectrumPlotModel";
+export { fitLabelPointForSeries } from "./SpectrumPlotParts";
 
 const EMPTY_MARKERS: PlotMarker[] = [];
 const EMPTY_RANGE_BANDS: PlotRangeBand[] = [];

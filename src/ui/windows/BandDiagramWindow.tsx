@@ -10,6 +10,7 @@ import {
 
 export const DEFAULT_BAND_INDICATOR_FONT_SIZE = 30;
 export const DEFAULT_BAND_INDICATOR_ARROW_SCALE = 0.7;
+export const DEFAULT_BAND_SIGNIFICANT_DIGITS = 4;
 
 export function BandDiagramWindow() {
   const band = useProjectStore((state) => state.project.analysis.band);
@@ -23,6 +24,7 @@ export function BandDiagramWindow() {
   const [indicatorArrowScale, setIndicatorArrowScale] = useState(
     DEFAULT_BAND_INDICATOR_ARROW_SCALE,
   );
+  const [significantDigits, setSignificantDigits] = useState(DEFAULT_BAND_SIGNIFICANT_DIGITS);
   const lastBandDataSignature = useRef<string | undefined>(undefined);
   const bandXDomain = useMemo(() => {
     const points = band ? [...band.upsPoints, ...band.leipsPoints] : [];
@@ -110,6 +112,7 @@ export function BandDiagramWindow() {
           leipsOffset={leipsOffset}
           indicatorFontSize={indicatorFontSize}
           indicatorArrowScale={indicatorArrowScale}
+          significantDigits={significantDigits}
           viewport={viewport}
           onResetView={applyAutoScale}
           onViewportChange={handleViewportChange}
@@ -130,6 +133,7 @@ export function BandDiagramWindow() {
             leipsOffset,
             indicatorFontSize,
             indicatorArrowScale,
+            significantDigits,
           }}
           setters={{
             setUpsScale,
@@ -138,6 +142,7 @@ export function BandDiagramWindow() {
             setLeipsOffset,
             setIndicatorFontSize,
             setIndicatorArrowScale,
+            setSignificantDigits: (value) => setSignificantDigits(clampSignificantDigits(value)),
           }}
         />
       ) : null}
@@ -162,6 +167,7 @@ function BandDiagramControlStrip({
     leipsOffset: number;
     indicatorFontSize: number;
     indicatorArrowScale: number;
+    significantDigits: number;
   };
   setters: {
     setUpsScale: (value: number) => void;
@@ -170,6 +176,7 @@ function BandDiagramControlStrip({
     setLeipsOffset: (value: number) => void;
     setIndicatorFontSize: (value: number) => void;
     setIndicatorArrowScale: (value: number) => void;
+    setSignificantDigits: (value: number) => void;
   };
   xMin: number;
   xMax: number;
@@ -194,6 +201,11 @@ function BandDiagramControlStrip({
           label="Arrow"
           value={values.indicatorArrowScale}
           onChange={setters.setIndicatorArrowScale}
+        />
+        <SmallNumber
+          label="Sig"
+          value={values.significantDigits}
+          onChange={setters.setSignificantDigits}
         />
         <span className="grid w-[190px] grid-cols-[1fr_1fr_auto] gap-1">
           <BandDomainInput value={xMin} onChange={(value) => setXDomainMin(value)} />
@@ -225,6 +237,13 @@ function BandDiagramControlStrip({
       x: { min: Math.min(xMin, value), max: Math.max(xMin, value) },
     }));
   }
+}
+
+export function clampSignificantDigits(value: number): number {
+  if (!Number.isFinite(value)) {
+    return DEFAULT_BAND_SIGNIFICANT_DIGITS;
+  }
+  return Math.min(Math.max(Math.round(value), 1), 8);
 }
 
 function BandDomainInput({

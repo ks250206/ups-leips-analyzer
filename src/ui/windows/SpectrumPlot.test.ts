@@ -3,6 +3,7 @@ import {
   createPlotGeometry,
   createPlotScales,
   formatTickParts,
+  fitLabelPointForSeries,
   inferPlotDragZoomMode,
   nextViewportAfterWheel,
   plotXToValue,
@@ -94,6 +95,35 @@ describe("SpectrumPlot D3 scales", () => {
 
     expect(scales.xDomain.max).toBeLessThan(100);
     expect(scales.yDomain.max).toBeLessThan(999);
+  });
+
+  test("keeps hidden-cursor fit labels inside the visible plot area", () => {
+    const scales = createPlotScales({
+      size: { width: 320, height: 240 },
+      series: [{ name: "raw", color: "#000000", points: [{ x: 5, y: 5 }] }],
+      viewport: { x: { min: 0, max: 10 }, y: { min: 0, max: 10 } },
+      xDirection: "normal",
+    });
+    const point = fitLabelPointForSeries(
+      {
+        name: "fit",
+        color: "#2563eb",
+        fitLabel: "very long VBM edge",
+        points: [
+          { x: -100, y: 20 },
+          { x: 100, y: -20 },
+        ],
+      },
+      scales.xDomain,
+      scales.geometry,
+      scales.xScale,
+      scales.yScale,
+    );
+
+    expect(point?.x).toBeGreaterThanOrEqual(scales.geometry.left);
+    expect(point?.x).toBeLessThanOrEqual(scales.geometry.plotRight);
+    expect(point?.y).toBeGreaterThanOrEqual(scales.geometry.top);
+    expect(point?.y).toBeLessThanOrEqual(scales.geometry.plotBottom);
   });
 
   test("converts plot-relative drag coordinates through absolute SVG scales", () => {
