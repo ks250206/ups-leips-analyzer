@@ -35,7 +35,6 @@ export function WindowFrame({
         scale={scale}
         style={{ zIndex: window.zIndex }}
         dragHandleClassName="window-titlebar"
-        onMouseDown={onFocus}
         onDragStart={onFocus}
         onResizeStart={onFocus}
         onDragStop={(_event, data) => onChange({ x: data.x, y: data.y })}
@@ -50,8 +49,8 @@ export function WindowFrame({
       >
         <section
           className="flex h-full flex-col overflow-hidden rounded-md border border-slate-400 bg-slate-50 shadow-xl"
-          onPointerDown={(event) => {
-            if (event.button === 2) {
+          onPointerDownCapture={(event) => {
+            if (event.button === 0 || event.button === 2) {
               onFocus();
             }
           }}

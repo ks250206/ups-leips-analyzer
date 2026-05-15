@@ -196,14 +196,27 @@ export function SpectrumPlot({
   if (!hasData || !scales) {
     return (
       <div
+        ref={containerRef}
         aria-label={`${title} plot`}
-        className="flex h-full w-full items-center justify-center bg-white text-sm text-slate-500"
+        className="relative flex h-full w-full items-center justify-center bg-white text-sm text-slate-500"
+        data-plot-host="true"
         data-x-direction={xDirection}
+        onContextMenu={(event) => {
+          event.preventDefault();
+          openPlotContextMenu(event.clientX, event.clientY);
+        }}
+        onPointerDown={(event) => {
+          if (event.button === 2) {
+            event.preventDefault();
+            openPlotContextMenu(event.clientX, event.clientY);
+          }
+        }}
       >
         <div className="rounded border border-slate-300 bg-slate-50 px-4 py-3 text-center">
           <div className="font-semibold text-slate-700">No data</div>
           <div className="mt-1 text-xs">Load CSV or Demo data to render this plot.</div>
         </div>
+        <ContextMenu menu={menu} onClose={closeMenu} />
       </div>
     );
   }
@@ -244,6 +257,7 @@ export function SpectrumPlot({
         onPointerDown={(event) => {
           if (event.button === 2) {
             event.preventDefault();
+            event.stopPropagation();
             openPlotContextMenu(event.clientX, event.clientY);
             return;
           }

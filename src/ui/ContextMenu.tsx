@@ -1,4 +1,5 @@
 import { useEffect, useState, type ReactNode } from "react";
+import { createPortal } from "react-dom";
 
 export type ContextMenuItem =
   | { type: "item"; label: string; action: () => void | Promise<void> }
@@ -49,7 +50,7 @@ export function ContextMenu({
     return null;
   }
 
-  return (
+  return createPortal(
     <div
       className="fixed z-[10000] min-w-44 rounded border border-slate-300 bg-white py-1 text-xs text-slate-800 shadow-xl"
       role="menu"
@@ -58,7 +59,8 @@ export function ContextMenu({
       onPointerDown={(event) => event.stopPropagation()}
     >
       <MenuItems items={menu.items} onClose={onClose} />
-    </div>
+    </div>,
+    document.body,
   );
 }
 
