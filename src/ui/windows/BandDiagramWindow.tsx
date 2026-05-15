@@ -36,12 +36,40 @@ export function BandDiagramWindow() {
   const [xMin, setXMin] = useState(bandXDomain.min);
   const [xMax, setXMax] = useState(bandXDomain.max);
   const [viewport, setViewport] = useState<BandViewport>({});
+  const autoViewport = useMemo(
+    () =>
+      band
+        ? createBandAutoViewport({
+            band,
+            xDomain: bandXDomain,
+            upsScale,
+            upsOffset,
+            leipsScale,
+            leipsOffset,
+          })
+        : undefined,
+    [band, bandXDomain, leipsOffset, leipsScale, upsOffset, upsScale],
+  );
+  const initialViewport = useMemo(
+    () =>
+      band
+        ? createBandAutoViewport({
+            band,
+            xDomain: bandXDomain,
+            upsScale: 1,
+            upsOffset: 0,
+            leipsScale: 1,
+            leipsOffset: 0,
+          })
+        : undefined,
+    [band, bandXDomain],
+  );
 
   useEffect(() => {
     setXMin(bandXDomain.min);
     setXMax(bandXDomain.max);
-    setViewport({});
-  }, [bandXDomain.min, bandXDomain.max]);
+    setViewport(initialViewport ?? {});
+  }, [initialViewport, bandXDomain.min, bandXDomain.max]);
   const handleViewportChange = (next: BandViewport) => {
     setViewport(next);
     if (next.x) {
@@ -66,6 +94,7 @@ export function BandDiagramWindow() {
           indicatorFontSize={indicatorFontSize}
           indicatorArrowScale={indicatorArrowScale}
           viewport={viewport}
+          resetViewport={autoViewport ?? {}}
           onViewportChange={handleViewportChange}
         />
       </div>
@@ -113,7 +142,7 @@ export function BandDiagramWindow() {
                 onClick={() => {
                   setXMin(bandXDomain.min);
                   setXMax(bandXDomain.max);
-                  setViewport({});
+                  setViewport(autoViewport ?? {});
                 }}
               >
                 Auto
@@ -136,6 +165,7 @@ function IgorBandDiagramPlot({
   indicatorFontSize,
   indicatorArrowScale,
   viewport,
+  resetViewport,
   onViewportChange,
 }: {
   band: BandDiagramResult | undefined;
@@ -147,6 +177,7 @@ function IgorBandDiagramPlot({
   indicatorFontSize: number;
   indicatorArrowScale: number;
   viewport: BandViewport;
+  resetViewport: BandViewport;
   onViewportChange: (viewport: BandViewport) => void;
 }) {
   const containerRef = useRef<HTMLDivElement>(null);
@@ -194,7 +225,7 @@ function IgorBandDiagramPlot({
       {
         type: "item",
         label: "Reset view",
-        action: () => updateViewport({}),
+        action: () => updateViewport(resetViewport),
       },
       {
         type: "item",
@@ -251,7 +282,7 @@ function IgorBandDiagramPlot({
         width={size.width}
         onDoubleClick={(event) => {
           event.preventDefault();
-          updateViewport({});
+          updateViewport(resetViewport);
         }}
         onPointerDown={(event) => {
           if (event.button === 2) {
@@ -548,6 +579,25 @@ export function createIgorBandModel(input: {
     yRightDomain,
     plotTop: geometry.top,
     plotBottom: geometry.plotBottom,
+  };
+}
+
+export function createBandAutoViewport(input: {
+  band: BandDiagramResult;
+  xDomain: { min: number; max: number };
+  upsScale: number;
+  upsOffset: number;
+  leipsScale: number;
+  leipsOffset: number;
+}): Required<BandViewport> {
+  const model = createIgorBandModel({
+    ...input,
+    geometry: { left: 0, top: 0, plotRight: 1, plotBottom: 1 },
+  });
+  return {
+    x: { min: input.xDomain.min, max: input.xDomain.max },
+    y: model.yDomain,
+    y2: model.yRightDomain,
   };
 }
 

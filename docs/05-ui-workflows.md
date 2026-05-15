@@ -22,6 +22,8 @@ plot上でドラッグ選択したx範囲を、現在アクティブなfit範囲
 - Windows menuは選択したwindowを最前面に移動する。
 - Help menuはalertではなく英語の専用Help windowをtoggle表示する。Windows menuにもHelpを表示する。
 - 通常plotとBand Diagramはホイール/Shiftホイール/Altドラッグ/ダブルクリックでズーム、パン、リセットを行う。
+- 最前面windowは濃いborder、やや大きいshadow、淡いringでactive状態を示す。
+- Band DiagramのAutoとdouble click resetは、その時点のX/Y/Y2 min/maxを明示的なviewport値として固定する。これによりUPS+/LEIPS+のpercent offsetを変えてもautoscaleが追従せず、plot上の見かけのoffsetとして反映される。
 
 ## Persistence
 

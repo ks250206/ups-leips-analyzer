@@ -11,6 +11,7 @@ interface WindowFrameProps {
   onChange: (patch: Partial<WindowLayout>) => void;
   contextMenuItems?: ContextMenuItem[];
   scale?: number;
+  isActive?: boolean;
 }
 
 export function WindowFrame({
@@ -21,6 +22,7 @@ export function WindowFrame({
   onChange,
   contextMenuItems = [],
   scale = 1,
+  isActive = false,
 }: WindowFrameProps) {
   const { menu, openMenu, closeMenu } = useContextMenu();
   return (
@@ -48,7 +50,11 @@ export function WindowFrame({
         }
       >
         <section
-          className="flex h-full flex-col overflow-hidden rounded-md border border-slate-400 bg-slate-50 shadow-xl"
+          className={
+            isActive
+              ? "flex h-full flex-col overflow-hidden rounded-md border border-slate-600 bg-slate-50 shadow-2xl shadow-slate-700/35 ring-2 ring-cyan-500/25"
+              : "flex h-full flex-col overflow-hidden rounded-md border border-slate-400 bg-slate-50 shadow-xl shadow-slate-500/20"
+          }
           onPointerDownCapture={(event) => {
             if (event.button === 0 || event.button === 2) {
               onFocus();

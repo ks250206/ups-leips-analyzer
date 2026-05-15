@@ -1,5 +1,6 @@
 import { describe, expect, test } from "vite-plus/test";
 import {
+  createBandAutoViewport,
   createIgorBandModel,
   nextIgorBandViewportAfterDrag,
   nextIgorBandViewportAfterWheel,
@@ -57,6 +58,30 @@ describe("Igor-style band diagram plot model", () => {
 
     expect(shifted.yDomain.min).toBeCloseTo(0.8);
     expect(shifted.yRightDomain.min).toBeCloseTo(1.6);
+  });
+
+  test("keeps explicit auto domains fixed after changing offsets", () => {
+    const auto = createBandAutoViewport({
+      band: BAND,
+      xDomain: { min: -6, max: 4 },
+      upsScale: 1,
+      upsOffset: 0,
+      leipsScale: 1,
+      leipsOffset: 0,
+    });
+    const shifted = createIgorBandModel({
+      band: BAND,
+      xDomain: { min: -6, max: 4 },
+      upsScale: 1,
+      upsOffset: 20,
+      leipsScale: 1,
+      leipsOffset: 20,
+      viewport: auto,
+      geometry: { left: 100, top: 50, plotRight: 800, plotBottom: 500 },
+    });
+
+    expect(shifted.yDomain).toEqual(auto.y);
+    expect(shifted.yRightDomain).toEqual(auto.y2);
   });
 
   test("zooms x with shift wheel and y axes with normal wheel", () => {

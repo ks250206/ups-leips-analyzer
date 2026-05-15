@@ -56,6 +56,7 @@ export function Workspace() {
     undefined,
   );
   const windows = useMemo(() => project.windows, [project.windows]);
+  const maxWindowZ = useMemo(() => Math.max(...windows.map((window) => window.zIndex)), [windows]);
   const resetWorkspaceView = () => setViewport({ x: 0, y: 0, scale: 1 });
   const refreshRecentProjects = () => {
     void listRecentProjects().then(setRecentProjects);
@@ -224,6 +225,7 @@ export function Workspace() {
               onFocus={() => focusWindow(window.id)}
               onChange={(patch) => updateWindow(window.id, patch)}
               contextMenuItems={windowContextItems(window, { recalculate })}
+              isActive={window.zIndex === maxWindowZ}
             >
               {renderWindow(window)}
             </WindowFrame>
