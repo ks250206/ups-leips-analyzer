@@ -2,7 +2,7 @@ import { useId, useMemo, useRef, useState } from "react";
 import type { BandDiagramResult } from "../../domain/types";
 import { ContextMenu, useContextMenu } from "../ContextMenu";
 import { formatNumber, formatSignificant } from "../format";
-import { exportPng, exportSvg } from "./plotExport";
+import { copyPng, exportPng, exportSvg } from "./plotExport";
 import { BandArrow, BandVerticalLine } from "./BandDiagramAnnotations";
 import { type BandDragState, type BandViewport, createIgorBandModel } from "./bandDiagramModel";
 import {
@@ -84,6 +84,12 @@ export function IgorBandDiagramPlot({
   function openPlotMenu(x: number, y: number) {
     openMenu(x, y, [
       { type: "item", label: "Reset view", action: onResetView },
+      {
+        type: "item",
+        label: "Copy PNG",
+        action: () => copyPng(svgRef.current),
+        disabled: !hasData,
+      },
       {
         type: "item",
         label: "Export PNG",
@@ -305,7 +311,7 @@ export function IgorBandDiagramPlot({
           label="CBM"
           labelY={plotBottom - 116}
           model={model}
-          upperOffset={250}
+          upperOffset={160}
           value={band.cbmRelativeToEf}
         />
         <BandVerticalLine

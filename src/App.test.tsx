@@ -18,6 +18,7 @@ file#
 
 describe("App", () => {
   beforeEach(() => {
+    localStorage.clear();
     useProjectStore.setState({
       activeFitTarget: "ups-vb-edge",
       project: createInitialProject(),
@@ -111,6 +112,9 @@ describe("App", () => {
     fireEvent.mouseEnter(screen.getByText("Cursor style"));
     expect(screen.getByText("✓ Point cursor")).toBeTruthy();
     expect(screen.getByText("Range cursor")).toBeTruthy();
+    await user.click(screen.getByText("Range cursor"));
+    expect(localStorage.getItem("ups-leips-analyzer-settings")).toContain('"cursorStyle":"range"');
+    useSettingsStore.getState().setCursorStyle("point");
 
     fireEvent.pointerDown(document.body);
     await user.click(screen.getByRole("button", { name: "Project" }));
@@ -159,6 +163,7 @@ describe("App", () => {
     expect(screen.getAllByLabelText("A cursor").length).toBeGreaterThan(0);
     expect(screen.getByText("Cursor style")).toBeTruthy();
     expect(screen.getByText("Reset view")).toBeTruthy();
+    expect(screen.getByText("Copy PNG")).toBeTruthy();
     expect(screen.getByText("Export PNG")).toBeTruthy();
     expect(screen.getByText("Export SVG")).toBeTruthy();
     expect(screen.getByText("Save VBM view")).toBeTruthy();

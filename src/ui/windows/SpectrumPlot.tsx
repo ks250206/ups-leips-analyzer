@@ -31,7 +31,7 @@ import {
   RangeBand,
   SeriesPath,
 } from "./SpectrumPlotParts";
-import { exportPng, exportSvg } from "./plotExport";
+import { copyPng, exportPng, exportSvg } from "./plotExport";
 
 export type { PlotGeometry, PlotScaleRange, PlotScales, PlotViewport } from "./SpectrumPlotModel";
 
@@ -134,6 +134,12 @@ export function SpectrumPlot({
           ] as ContextMenuItem[])
         : []),
       { type: "item", label: "Reset view", action: () => updateViewport({}) },
+      {
+        type: "item",
+        label: "Copy PNG",
+        action: () => copyPng(svgRef.current),
+        disabled: !hasData,
+      },
       {
         type: "item",
         label: "Export PNG",

@@ -72,8 +72,8 @@ export function AnalysisControls({ activeTab = "data" }: { activeTab?: AnalysisT
             key={id}
             className={
               tab === id
-                ? "rounded border border-cyan-600 bg-cyan-100 px-2 py-1 font-semibold text-cyan-950"
-                : "rounded border border-slate-300 bg-white px-2 py-1 hover:bg-cyan-50"
+                ? "rounded border border-slate-700 bg-slate-800 px-2 py-1 font-semibold text-white shadow-sm"
+                : "rounded border border-slate-300 bg-white px-2 py-1 text-slate-700 hover:bg-slate-100"
             }
             type="button"
             onClick={() => setTab(id as typeof tab)}
@@ -205,29 +205,15 @@ export function AnalysisControls({ activeTab = "data" }: { activeTab?: AnalysisT
 
         {tab === "fit" ? (
           <Panel title="Cursor / fitting ranges">
-            <div className="grid grid-cols-2 gap-1">
-              {FIT_TARGETS.map((item) => (
-                <button
-                  key={item.target}
-                  className={
-                    item.target === activeFitTarget
-                      ? "rounded border border-cyan-600 bg-cyan-100 px-2 py-1 font-semibold text-cyan-900"
-                      : "rounded border border-slate-300 bg-white px-2 py-1 hover:bg-cyan-50"
-                  }
-                  type="button"
-                  onClick={() => setActiveFitTarget(item.target)}
-                >
-                  {item.label}
-                </button>
-              ))}
-            </div>
-            <div className="mt-2 grid gap-1">
+            <div className="grid gap-1">
               {FIT_TARGETS.map((item) => (
                 <RangeEditor
                   key={item.target}
                   label={item.label}
                   range={analysis.fitRanges[fitRangeKey(item.target)]}
+                  selected={item.target === activeFitTarget}
                   onChange={(range) => setFitRange(item.target, range)}
+                  onFocus={() => setActiveFitTarget(item.target)}
                 />
               ))}
             </div>
@@ -275,35 +261,94 @@ function ResultGrid({ rows }: { rows: Array<[string, string, string]> }) {
 
 function RangeEditor({
   label,
+  selected,
   range,
   onChange,
+  onFocus,
 }: {
   label: string;
+  selected: boolean;
   range: FitRange;
   onChange: (range: FitRange) => void;
+  onFocus: () => void;
 }) {
   return (
-    <label className="grid grid-cols-[98px_1fr] items-center gap-2">
+    <label
+      className={
+        selected
+          ? "grid grid-cols-[98px_1fr] items-center gap-2 rounded border border-slate-500 bg-slate-200 px-1 py-0.5 shadow-sm"
+          : "grid grid-cols-[98px_1fr] items-center gap-2 rounded border border-transparent px-1 py-0.5"
+      }
+      onFocus={onFocus}
+      onPointerDown={onFocus}
+    >
       <span
-        className="truncate text-slate-600"
+        className={selected ? "truncate font-semibold text-slate-800" : "truncate text-slate-600"}
         title={`${label}: ${formatRange(range.min, range.max)}`}
       >
         {label}
       </span>
       <span className="grid grid-cols-2 gap-1">
-        <input
-          className="min-w-0 rounded border border-slate-300 bg-white px-1 py-0.5 font-mono"
-          inputMode="decimal"
+        <RangeNumberInput
           value={range.min}
-          onChange={(event) => onChange({ ...range, min: Number(event.currentTarget.value) })}
+          onChange={(value) => onChange({ ...range, min: value })}
         />
-        <input
-          className="min-w-0 rounded border border-slate-300 bg-white px-1 py-0.5 font-mono"
-          inputMode="decimal"
+        <RangeNumberInput
           value={range.max}
-          onChange={(event) => onChange({ ...range, max: Number(event.currentTarget.value) })}
+          onChange={(value) => onChange({ ...range, max: value })}
         />
       </span>
     </label>
   );
+}
+
+function RangeNumberInput({
+  value,
+  onChange,
+}: {
+  value: number;
+  onChange: (value: number) => void;
+}) {
+  const [draft, setDraft] = useState(formatFitValue(value));
+  const [focused, setFocused] = useState(false);
+
+  useEffect(() => {
+    if (!focused) {
+      setDraft(formatFitValue(value));
+    }
+  }, [focused, value]);
+
+  return (
+    <input
+      className="min-w-0 rounded border border-slate-300 bg-white px-1 py-0.5 font-mono"
+      inputMode="decimal"
+      value={draft}
+      onBlur={() => {
+        setFocused(false);
+        if (!Number.isFinite(Number(draft))) {
+          setDraft(formatFitValue(value));
+        }
+      }}
+      onChange={(event) => {
+        const next = event.currentTarget.value;
+        setDraft(next);
+        if (isIncompleteNumber(next)) {
+          return;
+        }
+        const parsed = Number(next);
+        if (Number.isFinite(parsed)) {
+          onChange(parsed);
+        }
+      }}
+      onFocus={() => setFocused(true)}
+    />
+  );
+}
+
+function formatFitValue(value: number): string {
+  return Number.isFinite(value) ? value.toFixed(3) : "";
+}
+
+function isIncompleteNumber(value: string): boolean {
+  return value === "" || value === "-" || value === "." || value === "-.";
 }
