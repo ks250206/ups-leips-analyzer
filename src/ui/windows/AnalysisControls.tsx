@@ -85,9 +85,9 @@ export function AnalysisControls({ activeTab = "sample" }: { activeTab?: Analysi
           {analysis.error}
         </div>
       ) : null}
-      <div className="grid grid-cols-7 gap-1 border-b border-slate-300 bg-slate-200 p-2">
+      <div className="grid grid-cols-7 gap-1 border-b border-slate-300 bg-slate-200 p-2 text-[11px]">
         {[
-          ["sample", "Sample"],
+          ["sample", "Samp."],
           ["data", "Data"],
           ["ups", "UPS"],
           ["leips", "LEIPS"],
@@ -99,8 +99,8 @@ export function AnalysisControls({ activeTab = "sample" }: { activeTab?: Analysi
             key={id}
             className={
               tab === id
-                ? "rounded border border-slate-700 bg-slate-800 px-2 py-1 font-semibold text-white shadow-sm"
-                : "rounded border border-slate-300 bg-white px-2 py-1 text-slate-700 hover:bg-slate-100"
+                ? "rounded border border-slate-700 bg-slate-800 px-1.5 py-1 font-semibold text-white shadow-sm"
+                : "rounded border border-slate-300 bg-white px-1.5 py-1 text-slate-700 hover:bg-slate-100"
             }
             type="button"
             onClick={() => setTab(id as typeof tab)}

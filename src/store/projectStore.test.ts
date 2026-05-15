@@ -177,8 +177,8 @@ describe("project store", () => {
       ),
     });
 
-    expect(normalized.windows.find((window) => window.id === "controls")?.width).toBe(378);
-    expect(normalized.windows.find((window) => window.id === "controls")?.x).toBe(1502);
+    expect(normalized.windows.find((window) => window.id === "controls")?.width).toBe(357);
+    expect(normalized.windows.find((window) => window.id === "controls")?.x).toBe(1448);
   });
 
   test("stores per-IP applied voltage and fit ranges", () => {

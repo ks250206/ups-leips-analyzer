@@ -168,7 +168,7 @@ export function normalizeProject(project: ProjectSnapshot): ProjectSnapshot {
 function normalizeWindows(windows: ProjectSnapshot["windows"]): ProjectSnapshot["windows"] {
   const defaults = defaultWindows();
   return windows.map((window) => {
-    if (window.id === "controls" && window.width > 390) {
+    if (window.id === "controls" && window.width > 360) {
       const defaultWindow = defaults.find((item) => item.id === "controls");
       return defaultWindow ? { ...window, x: defaultWindow.x, width: defaultWindow.width } : window;
     }

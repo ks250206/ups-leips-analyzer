@@ -46,7 +46,7 @@ describe("App", () => {
     expect(screen.getByText("UPS-LEIPS Analyzer")).toBeTruthy();
     expect(screen.getByText("Sample Info")).toBeTruthy();
     const tabButtons = screen.getAllByRole("button").map((button) => button.textContent ?? "");
-    expect(tabButtons.indexOf("Sample")).toBeLessThan(tabButtons.indexOf("Data"));
+    expect(tabButtons.indexOf("Samp.")).toBeLessThan(tabButtons.indexOf("Data"));
     expect(screen.getByLabelText("試料状態表記")).toBeTruthy();
     expect(screen.getAllByText("UPS VB").length).toBeGreaterThan(0);
     expect(screen.getAllByText("UPS IP").length).toBeGreaterThan(0);
@@ -323,7 +323,7 @@ describe("App", () => {
     const user = userEvent.setup();
     render(<App />);
 
-    await user.click(screen.getByRole("button", { name: "Sample" }));
+    await user.click(screen.getByRole("button", { name: "Samp." }));
     expect(screen.getByText("Sample Info")).toBeTruthy();
     expect(screen.queryByRole("button", { name: "Sample Info" })).toBeNull();
     expect(screen.getByPlaceholderText("initial, 1st charge, Ar etched")).toBeTruthy();
@@ -332,7 +332,8 @@ describe("App", () => {
     await user.type(screen.getByLabelText("組成(仕込)"), "Li6PS5Cl");
     expect(screen.getByDisplayValue("Li, P, S, Cl")).toBeTruthy();
     await user.type(screen.getByLabelText("試料状態表記"), "initial");
-    expect(screen.getAllByText("Sample").length).toBeGreaterThan(1);
+    expect(screen.getAllByText("Sample").length).toBeGreaterThan(0);
+    expect(screen.getByRole("button", { name: "Samp." })).toBeTruthy();
     expect(screen.getByText("LPSCl-001")).toBeTruthy();
     expect(screen.getByText("State")).toBeTruthy();
     expect(screen.getByText("initial")).toBeTruthy();
