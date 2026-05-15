@@ -75,6 +75,6 @@ describe("App", () => {
     fireEvent.pointerDown(document.body);
     fireEvent.contextMenu(screen.getByLabelText("LEET / LEET(der) / LEIPS plot"));
     expect(screen.getByText("Filter")).toBeTruthy();
-    expect(screen.getByText("Set peak range from current max")).toBeTruthy();
+    expect(screen.getByText("Band pass 1_4.77 eV ✓")).toBeTruthy();
   });
 });

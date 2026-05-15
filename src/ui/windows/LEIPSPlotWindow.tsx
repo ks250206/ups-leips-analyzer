@@ -1,6 +1,6 @@
 import { useMemo } from "react";
 import { convertBiasToVacuumEnergy } from "../../domain/analysis";
-import { bandpassEnergy } from "../../domain/constants";
+import { BANDPASS_OPTIONS, bandpassEnergy } from "../../domain/constants";
 import type { FitTarget, Point, SpectrumDataset } from "../../domain/types";
 import { useProjectStore } from "../../store/projectStore";
 import type { ContextMenuItem } from "../ContextMenu";
@@ -19,6 +19,7 @@ import { SpectrumPlot } from "./SpectrumPlot";
 export function LEIPSPlotWindow() {
   const project = useProjectStore((state) => state.project);
   const setFitRange = useProjectStore((state) => state.setFitRange);
+  const setBandpassType = useProjectStore((state) => state.setBandpassType);
   const activeFitTarget = useProjectStore((state) => state.activeFitTarget);
   const leetDataset = project.datasets.find(
     (dataset) => dataset.id === project.analysis.selection.leetDatasetId,
@@ -80,21 +81,17 @@ export function LEIPSPlotWindow() {
       {
         type: "submenu",
         label: "Filter",
-        items: [
-          {
-            type: "item",
-            label: "Set peak range from current max",
-            action: () => {
-              const peak = maxPoint(leetDerDataset?.points ?? []);
-              if (peak) {
-                setFitRange("leet-der-peak", { min: peak.x - 0.5, max: peak.x + 0.5 });
-              }
-            },
-          },
-        ],
+        items: BANDPASS_OPTIONS.map((option) => ({
+          type: "item",
+          label:
+            option.type === project.analysis.bandpassType
+              ? `Band pass ${option.label} ✓`
+              : `Band pass ${option.label}`,
+          action: () => setBandpassType(option.type),
+        })),
       },
     ],
-    [leetDerDataset, setFitRange],
+    [project.analysis.bandpassType, setBandpassType],
   );
 
   return (
@@ -111,13 +108,6 @@ export function LEIPSPlotWindow() {
       onSelectRange={(range) => setFitRange("leet-der-peak", range)}
       onRangeBandChange={(target, range) => setFitRange(target as FitTarget, range)}
     />
-  );
-}
-
-function maxPoint(points: readonly Point[]): Point | undefined {
-  return points.reduce<Point | undefined>(
-    (current, point) => (!current || point.y > current.y ? point : current),
-    undefined,
   );
 }
 

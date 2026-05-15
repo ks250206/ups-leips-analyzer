@@ -2,7 +2,7 @@ import { useEffect, useState, type ReactNode } from "react";
 import { createPortal } from "react-dom";
 
 export type ContextMenuItem =
-  | { type: "item"; label: string; action: () => void | Promise<void> }
+  | { type: "item"; label: string; action?: () => void | Promise<void>; disabled?: boolean }
   | { type: "submenu"; label: string; items: ContextMenuItem[] }
   | { type: "separator" };
 
@@ -85,11 +85,12 @@ function MenuItems({ items, onClose }: { items: ContextMenuItem[]; onClose: () =
     return (
       <button
         key={item.label}
-        className="flex w-full items-center px-3 py-1.5 text-left hover:bg-cyan-50"
+        className="flex w-full items-center px-3 py-1.5 text-left enabled:hover:bg-cyan-50 disabled:cursor-not-allowed disabled:text-slate-400"
+        disabled={item.disabled}
         role="menuitem"
         type="button"
         onClick={() => {
-          void item.action();
+          void item.action?.();
           onClose();
         }}
       >

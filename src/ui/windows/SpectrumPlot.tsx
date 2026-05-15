@@ -123,8 +123,18 @@ export function SpectrumPlot({
   const openPlotContextMenu = (x: number, y: number) =>
     openMenu(x, y, [
       { type: "item", label: "Reset view", action: () => updateViewport({}) },
-      { type: "item", label: "Export PNG", action: () => exportPng(svgRef.current, title) },
-      { type: "item", label: "Export SVG", action: () => exportSvg(svgRef.current, title) },
+      {
+        type: "item",
+        label: "Export PNG",
+        action: () => exportPng(svgRef.current, title),
+        disabled: !hasData,
+      },
+      {
+        type: "item",
+        label: "Export SVG",
+        action: () => exportSvg(svgRef.current, title),
+        disabled: !hasData,
+      },
       ...(extraContextMenuItems.length > 0
         ? ([{ type: "separator" }, ...extraContextMenuItems] as ContextMenuItem[])
         : []),

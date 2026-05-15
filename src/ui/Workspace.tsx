@@ -6,11 +6,19 @@ import {
   SlidersHorizontal,
   Table2,
 } from "lucide-react";
-import { useEffect, useMemo, useRef, useState, type PointerEvent, type WheelEvent } from "react";
+import {
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+  type MouseEvent,
+  type PointerEvent,
+  type WheelEvent,
+} from "react";
 import { exportProjectJson } from "../store/projectDb";
 import { useProjectStore } from "../store/projectStore";
 import type { ProjectRecord, WindowLayout } from "../store/projectTypes";
-import type { ContextMenuItem } from "./ContextMenu";
+import { ContextMenu, type ContextMenuItem, useContextMenu } from "./ContextMenu";
 import { AnalysisControls } from "./windows/AnalysisControls";
 import { BandDiagramWindow } from "./windows/BandDiagramWindow";
 import { DataBrowser } from "./windows/DataBrowser";
@@ -25,14 +33,13 @@ export function Workspace() {
   const focusWindow = useProjectStore((state) => state.focusWindow);
   const loadDemo = useProjectStore((state) => state.loadDemo);
   const recalculate = useProjectStore((state) => state.recalculate);
+  const newProject = useProjectStore((state) => state.newProject);
+  const { menu, openMenu, closeMenu } = useContextMenu();
   const [viewport, setViewport] = useState({ x: 0, y: 0, scale: 1 });
   const panStart = useRef<{ x: number; y: number; originX: number; originY: number } | undefined>(
     undefined,
   );
-  const windows = useMemo(
-    () => [...project.windows].sort((a, b) => a.zIndex - b.zIndex),
-    [project.windows],
-  );
+  const windows = useMemo(() => project.windows, [project.windows]);
   const handleWheel = (event: WheelEvent<HTMLDivElement>) => {
     const target = event.target as HTMLElement;
     if (target.closest("[data-plot-host='true']") && !event.metaKey && !event.ctrlKey) {
@@ -76,6 +83,22 @@ export function Workspace() {
     };
     event.currentTarget.setPointerCapture?.(event.pointerId);
   };
+  const handleContextMenu = (event: MouseEvent<HTMLDivElement>) => {
+    const target = event.target as HTMLElement;
+    if (!target.closest("[data-workspace-surface='true'], [data-workspace-plane='true']")) {
+      return;
+    }
+    if (target.closest(".workspace-window")) {
+      return;
+    }
+    event.preventDefault();
+    openMenu(event.clientX, event.clientY, [
+      { type: "item", label: "Load Demo", action: loadDemo },
+      { type: "item", label: "Recalculate", action: recalculate },
+      { type: "separator" },
+      { type: "item", label: "New Project", action: newProject },
+    ]);
+  };
   const handlePointerMove = (event: PointerEvent<HTMLDivElement>) => {
     const drag = panStart.current;
     if (!drag) {
@@ -112,6 +135,7 @@ export function Workspace() {
         onPointerUp={handlePointerUp}
         onPointerCancel={handlePointerUp}
         onWheel={handleWheel}
+        onContextMenu={handleContextMenu}
       >
         <div
           className="absolute left-0 top-0 h-full w-full"
@@ -136,6 +160,7 @@ export function Workspace() {
           ))}
         </div>
       </div>
+      <ContextMenu menu={menu} onClose={closeMenu} />
     </main>
   );
 }

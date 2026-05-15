@@ -9,8 +9,8 @@ export const DEFAULT_FIT_RANGES: FitRanges = {
   upsIpEdge: { min: 9.0, max: 11.4 },
   upsIpBackground: { min: 12.2, max: 15.2 },
   leetDerPeak: { min: -6.9, max: -5.7 },
-  leipsEdge: { min: 3.0, max: 4.6 },
-  leipsBackground: { min: 1.0, max: 2.4 },
+  leipsEdge: { min: 1.0, max: 2.4 },
+  leipsBackground: { min: 3.0, max: 4.6 },
 };
 
 export function createDemoDatasets(): SpectrumDataset[] {
