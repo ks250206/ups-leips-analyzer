@@ -33,4 +33,4 @@ pnpm binary:build:macos-app:arm64
 7. Goバイナリで `/` と `/assets/...` が返る。
 8. macOS `.app` は `Contents/Resources/favicon.icns` と `CFBundleIconFile` を持つ。
 9. Windows `.exe` はfavicon resourceを埋め込んで生成される。
-10. `docker compose up` で `http://127.0.0.1:4173/` が返る。
+10. Caddyコンテナを `docker compose up` / `podman compose up` で起動し、`http://127.0.0.1:4173/` が返る。
