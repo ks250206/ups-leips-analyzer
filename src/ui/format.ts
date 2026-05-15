@@ -13,8 +13,5 @@ export function formatSignificant(value: number | undefined, digits = 4): string
   if (value === undefined || !Number.isFinite(value)) {
     return "-";
   }
-  return value
-    .toPrecision(Math.max(1, Math.round(digits)))
-    .replace(/(\.\d*?)0+($|e)/, "$1$2")
-    .replace(/\.$/, "");
+  return value.toPrecision(Math.max(1, Math.round(digits)));
 }

@@ -126,6 +126,32 @@ describe("SpectrumPlot D3 scales", () => {
     expect(point?.y).toBeLessThanOrEqual(scales.geometry.plotBottom);
   });
 
+  test("places hidden-cursor fit labels near a visible edge", () => {
+    const scales = createPlotScales({
+      size: { width: 320, height: 240 },
+      series: [{ name: "raw", color: "#000000", points: [{ x: 5, y: 5 }] }],
+      viewport: { x: { min: 0, max: 10 }, y: { min: 0, max: 10 } },
+      xDirection: "normal",
+    });
+    const point = fitLabelPointForSeries(
+      {
+        name: "fit",
+        color: "#2563eb",
+        fitLabel: "VBM edge",
+        points: [
+          { x: -100, y: 20 },
+          { x: 100, y: -20 },
+        ],
+      },
+      scales.xDomain,
+      scales.geometry,
+      scales.xScale,
+      scales.yScale,
+    );
+
+    expect(point?.x).toBeCloseTo(scales.geometry.left + "VBM edge".length * 3.6);
+  });
+
   test("converts plot-relative drag coordinates through absolute SVG scales", () => {
     const normal = createPlotScales({
       size: { width: 320, height: 240 },

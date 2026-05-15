@@ -216,7 +216,7 @@ export function SeriesPath({
           strokeWidth={3}
           textAnchor="middle"
           x={labelPoint.x}
-          y={labelPoint.y - 6}
+          y={labelPoint.y}
         >
           {series.fitLabel}
         </text>
@@ -238,7 +238,8 @@ export function fitLabelPointForSeries(
   }
   const min = Math.max(points[0]?.x ?? visibleXDomain.min, visibleXDomain.min);
   const max = Math.min(points[points.length - 1]?.x ?? visibleXDomain.max, visibleXDomain.max);
-  const targetX = min <= max ? (min + max) / 2 : points[Math.floor(points.length / 2)]?.x;
+  const targetX =
+    min <= max ? fitLabelEdgeX(min, max, xScale) : points[Math.floor(points.length / 2)]?.x;
   if (targetX === undefined) {
     return undefined;
   }
@@ -248,6 +249,10 @@ export function fitLabelPointForSeries(
     x: clamp(xScale(targetX), geometry.left + textHalfWidth, geometry.plotRight - textHalfWidth),
     y: clamp(yScale(targetY) - 6, geometry.top + 14, geometry.plotBottom - 8),
   };
+}
+
+function fitLabelEdgeX(min: number, max: number, xScale: ScaleLinear<number, number>): number {
+  return xScale(min) <= xScale(max) ? min : max;
 }
 
 function interpolateY(points: readonly Point[], x: number): number {

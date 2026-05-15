@@ -15,6 +15,7 @@ import {
   DEFAULT_BAND_SIGNIFICANT_DIGITS,
   clampSignificantDigits,
 } from "./BandDiagramWindow";
+import { formatSignificant } from "../format";
 
 const BAND = {
   efMinusEvbm: 1,
@@ -52,6 +53,7 @@ describe("Igor-style band diagram plot model", () => {
     expect(DEFAULT_BAND_SIGNIFICANT_DIGITS).toBe(4);
     expect(clampSignificantDigits(2.2)).toBe(2);
     expect(clampSignificantDigits(99)).toBe(8);
+    expect(formatSignificant(5.1, 3)).toBe("5.10");
   });
 
   test("can render one-sided left arrowheads for IP and EA", () => {
@@ -111,6 +113,27 @@ describe("Igor-style band diagram plot model", () => {
 
     expect(shifted.yDomain).toEqual(auto.y);
     expect(shifted.yRightDomain).toEqual(auto.y2);
+  });
+
+  test("auto viewport ignores display scale and offsets", () => {
+    const normal = createBandAutoViewport({
+      band: BAND,
+      xDomain: { min: -6, max: 4 },
+      upsScale: 1,
+      upsOffset: 0,
+      leipsScale: 1,
+      leipsOffset: 0,
+    });
+    const transformed = createBandAutoViewport({
+      band: BAND,
+      xDomain: { min: -6, max: 4 },
+      upsScale: 10,
+      upsOffset: 50,
+      leipsScale: 0.1,
+      leipsOffset: -50,
+    });
+
+    expect(transformed).toEqual(normal);
   });
 
   test("keeps the band data signature stable across recalculated annotation values", () => {

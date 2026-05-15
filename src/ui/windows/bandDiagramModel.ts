@@ -106,16 +106,10 @@ export function createBandAutoViewport(input: {
   leipsScale: number;
   leipsOffset: number;
 }): Required<BandViewport> {
-  const upsPoints = transformBandPoints(input.band.upsPoints, input.upsScale, input.upsOffset);
-  const leipsPoints = transformBandPoints(
-    input.band.leipsPoints,
-    input.leipsScale,
-    input.leipsOffset,
-  );
   return {
     x: { min: input.xDomain.min, max: input.xDomain.max },
-    y: domainForY(upsPoints),
-    y2: domainForY(leipsPoints),
+    y: domainForY(input.band.upsPoints),
+    y2: domainForY(input.band.leipsPoints),
   };
 }
 

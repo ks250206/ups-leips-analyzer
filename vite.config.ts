@@ -4,6 +4,24 @@ import { defineConfig } from "vite-plus";
 
 export default defineConfig({
   lint: { options: { typeAware: true, typeCheck: true } },
+  build: {
+    rolldownOptions: {
+      output: {
+        codeSplitting: {
+          groups: [
+            {
+              name: "react-vendor",
+              test: /[\\/]node_modules[\\/](react|react-dom|scheduler)[\\/]/,
+            },
+            {
+              name: "data-vendor",
+              test: /[\\/]node_modules[\\/](@tanstack|dexie|fflate|zustand)[\\/]/,
+            },
+          ],
+        },
+      },
+    },
+  },
   plugins: [react(), tailwindcss()],
   test: {
     environment: "jsdom",

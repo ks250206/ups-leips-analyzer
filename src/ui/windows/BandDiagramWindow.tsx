@@ -48,16 +48,16 @@ export function BandDiagramWindow() {
     const next = createBandAutoViewport({
       band,
       xDomain: bandXDomain,
-      upsScale,
-      upsOffset,
-      leipsScale,
-      leipsOffset,
+      upsScale: 1,
+      upsOffset: 0,
+      leipsScale: 1,
+      leipsOffset: 0,
     });
     setXMin(Number(next.x.min.toFixed(3)));
     setXMax(Number(next.x.max.toFixed(3)));
     setViewport(next);
     setBandDiagramViewport(next);
-  }, [band, bandXDomain, leipsOffset, leipsScale, setBandDiagramViewport, upsOffset, upsScale]);
+  }, [band, bandXDomain, setBandDiagramViewport]);
 
   useEffect(() => {
     if (!band || !bandDataSignature) {
