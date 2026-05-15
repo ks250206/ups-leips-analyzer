@@ -214,17 +214,49 @@ describe("App", () => {
     const user = userEvent.setup();
     render(<App />);
 
-    await user.click(screen.getByRole("button", { name: "Sample Info" }));
-    expect(screen.getAllByText("Sample Info").length).toBeGreaterThan(1);
+    await user.click(screen.getByRole("button", { name: "Sample" }));
+    expect(screen.getByText("Sample Info")).toBeTruthy();
+    expect(screen.queryByRole("button", { name: "Sample Info" })).toBeNull();
     await user.type(screen.getByLabelText("組成(仕込)"), "Li6PS5Cl");
     expect(screen.getByDisplayValue("Li, P, S, Cl")).toBeTruthy();
+    await user.click(screen.getByLabelText("電池のイオン種"));
+    expect(screen.queryByRole("option", { name: "Li+" })).toBeNull();
+    await user.click(screen.getAllByText("Li+")[1]!);
+    expect(screen.getByLabelText("電池のイオン種").textContent).toContain("Li+");
     expect(screen.getByLabelText("試料台")).toBeTruthy();
-    expect(screen.getByText("LEIPS測定対応傾斜試料ホルダ_MOD201")).toBeTruthy();
+    await user.click(screen.getByLabelText("試料台"));
+    expect(screen.getAllByText("LEIPS測定対応傾斜試料ホルダ_MOD201").length).toBeGreaterThan(1);
 
     await user.click(screen.getByRole("button", { name: "Project" }));
     await user.click(screen.getByText("Load Project"));
     expect(screen.getByRole("heading", { name: "Load Project" })).toBeTruthy();
     fireEvent.pointerDown(screen.getByTestId("modal-backdrop"));
     expect(screen.queryByRole("heading", { name: "Load Project" })).toBeNull();
+  });
+
+  test("changes and deletes loaded datasets from the Data Browser", async () => {
+    const user = userEvent.setup();
+    render(<App />);
+
+    await user.upload(
+      screen.getByLabelText("Load CSV files"),
+      new File([CSV], "browser_UPS_VB.csv", { type: "text/csv" }),
+    );
+
+    expect(await screen.findByText("Loaded 1 dataset.")).toBeTruthy();
+    await user.click(screen.getByLabelText("Open browser_UPS_VB dataset menu"));
+    expect(screen.getByText("Change role")).toBeTruthy();
+    fireEvent.mouseEnter(screen.getByText("Change role"));
+    await user.click(screen.getByText("reels"));
+    expect(await screen.findByText("Changed browser_UPS_VB role to reels.")).toBeTruthy();
+    expect(screen.getByText("reels")).toBeTruthy();
+
+    await user.click(screen.getByLabelText("Open browser_UPS_VB dataset menu"));
+    await user.click(screen.getByText("Delete dataset"));
+    expect(screen.getByRole("heading", { name: "Delete dataset" })).toBeTruthy();
+    await user.click(screen.getByRole("button", { name: "Delete" }));
+    expect(await screen.findByText("Deleted browser_UPS_VB.")).toBeTruthy();
+    expect(screen.getByText("0 datasets")).toBeTruthy();
+    expect(screen.getByText("No dataset")).toBeTruthy();
   });
 });

@@ -132,6 +132,7 @@ describe("project store", () => {
   test("persists per-plot cursor styles and sample info", () => {
     useProjectStore.getState().setPlotCursorStyle("upsIp", "range");
     useProjectStore.getState().setSampleInfoField("nominalComposition", "Li6PS5Cl");
+    useProjectStore.getState().setSampleInfoField("batteryIonSpecies", ["Li+", "Na+"]);
     useProjectStore.getState().setSampleInfoField("sampleName", "sample-a");
 
     const project = useProjectStore.getState().project;
@@ -144,6 +145,24 @@ describe("project store", () => {
       .importProject(exportProjectJson({ ...project, id: "sample-info", name: "Sample Info" }));
     expect(useProjectStore.getState().project.ui?.cursorStyles?.upsIp).toBe("range");
     expect(useProjectStore.getState().project.ui?.sampleInfo?.sampleName).toBe("sample-a");
+    expect(useProjectStore.getState().project.ui?.sampleInfo?.batteryIonSpecies).toEqual([
+      "Li+",
+      "Na+",
+    ]);
+  });
+
+  test("migrates legacy string sample multi-select values", () => {
+    const project = {
+      ...useProjectStore.getState().project,
+      ui: {
+        ...useProjectStore.getState().project.ui,
+        sampleInfo: { batteryIonSpecies: "Li+" },
+      },
+    };
+
+    useProjectStore.getState().importProject(exportProjectJson(project as never));
+
+    expect(useProjectStore.getState().project.ui?.sampleInfo?.batteryIonSpecies).toEqual(["Li+"]);
   });
 
   test("resets individual and all window geometry to defaults", () => {
@@ -239,6 +258,33 @@ describe("project store", () => {
     const project = { ...useProjectStore.getState().project, id: "imported", name: "Imported" };
     useProjectStore.getState().importProject(exportProjectJson(project));
     expect(useProjectStore.getState().project.name).toBe("Imported");
+  });
+
+  test("deletes a dataset and repairs selection state", () => {
+    const state = useProjectStore.getState();
+    const selectedId = state.project.analysis.selection.upsVbDatasetId!;
+
+    state.deleteDataset(selectedId);
+
+    const project = useProjectStore.getState().project;
+    expect(project.datasets.some((dataset) => dataset.id === selectedId)).toBe(false);
+    expect(project.selectedDatasetId).not.toBe(selectedId);
+    expect(project.analysis.selection.upsVbDatasetId).toBeUndefined();
+    expect(project.analysis.ups).toBeUndefined();
+  });
+
+  test("changes dataset kind and reassigns the matching analysis slot", () => {
+    const state = useProjectStore.getState();
+    const leips = state.project.datasets.find((dataset) => dataset.kind === "leips")!;
+
+    state.setDatasetKind(leips.id, "reels");
+
+    const project = useProjectStore.getState().project;
+    const changed = project.datasets.find((dataset) => dataset.id === leips.id)!;
+    expect(changed.kind).toBe("reels");
+    expect(changed.xLabel).toBe("Kinetic Energy / eV");
+    expect(project.analysis.selection.reelsDatasetId).toBe(leips.id);
+    expect(project.analysis.selection.leipsDatasetId).toBeUndefined();
   });
 
   test("switches analysis slots from demo datasets to imported datasets of the same kind", () => {

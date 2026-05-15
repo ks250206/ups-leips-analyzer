@@ -1,8 +1,9 @@
 import { create } from "zustand";
 import { CUSTOM_BANDPASS_TYPE } from "../domain/constants";
-import type { SampleInfoField } from "../domain/sampleInfo";
+import type { SampleInfoField, SampleInfoFieldValue } from "../domain/sampleInfo";
 import type { AnalysisState, FitRange, FitTarget, SpectrumDataset } from "../domain/types";
 import {
+  axisLabelForDatasetKind,
   autoFitRanges,
   autoSelectDatasets,
   fitRangeKey,
@@ -40,6 +41,8 @@ interface ProjectStore {
   newProject: () => void;
   loadDemo: () => void;
   addDatasets: (datasets: SpectrumDataset[]) => void;
+  deleteDataset: (datasetId: string) => void;
+  setDatasetKind: (datasetId: string, kind: SpectrumDataset["kind"]) => void;
   selectDataset: (datasetId: string) => void;
   assignDataset: (slot: keyof AnalysisState["selection"], datasetId: string) => void;
   setFitRange: (target: FitTarget, range: FitRange) => void;
@@ -56,7 +59,7 @@ interface ProjectStore {
   setLeipsEvacPlotViewport: (viewport: ProjectUiState["leipsEvacPlotViewport"]) => void;
   setReelsBackgroundMode: (mode: NonNullable<ProjectUiState["reelsBackgroundMode"]>) => void;
   setPlotCursorStyle: (plot: PlotCursorStyleKey, style: CursorStyle) => void;
-  setSampleInfoField: (field: SampleInfoField, value: string) => void;
+  setSampleInfoField: (field: SampleInfoField, value: SampleInfoFieldValue) => void;
   updateWindow: (id: string, patch: Partial<WindowLayout>) => void;
   focusWindow: (id: string) => void;
   resetWindowPosition: (id: string) => void;
@@ -102,6 +105,68 @@ export const useProjectStore = create<ProjectStore>((set, get) => ({
         datasets: merged,
         selectedDatasetId: datasets[0]?.id ?? state.project.selectedDatasetId,
         analysis: { ...state.project.analysis, fitRanges, selection },
+      });
+      return { project: recalculateProject(project) };
+    });
+  },
+  deleteDataset: (datasetId) => {
+    set((state) => {
+      const datasets = state.project.datasets.filter((dataset) => dataset.id !== datasetId);
+      const selection = autoSelectDatasets(datasets, state.project.analysis.selection, []);
+      const selectedDatasetId =
+        state.project.selectedDatasetId === datasetId
+          ? datasets[0]?.id
+          : datasets.some((dataset) => dataset.id === state.project.selectedDatasetId)
+            ? state.project.selectedDatasetId
+            : datasets[0]?.id;
+      const project = touchProject({
+        ...state.project,
+        datasets,
+        selectedDatasetId,
+        analysis: {
+          ...state.project.analysis,
+          selection,
+        },
+      });
+      return { project: recalculateProject(project) };
+    });
+  },
+  setDatasetKind: (datasetId, kind) => {
+    set((state) => {
+      let preferred: SpectrumDataset[] = [];
+      const datasets = state.project.datasets.map((dataset) => {
+        if (dataset.id !== datasetId) {
+          return dataset;
+        }
+        const updated = {
+          ...dataset,
+          kind,
+          xLabel: axisLabelForDatasetKind(kind),
+        };
+        preferred = [updated];
+        return updated;
+      });
+      if (preferred.length === 0) {
+        return state;
+      }
+      const selection = autoSelectDatasets(datasets, state.project.analysis.selection, preferred);
+      const fitRanges = autoFitRanges(
+        datasets,
+        selection,
+        state.project.analysis.fitRanges,
+        preferred,
+        state.project.analysis.bandpassType,
+        state.project.analysis.customBandpassEnergy,
+        state.project.analysis.reelsIncidentEnergy,
+      );
+      const project = touchProject({
+        ...state.project,
+        datasets,
+        analysis: {
+          ...state.project.analysis,
+          selection,
+          fitRanges,
+        },
       });
       return { project: recalculateProject(project) };
     });

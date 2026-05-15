@@ -1,16 +1,32 @@
-import { ChevronDown, FileUp } from "lucide-react";
+import { ChevronDown, FileUp, MoreHorizontal } from "lucide-react";
 import { useRef, useState } from "react";
+import type { SpectrumDataset, SpectrumKind } from "../../domain/types";
 import { parseMultiPakCsv } from "../../io/multipakCsv";
 import { useProjectStore } from "../../store/projectStore";
+import { ContextMenu, type ContextMenuItem, useContextMenu } from "../ContextMenu";
 import { useToastStore } from "../Toast";
+
+const DATASET_KINDS: SpectrumKind[] = [
+  "ups-vb",
+  "ups-ip",
+  "leet",
+  "leet-der",
+  "leips",
+  "reels",
+  "unknown",
+];
 
 export function DataBrowser() {
   const project = useProjectStore((state) => state.project);
   const addDatasets = useProjectStore((state) => state.addDatasets);
+  const deleteDataset = useProjectStore((state) => state.deleteDataset);
   const selectDataset = useProjectStore((state) => state.selectDataset);
+  const setDatasetKind = useProjectStore((state) => state.setDatasetKind);
   const pushToast = useToastStore((state) => state.pushToast);
+  const { menu, openMenu, closeMenu } = useContextMenu();
   const csvInputRef = useRef<HTMLInputElement>(null);
   const [error, setError] = useState<string>();
+  const [deleteTarget, setDeleteTarget] = useState<SpectrumDataset>();
 
   async function handleFiles(fileList: FileList | null) {
     const files = [...(fileList ?? [])];
@@ -30,6 +46,34 @@ export function DataBrowser() {
       setError(message);
       pushToast(`CSV load failed: ${message}`, "error");
     }
+  }
+
+  function datasetMenuItems(dataset: SpectrumDataset): ContextMenuItem[] {
+    return [
+      {
+        type: "submenu",
+        label: "Change role",
+        items: DATASET_KINDS.map((kind) => ({
+          type: "item",
+          label: kind === dataset.kind ? `${kind} ✓` : kind,
+          action: () => {
+            setDatasetKind(dataset.id, kind);
+            pushToast(`Changed ${dataset.name} role to ${kind}.`, "success");
+          },
+        })),
+      },
+      { type: "separator" },
+      {
+        type: "item",
+        label: "Delete dataset",
+        action: () => setDeleteTarget(dataset),
+      },
+    ];
+  }
+
+  function openDatasetMenu(dataset: SpectrumDataset, x: number, y: number) {
+    selectDataset(dataset.id);
+    openMenu(x, y, datasetMenuItems(dataset));
   }
 
   return (
@@ -98,21 +142,95 @@ export function DataBrowser() {
       </div>
       <div className="min-h-0 flex-1 overflow-auto">
         {project.datasets.map((dataset) => (
-          <button
+          <div
             key={dataset.id}
-            className="flex w-full items-center justify-between gap-2 border-b border-slate-200 px-2 py-1.5 text-left hover:bg-cyan-50"
-            type="button"
-            onClick={() => selectDataset(dataset.id)}
+            className="flex w-full items-center gap-1 border-b border-slate-200 hover:bg-cyan-50"
+            onContextMenu={(event) => {
+              event.preventDefault();
+              event.stopPropagation();
+              openDatasetMenu(dataset, event.clientX, event.clientY);
+            }}
           >
-            <span className="min-w-0 truncate">{dataset.name}</span>
-            <span className="rounded bg-slate-200 px-1.5 py-0.5 text-[10px] uppercase text-slate-600">
-              {dataset.kind}
-            </span>
-          </button>
+            <button
+              className="flex min-w-0 flex-1 items-center justify-between gap-2 px-2 py-1.5 text-left"
+              type="button"
+              onClick={() => selectDataset(dataset.id)}
+            >
+              <span className="min-w-0 truncate">{dataset.name}</span>
+              <span className="rounded bg-slate-200 px-1.5 py-0.5 text-[10px] uppercase text-slate-600">
+                {dataset.kind}
+              </span>
+            </button>
+            <button
+              aria-label={`Open ${dataset.name} dataset menu`}
+              className="mr-1 rounded p-1 text-slate-500 hover:bg-white hover:text-slate-800"
+              type="button"
+              onClick={(event) => {
+                event.stopPropagation();
+                openDatasetMenu(dataset, event.clientX, event.clientY);
+              }}
+            >
+              <MoreHorizontal size={13} />
+            </button>
+          </div>
         ))}
       </div>
       <div className="border-t border-slate-300 bg-white p-2 text-slate-600">
         {project.datasets.length} datasets
+      </div>
+      <ContextMenu menu={menu} onClose={closeMenu} />
+      {deleteTarget ? (
+        <DeleteDatasetModal
+          dataset={deleteTarget}
+          onCancel={() => setDeleteTarget(undefined)}
+          onConfirm={() => {
+            deleteDataset(deleteTarget.id);
+            pushToast(`Deleted ${deleteTarget.name}.`, "success");
+            setDeleteTarget(undefined);
+          }}
+        />
+      ) : null}
+    </div>
+  );
+}
+
+function DeleteDatasetModal({
+  dataset,
+  onCancel,
+  onConfirm,
+}: {
+  dataset: SpectrumDataset;
+  onCancel: () => void;
+  onConfirm: () => void;
+}) {
+  return (
+    <div className="fixed inset-0 z-[11000] grid place-items-center bg-slate-950/20">
+      <div
+        aria-modal="true"
+        className="w-[360px] rounded border border-slate-300 bg-white p-4 text-sm shadow-2xl"
+        role="dialog"
+      >
+        <h2 className="font-semibold text-slate-900">Delete dataset</h2>
+        <p className="mt-2 text-xs leading-5 text-slate-600">
+          Delete <span className="font-semibold text-slate-800">{dataset.name}</span> from this
+          project. The source CSV file is not changed.
+        </p>
+        <div className="mt-4 flex justify-end gap-2">
+          <button
+            className="rounded border border-slate-300 bg-white px-3 py-1.5 text-xs hover:bg-slate-50"
+            type="button"
+            onClick={onCancel}
+          >
+            Cancel
+          </button>
+          <button
+            className="rounded bg-slate-900 px-3 py-1.5 text-xs font-semibold text-white hover:bg-slate-800"
+            type="button"
+            onClick={onConfirm}
+          >
+            Delete
+          </button>
+        </div>
       </div>
     </div>
   );

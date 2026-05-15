@@ -8,6 +8,7 @@ import {
 } from "../domain/analysis";
 import { CUSTOM_BANDPASS_TYPE, bandpassEnergy } from "../domain/constants";
 import { DEFAULT_FIT_RANGES } from "../domain/demoData";
+import { normalizeSampleInfo } from "../domain/sampleInfo";
 import type { AnalysisState, FitRange, FitTarget, Point, SpectrumDataset } from "../domain/types";
 import type { ProjectSnapshot } from "./projectTypes";
 
@@ -122,7 +123,10 @@ export function fitRangeKey(target: FitTarget): keyof AnalysisState["fitRanges"]
 export function normalizeProject(project: ProjectSnapshot): ProjectSnapshot {
   return {
     ...project,
-    ui: project.ui ?? {},
+    ui: {
+      ...project.ui,
+      sampleInfo: normalizeSampleInfo(project.ui?.sampleInfo),
+    },
     analysis: {
       ...project.analysis,
       customBandpassEnergy: project.analysis.customBandpassEnergy ?? 4.77,
@@ -245,11 +249,22 @@ function pickDatasetId(
   currentId: string | undefined,
   preferred: readonly SpectrumDataset[],
 ): string | undefined {
+  const current = datasets.find((dataset) => dataset.id === currentId && dataset.kind === kind);
   return (
     preferred.find((dataset) => dataset.kind === kind)?.id ??
-    currentId ??
+    current?.id ??
     datasets.find((dataset) => dataset.kind === kind)?.id
   );
+}
+
+export function axisLabelForDatasetKind(kind: SpectrumDataset["kind"]): string {
+  if (kind === "leet" || kind === "leet-der" || kind === "leips") {
+    return "Applied Bias Vbias / V";
+  }
+  if (kind === "reels") {
+    return "Kinetic Energy / eV";
+  }
+  return "Binding Energy / eV";
 }
 
 function peakCenteredRange(dataset: SpectrumDataset, width: number): FitRange {

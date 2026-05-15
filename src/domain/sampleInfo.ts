@@ -8,7 +8,7 @@ export interface SampleInfoState {
   crystalStructure?: string;
   crystalState?: string;
   applicationCategory?: string;
-  batteryIonSpecies?: string;
+  batteryIonSpecies?: string[];
   holder?: string;
   transferVessel?: string;
   sampleForm?: string;
@@ -19,11 +19,12 @@ export interface SampleInfoState {
 }
 
 export type SampleInfoField = keyof SampleInfoState;
+export type SampleInfoFieldValue = string | string[];
 
 export interface SampleInfoFieldDefinition {
   field: SampleInfoField;
   label: string;
-  kind: "text" | "select" | "date" | "textarea";
+  kind: "text" | "select" | "multiselect" | "date" | "textarea";
   placeholder?: string;
   options?: readonly string[];
 }
@@ -102,7 +103,7 @@ export const SAMPLE_INFO_FIELDS: readonly SampleInfoFieldDefinition[] = [
   {
     field: "batteryIonSpecies",
     label: "電池のイオン種",
-    kind: "select",
+    kind: "multiselect",
     options: BATTERY_ION_SPECIES_OPTIONS,
     placeholder: "Li+",
   },
@@ -152,4 +153,21 @@ export function elementsFromComposition(composition: string | undefined): string
     }
   }
   return elements.join(", ");
+}
+
+export function normalizeSampleInfo(input: SampleInfoState | undefined): SampleInfoState {
+  if (!input) {
+    return {};
+  }
+  return {
+    ...input,
+    batteryIonSpecies: normalizeStringArray(input.batteryIonSpecies),
+  };
+}
+
+function normalizeStringArray(value: string | string[] | undefined): string[] | undefined {
+  if (Array.isArray(value)) {
+    return value.filter(Boolean);
+  }
+  return value ? [value] : undefined;
 }

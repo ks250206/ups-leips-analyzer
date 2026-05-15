@@ -3,10 +3,13 @@ import {
   SAMPLE_INFO_FIELDS,
   elementsFromComposition,
   type SampleInfoFieldDefinition,
+  type SampleInfoFieldValue,
+  type SampleInfoState,
 } from "../../domain/sampleInfo";
 import { useEffect, useState, type ReactNode } from "react";
 import type { AnalysisSelection, FitRange, FitTarget, SpectrumDataset } from "../../domain/types";
 import { fitRangeKey, useProjectStore } from "../../store/projectStore";
+import { MultiSelectField, SelectField } from "../FormSelect";
 import { formatNumber, formatRange } from "../format";
 
 const FIT_TARGETS: Array<{ target: FitTarget; label: string }> = [
@@ -69,7 +72,7 @@ export function AnalysisControls({ activeTab = "data" }: { activeTab?: AnalysisT
       <div className="grid grid-cols-7 gap-1 border-b border-slate-300 bg-slate-200 p-2">
         {[
           ["data", "Data"],
-          ["sample", "Sample Info"],
+          ["sample", "Sample"],
           ["ups", "UPS"],
           ["leips", "LEIPS"],
           ["reels", "REELS"],
@@ -119,22 +122,13 @@ export function AnalysisControls({ activeTab = "data" }: { activeTab?: AnalysisT
           <Panel title="Sample Info">
             <div className="grid gap-2">
               {SAMPLE_INFO_FIELDS.map((field) => (
-                <SampleInfoFieldRow
+                <FragmentWithElements
                   key={field.field}
-                  definition={field}
-                  value={sampleInfo[field.field] ?? ""}
+                  field={field}
+                  sampleInfo={sampleInfo}
                   onChange={(value) => setSampleInfoField(field.field, value)}
                 />
               ))}
-              <label className="grid grid-cols-[118px_1fr] items-center gap-2">
-                <span className="font-semibold text-slate-600">含有元素</span>
-                <input
-                  className="min-w-0 rounded border border-slate-300 bg-slate-50 px-2 py-1 text-slate-600"
-                  readOnly
-                  value={elementsFromComposition(sampleInfo.nominalComposition)}
-                  placeholder="Li, P, S, Cl"
-                />
-              </label>
             </div>
           </Panel>
         ) : null}
@@ -265,6 +259,37 @@ export function AnalysisControls({ activeTab = "data" }: { activeTab?: AnalysisT
   );
 }
 
+function FragmentWithElements({
+  field,
+  sampleInfo,
+  onChange,
+}: {
+  field: SampleInfoFieldDefinition;
+  sampleInfo: SampleInfoState;
+  onChange: (value: SampleInfoFieldValue) => void;
+}) {
+  return (
+    <>
+      <SampleInfoFieldRow
+        definition={field}
+        value={sampleInfo?.[field.field] ?? (field.kind === "multiselect" ? [] : "")}
+        onChange={onChange}
+      />
+      {field.field === "nominalComposition" ? (
+        <label className="grid grid-cols-[118px_1fr] items-center gap-2">
+          <span className="font-semibold text-slate-600">含有元素</span>
+          <input
+            className="min-w-0 rounded border border-slate-300 bg-slate-50 px-2 py-1 text-slate-600"
+            readOnly
+            value={elementsFromComposition(sampleInfo?.nominalComposition)}
+            placeholder="Li, P, S, Cl"
+          />
+        </label>
+      ) : null}
+    </>
+  );
+}
+
 function Panel({ title, children }: { title: string; children: ReactNode }) {
   return (
     <section className="border-b border-slate-300 p-2">
@@ -296,8 +321,8 @@ function SampleInfoFieldRow({
   onChange,
 }: {
   definition: SampleInfoFieldDefinition;
-  value: string;
-  onChange: (value: string) => void;
+  value: SampleInfoFieldValue;
+  onChange: (value: SampleInfoFieldValue) => void;
 }) {
   const commonClass = "min-w-0 rounded border border-slate-300 bg-white px-2 py-1";
   return (
@@ -310,22 +335,25 @@ function SampleInfoFieldRow({
     >
       <span className="font-semibold text-slate-600">{definition.label}</span>
       {definition.kind === "select" ? (
-        <select
-          className={commonClass}
-          value={value}
-          onChange={(event) => onChange(event.currentTarget.value)}
-        >
-          <option value="">{definition.placeholder ? `例: ${definition.placeholder}` : "-"}</option>
-          {definition.options?.map((option) => (
-            <option key={option} value={option}>
-              {option}
-            </option>
-          ))}
-        </select>
+        <SelectField
+          ariaLabel={definition.label}
+          options={definition.options ?? []}
+          placeholder={definition.placeholder}
+          value={typeof value === "string" ? value : ""}
+          onChange={onChange}
+        />
+      ) : definition.kind === "multiselect" ? (
+        <MultiSelectField
+          ariaLabel={definition.label}
+          options={definition.options ?? []}
+          placeholder={definition.placeholder}
+          values={Array.isArray(value) ? value : value ? [value] : []}
+          onChange={onChange}
+        />
       ) : definition.kind === "textarea" ? (
         <textarea
           className={`${commonClass} min-h-20 resize-y`}
-          value={value}
+          value={typeof value === "string" ? value : ""}
           placeholder={definition.placeholder}
           onChange={(event) => onChange(event.currentTarget.value)}
         />
@@ -333,7 +361,7 @@ function SampleInfoFieldRow({
         <input
           className={commonClass}
           type={definition.kind === "date" ? "date" : "text"}
-          value={value}
+          value={typeof value === "string" ? value : ""}
           placeholder={definition.placeholder}
           onChange={(event) => onChange(event.currentTarget.value)}
         />

@@ -11,9 +11,9 @@
 
 - `src/store/projectStore.ts`: Zustand state/action wiring、Dexie呼び出し、公開store API。
 - `src/store/projectFactory.ts`: 空Project、demo Project、初期dataset/window生成。
-- `src/store/projectModel.ts`: 解析再計算、dataset auto selection、fit range migration、Project JSON変換。
+- `src/store/projectModel.ts`: 解析再計算、dataset auto selection、dataset role変更時のaxis label補正、fit range migration、Project JSON変換。
 - `src/store/windowModel.ts`: workspace window生成とdefault layout。
-- `ProjectSnapshot.ui`: UPS/LEIPS/REELS/Band Diagram plot viewport、plot別cursor表示設定、Sample Info、Help window状態などProjectと一緒に復元したいUI state。
+- `ProjectSnapshot.ui`: UPS/LEIPS/REELS/Band Diagram plot viewport、plot別cursor表示設定、Sample Info、Help window状態などProjectと一緒に復元したいUI state。Sample Infoのmulti-select値はProject JSON import時に旧string値から配列へ軽量migrationする。
 - `src/ui/Workspace.tsx`: workspace viewport、background pan/context menu、window frame配置、modal open state。
 - `src/ui/workspace/WorkspaceMenu.tsx`: TopBar/background context menuの共通menu definition。
 - `src/ui/workspace/WorkspaceWindows.tsx`: window kindごとのtitle/icon/render/context menu/help window。
@@ -29,6 +29,7 @@
 - `src/ui/windows/BandDiagramPlot.tsx`: Band Diagram専用SVG plot。
 - `src/ui/windows/BandDiagramAnnotations.tsx`: VBM/CBM/Vacuum線、IP/EA/Eg矢印annotation。
 - `src/ui/windows/BandDiagramControls.tsx`: Band Diagram compact control inputs。
+- `src/ui/FormSelect.tsx`: native selectに依存しないsingle/multi select field。placeholderは未選択時の表示専用で、選択肢には含めない。
 
 ## State
 

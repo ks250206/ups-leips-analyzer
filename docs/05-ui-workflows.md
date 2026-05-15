@@ -4,7 +4,7 @@
 
 IGOR Proの複数グラフ/操作パネル画面とSciSpace風ワークベンチを合わせる。
 
-- Data Browser: `Load CSVs`ドロップダウンファイルフィールドからMultiPak CSVを読み込み、読み込んだdatasetを表示する。Project import/exportとdemo読み込みはData Browserから外し、Project menuへ集約する。
+- Data Browser: `Load CSVs`ドロップダウンファイルフィールドからMultiPak CSVを読み込み、読み込んだdatasetを表示する。読み込み済みdatasetは行context menuから削除でき、`Change role`で`ups-vb`/`ups-ip`/`leet`/`leet-der`/`leips`/`reels`/`unknown`へ解析上の役割を変更できる。Project import/exportとdemo読み込みはData Browserから外し、Project menuへ集約する。
 - Table: 選択datasetをTanStack Table + Virtualで表示。
 - UPS Plot: VB/IPスペクトル、fit line、VBM/cut-off marker。UPS spectra analysisのVB setはEVBMのみを表示し、EF-EVBMの重複表示はしない。
 - LEIPS Plot: LEET、LEET(der)、LEIPS、ガウスfit、真空準位marker、EA marker。Filter menuの固定bandpass候補はエネルギー値だけを表示し、`Band pass` prefixは付けない。
@@ -12,8 +12,8 @@ IGOR Proの複数グラフ/操作パネル画面とSciSpace風ワークベンチ
 - UPS VB、UPS IP、LEIPS Plot、LEIPS vs Energy from Evac.、REELS Plotのwindow titleには現在割当中の主dataset名を表示する。window titlebar/context menuからAnalysis Controls Data tabと同じdataset割当を変更できる。
 - Band Diagram: UPSとLEIPSをEnergy relative to Ef/eVで重ね、IGOR Pro風の大きいUPS/LEIPSラベル、VBM/CBM/Vacuum levelの縦線、IP/EA/Egの両矢印を表示する。調整欄はplot下に固定幅のcompact controlとして置き、UPS+/LEIPS+は各スペクトル強度レンジに対するpercent offsetとして扱う。IP/EA/Eg indicatorのfont sizeとarrow scaleは数値入力で調整できる。
 - Band DiagramのUPS/LEIPS annotationはseriesより上に描画し、曲線と重なる部分を白いhaloで隠して読めるようにする。VBM/CBM/Vacuum levelとEgのsubscriptもFont入力に追従する。
-- Analysis Controls: Data tabでdataset割当、Sample Info tabで試料情報、各解析tabでfit範囲、bandpass、REELS incident energy、計算結果を扱う。bandpassは固定候補に加えてcustom値を入力できる。
-- Sample InfoはProject stateに保存する。初期値は空で、Excelテンプレート由来の例値はplaceholderとしてだけ表示する。選択式項目はテンプレートの語彙に合わせ、含有元素は組成文字列から自動抽出する。
+- Analysis Controls: Data tabでdataset割当、Sample tabで試料情報、各解析tabでfit範囲、bandpass、REELS incident energy、計算結果を扱う。bandpassは固定候補に加えてcustom値を入力できる。
+- Sample InfoはProject stateに保存する。初期値は空で、Excelテンプレート由来の例値はplaceholderとしてだけ表示する。選択式項目は自前dropdownで表示し、placeholderは選択肢に含めない。複数選択が自然な項目だけcustom multi-selectを使う。含有元素は組成文字列から自動抽出し、組成入力の直下に表示する。
 - Analysis Controlsは初期表示をData tabにし、plot/windowを選択したときは関連tab（UPS/LEIPS/REELS/Band/Data）へ同期する。
 - 各plotのcontext menuにはcursor range表示のtoggle、Reset view、Copy PNG、Export PNG/SVGを置く。LEIPS PlotのFilter > Custom band passはmodalで任意値を入力する。REELS Plotだけ`REELS BG mode`を表示し、BG single point horizontal modeを選べる。
 - Window context menuとWindows menuからwindow position/sizeをdefault layoutへ戻せる。Windows menuには全window position/size resetも置く。
