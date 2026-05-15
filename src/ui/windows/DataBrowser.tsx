@@ -1,15 +1,12 @@
-import { Download, FileUp, RefreshCcw, Upload } from "lucide-react";
+import { ChevronDown, FileUp } from "lucide-react";
 import { useState } from "react";
 import { parseMultiPakCsv } from "../../io/multipakCsv";
-import { exportProjectGzip, exportProjectJson, importProjectBytes } from "../../store/projectDb";
 import { useProjectStore } from "../../store/projectStore";
 
 export function DataBrowser() {
   const project = useProjectStore((state) => state.project);
-  const loadDemo = useProjectStore((state) => state.loadDemo);
   const addDatasets = useProjectStore((state) => state.addDatasets);
   const selectDataset = useProjectStore((state) => state.selectDataset);
-  const importProject = useProjectStore((state) => state.importProject);
   const [error, setError] = useState<string>();
 
   async function handleFiles(fileList: FileList | null) {
@@ -28,33 +25,9 @@ export function DataBrowser() {
     }
   }
 
-  async function handleProjectFile(files: FileList | null) {
-    const file = files?.[0];
-    if (!file) {
-      return;
-    }
-    setError(undefined);
-    try {
-      importProject(exportProjectJson(importProjectBytes(await file.arrayBuffer())));
-    } catch (caught) {
-      setError(caught instanceof Error ? caught.message : String(caught));
-    }
-  }
-
-  function exportProject() {
-    const compressed = exportProjectGzip(project);
-    const blob = new Blob([compressed.slice().buffer as ArrayBuffer], { type: "application/gzip" });
-    const url = URL.createObjectURL(blob);
-    const anchor = document.createElement("a");
-    anchor.href = url;
-    anchor.download = `${project.name.replace(/[^a-z0-9]+/gi, "-").toLowerCase()}.upsleips.gz`;
-    anchor.click();
-    URL.revokeObjectURL(url);
-  }
-
   return (
     <div className="flex h-full flex-col bg-slate-100 text-xs">
-      <div className="grid grid-cols-2 gap-2 border-b border-slate-300 p-2">
+      <div className="border-b border-slate-300 p-2">
         <input
           id="dataset-csv-input"
           className="sr-only"
@@ -67,44 +40,14 @@ export function DataBrowser() {
           }}
         />
         <label
-          className="flex cursor-pointer items-center justify-center gap-1 rounded border border-slate-300 bg-white px-2 py-1 hover:bg-cyan-50"
+          className="flex cursor-pointer items-center justify-between gap-2 rounded border border-slate-300 bg-white px-2 py-1.5 text-left hover:bg-cyan-50"
           htmlFor="dataset-csv-input"
         >
-          <FileUp size={14} />
-          CSV
-        </label>
-        <button
-          className="flex items-center justify-center gap-1 rounded border border-slate-300 bg-white px-2 py-1 hover:bg-cyan-50"
-          type="button"
-          onClick={loadDemo}
-        >
-          <RefreshCcw size={14} />
-          Demo
-        </button>
-        <button
-          className="flex items-center justify-center gap-1 rounded border border-slate-300 bg-white px-2 py-1 hover:bg-cyan-50"
-          type="button"
-          onClick={exportProject}
-        >
-          <Download size={14} />
-          GZIP
-        </button>
-        <input
-          id="project-json-input"
-          className="sr-only"
-          type="file"
-          accept=".upsleips,.gz,.json,application/json,application/gzip"
-          onChange={(event) => {
-            void handleProjectFile(event.currentTarget.files);
-            event.currentTarget.value = "";
-          }}
-        />
-        <label
-          className="flex cursor-pointer items-center justify-center gap-1 rounded border border-slate-300 bg-white px-2 py-1 hover:bg-cyan-50"
-          htmlFor="project-json-input"
-        >
-          <Upload size={14} />
-          Import
+          <span className="flex items-center gap-1.5">
+            <FileUp size={14} />
+            CSV
+          </span>
+          <ChevronDown size={14} className="text-slate-500" />
         </label>
       </div>
       {error ? (

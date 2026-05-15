@@ -2,6 +2,7 @@ import {
   Activity,
   BarChart3,
   FolderOpen,
+  HelpCircle,
   LineChart,
   SlidersHorizontal,
   Table2,
@@ -31,7 +32,6 @@ export function Workspace() {
   const project = useProjectStore((state) => state.project);
   const updateWindow = useProjectStore((state) => state.updateWindow);
   const focusWindow = useProjectStore((state) => state.focusWindow);
-  const loadDemo = useProjectStore((state) => state.loadDemo);
   const recalculate = useProjectStore((state) => state.recalculate);
   const newProject = useProjectStore((state) => state.newProject);
   const saveCurrentProject = useProjectStore((state) => state.saveCurrentProject);
@@ -40,6 +40,7 @@ export function Workspace() {
   const listRecentProjects = useProjectStore((state) => state.listRecentProjects);
   const importProject = useProjectStore((state) => state.importProject);
   const deleteCurrentProject = useProjectStore((state) => state.deleteCurrentProject);
+  const toggleHelpWindow = useProjectStore((state) => state.toggleHelpWindow);
   const { menu, openMenu, closeMenu } = useContextMenu();
   const [viewport, setViewport] = useState({ x: 0, y: 0, scale: 1 });
   const importInputRef = useRef<HTMLInputElement>(null);
@@ -81,18 +82,6 @@ export function Workspace() {
     }
     void deleteCurrentProject().then(refreshRecentProjects);
   };
-  const showHelp = () => {
-    window.alert(
-      [
-        "UPS-LEIPS Analyzer",
-        "",
-        "Wheel: Y zoom on plots",
-        "Shift + wheel: X zoom on plots",
-        "Alt + drag/wheel: pan plots",
-        "Command/Ctrl + wheel: workspace zoom",
-      ].join("\n"),
-    );
-  };
   const menuGroups = buildMenuGroups({
     project,
     windows,
@@ -111,7 +100,7 @@ export function Workspace() {
       saveCurrentProject: () => {
         void saveCurrentProject().then(refreshRecentProjects);
       },
-      showHelp,
+      toggleHelpWindow,
     },
   });
   const handleWheel = (event: WheelEvent<HTMLDivElement>) => {
@@ -237,7 +226,7 @@ export function Workspace() {
               window={window}
               onFocus={() => focusWindow(window.id)}
               onChange={(patch) => updateWindow(window.id, patch)}
-              contextMenuItems={windowContextItems(window, { loadDemo, recalculate })}
+              contextMenuItems={windowContextItems(window, { recalculate })}
             >
               {renderWindow(window)}
             </WindowFrame>
@@ -252,6 +241,19 @@ export function Workspace() {
 function TopBar({ menuGroups, onMenuOpen }: { menuGroups: MenuGroup[]; onMenuOpen: () => void }) {
   const project = useProjectStore((state) => state.project);
   const recalculate = useProjectStore((state) => state.recalculate);
+  const { menu, openMenu, closeMenu } = useContextMenu();
+  const [activeMenu, setActiveMenu] = useState<string>();
+  const buttonRefs = useRef(new Map<string, HTMLButtonElement>());
+  const openGroup = (group: MenuGroup) => {
+    const rect = buttonRefs.current.get(group.label)?.getBoundingClientRect();
+    setActiveMenu(group.label);
+    onMenuOpen();
+    openMenu(rect?.left ?? 0, rect?.bottom ?? 0, group.items);
+  };
+  const closeTopMenu = () => {
+    setActiveMenu(undefined);
+    closeMenu();
+  };
 
   return (
     <header className="absolute inset-x-0 top-0 z-50 flex h-10 items-center justify-between border-b border-slate-300 bg-slate-950 px-3 text-sm text-slate-100">
@@ -259,7 +261,30 @@ function TopBar({ menuGroups, onMenuOpen }: { menuGroups: MenuGroup[]; onMenuOpe
         <Activity size={16} className="text-cyan-300" />
         <h1 className="font-semibold">UPS-LEIPS Analyzer</h1>
         {menuGroups.map((group) => (
-          <TopMenu key={group.label} group={group} onOpen={onMenuOpen} />
+          <button
+            key={group.label}
+            ref={(element) => {
+              if (element) {
+                buttonRefs.current.set(group.label, element);
+              } else {
+                buttonRefs.current.delete(group.label);
+              }
+            }}
+            className={
+              activeMenu === group.label
+                ? "rounded bg-slate-800 px-2 py-1 text-xs font-semibold text-slate-100"
+                : "rounded px-2 py-1 text-xs font-semibold text-slate-200 hover:bg-slate-800"
+            }
+            type="button"
+            onClick={() => openGroup(group)}
+            onMouseEnter={() => {
+              if (menu) {
+                openGroup(group);
+              }
+            }}
+          >
+            {group.label}
+          </button>
         ))}
         <span className="rounded bg-slate-800 px-2 py-0.5 text-xs text-slate-300">
           {project.name}
@@ -274,6 +299,7 @@ function TopBar({ menuGroups, onMenuOpen }: { menuGroups: MenuGroup[]; onMenuOpe
           Recalculate
         </button>
       </div>
+      <ContextMenu menu={menu} onClose={closeTopMenu} />
     </header>
   );
 }
@@ -281,28 +307,6 @@ function TopBar({ menuGroups, onMenuOpen }: { menuGroups: MenuGroup[]; onMenuOpe
 interface MenuGroup {
   label: string;
   items: ContextMenuItem[];
-}
-
-function TopMenu({ group, onOpen }: { group: MenuGroup; onOpen: () => void }) {
-  const buttonRef = useRef<HTMLButtonElement>(null);
-  const { menu, openMenu, closeMenu } = useContextMenu();
-  return (
-    <>
-      <button
-        ref={buttonRef}
-        className="rounded px-2 py-1 text-xs font-semibold text-slate-200 hover:bg-slate-800"
-        type="button"
-        onClick={() => {
-          const rect = buttonRef.current?.getBoundingClientRect();
-          onOpen();
-          openMenu(rect?.left ?? 0, rect?.bottom ?? 0, group.items);
-        }}
-      >
-        {group.label}
-      </button>
-      <ContextMenu menu={menu} onClose={closeMenu} />
-    </>
-  );
 }
 
 function buildMenuGroups(input: {
@@ -319,7 +323,7 @@ function buildMenuGroups(input: {
     resetWorkspaceView: () => void;
     saveAsProject: () => void;
     saveCurrentProject: () => void;
-    showHelp: () => void;
+    toggleHelpWindow: () => void;
   };
 }): MenuGroup[] {
   return [
@@ -329,6 +333,11 @@ function buildMenuGroups(input: {
         { type: "item", label: "New Project", action: input.actions.newProject },
         { type: "item", label: "Save Project", action: input.actions.saveCurrentProject },
         { type: "item", label: "Save as", action: input.actions.saveAsProject },
+        { type: "item", label: "Delete project", action: input.actions.deleteProject },
+        { type: "separator" },
+        { type: "item", label: "Export", action: input.actions.exportProject },
+        { type: "item", label: "Import", action: input.actions.importProject },
+        { type: "separator" },
         {
           type: "submenu",
           label: "Recent project",
@@ -341,11 +350,6 @@ function buildMenuGroups(input: {
                 }))
               : [{ type: "item", label: "No recent projects", disabled: true }],
         },
-        { type: "separator" },
-        { type: "item", label: "Export", action: input.actions.exportProject },
-        { type: "item", label: "Import", action: input.actions.importProject },
-        { type: "separator" },
-        { type: "item", label: "Delete project", action: input.actions.deleteProject },
       ],
     },
     {
@@ -362,7 +366,9 @@ function buildMenuGroups(input: {
     },
     {
       label: "Help",
-      items: [{ type: "item", label: "About UPS-LEIPS Analyzer", action: input.actions.showHelp }],
+      items: [
+        { type: "item", label: "About UPS-LEIPS Analyzer", action: input.actions.toggleHelpWindow },
+      ],
     },
   ];
 }
@@ -386,6 +392,8 @@ function renderWindow(window: WindowLayout) {
       return <BandDiagramWindow />;
     case "controls":
       return <AnalysisControls />;
+    case "help":
+      return <HelpWindow />;
   }
 }
 
@@ -405,19 +413,18 @@ function iconForWindow(kind: WindowLayout["kind"]) {
       return <BarChart3 size={14} />;
     case "controls":
       return <SlidersHorizontal size={14} />;
+    case "help":
+      return <HelpCircle size={14} />;
   }
 }
 
 function windowContextItems(
   window: WindowLayout,
-  actions: { loadDemo: () => void; recalculate: () => void },
+  actions: { recalculate: () => void },
 ): ContextMenuItem[] {
   switch (window.kind) {
     case "browser":
-      return [
-        { type: "item", label: "Load Demo", action: actions.loadDemo },
-        { type: "item", label: "Recalculate", action: actions.recalculate },
-      ];
+      return [{ type: "item", label: "Recalculate", action: actions.recalculate }];
     case "controls":
       return [{ type: "item", label: "Recalculate", action: actions.recalculate }];
     case "table":
@@ -425,4 +432,19 @@ function windowContextItems(
     default:
       return [];
   }
+}
+
+function HelpWindow() {
+  return (
+    <div className="h-full overflow-auto bg-white p-4 text-sm text-slate-700">
+      <h2 className="text-base font-semibold text-slate-900">UPS-LEIPS Analyzer</h2>
+      <div className="mt-3 space-y-2 text-xs leading-5">
+        <p>Project menuで保存、読み込み、削除、gzip export/importを行います。</p>
+        <p>View menuのReset viewでワークスペース位置と拡大率を初期化します。</p>
+        <p>Windows menuでは対象windowを最前面へ移動します。</p>
+        <p>Plot上ではwheelでY拡大、Shift+wheelでX拡大、Alt+drag/wheelでpanします。</p>
+        <p>Plotのdouble clickで拡大状態をリセットします。</p>
+      </div>
+    </div>
+  );
 }

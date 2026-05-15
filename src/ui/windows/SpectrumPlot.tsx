@@ -21,6 +21,7 @@ interface SpectrumPlotProps {
   yRightLabel?: string;
   hideYTicks?: boolean;
   largeAxisLabels?: boolean;
+  marginVariant?: "normal" | "leips";
   series: PlotSeries[];
   markers?: PlotMarker[];
   rangeBands?: PlotRangeBand[];
@@ -37,6 +38,7 @@ export interface SpectrumPlotScaleInput {
   series: readonly PlotSeries[];
   xDirection: "normal" | "reverse";
   largeAxisLabels?: boolean;
+  marginVariant?: "normal" | "leips";
   viewport?: PlotViewport;
 }
 
@@ -92,6 +94,7 @@ export function SpectrumPlot({
   yRightLabel,
   hideYTicks = false,
   largeAxisLabels = false,
+  marginVariant = "normal",
   series,
   markers = EMPTY_MARKERS,
   rangeBands = EMPTY_RANGE_BANDS,
@@ -172,10 +175,11 @@ export function SpectrumPlot({
             series,
             xDirection,
             largeAxisLabels,
+            marginVariant,
             viewport,
           })
         : undefined,
-    [hasData, largeAxisLabels, series, size, viewport, xDirection],
+    [hasData, largeAxisLabels, marginVariant, series, size, viewport, xDirection],
   );
   scalesRef.current = scales;
   xDirectionRef.current = xDirection;
@@ -224,7 +228,7 @@ export function SpectrumPlot({
       >
         <div className="rounded border border-slate-300 bg-slate-50 px-4 py-3 text-center">
           <div className="font-semibold text-slate-700">No data</div>
-          <div className="mt-1 text-xs">Load CSV or Demo data to render this plot.</div>
+          <div className="mt-1 text-xs">Load CSV data to render this plot.</div>
         </div>
         <ContextMenu menu={menu} onClose={closeMenu} />
       </div>
@@ -386,7 +390,7 @@ function PlotAxes({
   const yTicks = scales.yScale.ticks(5);
   const yRightTicks = scales.yRightScale?.ticks(5) ?? [];
   const axisColor = "#334155";
-  const labelSize = largeAxisLabels ? 24 : 13;
+  const labelSize = largeAxisLabels ? 24 : 15;
   const labelWeight = largeAxisLabels ? 800 : 700;
   return (
     <g>
@@ -468,7 +472,7 @@ function PlotAxes({
       />
       <text
         fill={axisColor}
-        fontSize={largeAxisLabels ? 22 : 12}
+        fontSize={largeAxisLabels ? 22 : 14}
         fontWeight={labelWeight}
         textAnchor="middle"
         x={geometry.left + geometry.plotWidth / 2}
@@ -677,13 +681,22 @@ export function createPlotGeometry(
   size: { width: number; height: number },
   largeAxisLabels = false,
   hasRightAxis = false,
+  marginVariant: "normal" | "leips" = "normal",
 ): PlotGeometry {
   const width = Math.max(MIN_PLOT_SIZE.width, Math.floor(size.width));
   const height = Math.max(MIN_PLOT_SIZE.height, Math.floor(size.height));
   const top = largeAxisLabels ? 44 : 32;
-  const right = largeAxisLabels ? 78 : hasRightAxis ? 50 : 30;
+  const right = largeAxisLabels
+    ? 78
+    : marginVariant === "leips"
+      ? hasRightAxis
+        ? 70
+        : 36
+      : hasRightAxis
+        ? 50
+        : 30;
   const bottom = largeAxisLabels ? 62 : 44;
-  const left = largeAxisLabels ? 96 : 92;
+  const left = largeAxisLabels ? 96 : marginVariant === "leips" ? 76 : 92;
   const plotWidth = Math.max(40, width - left - right);
   const plotHeight = Math.max(40, height - top - bottom);
   return {
@@ -702,7 +715,12 @@ export function createPlotGeometry(
 
 export function createPlotScales(input: SpectrumPlotScaleInput): PlotScales {
   const hasRightAxis = input.series.some((item) => item.yAxis === "right");
-  const geometry = createPlotGeometry(input.size, input.largeAxisLabels ?? false, hasRightAxis);
+  const geometry = createPlotGeometry(
+    input.size,
+    input.largeAxisLabels ?? false,
+    hasRightAxis,
+    input.marginVariant ?? "normal",
+  );
   const xDomain = input.viewport?.x ?? domainForX(input.series);
   const yDomain =
     input.viewport?.y ?? domainForY(input.series.filter((item) => item.yAxis !== "right"));

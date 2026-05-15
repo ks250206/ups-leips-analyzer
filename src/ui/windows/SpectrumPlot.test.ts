@@ -59,6 +59,14 @@ describe("SpectrumPlot D3 scales", () => {
     expect(geometry.plotHeight).toBe(254);
   });
 
+  test("uses compact left and wider right margins for LEIPS dual-axis plots", () => {
+    const geometry = createPlotGeometry({ width: 320, height: 240 }, false, true, "leips");
+
+    expect(geometry.left).toBe(76);
+    expect(geometry.right).toBe(70);
+    expect(geometry.plotWidth).toBe(174);
+  });
+
   test("creates a right y scale for dual-axis plots", () => {
     const scales = createPlotScales({
       size: { width: 320, height: 240 },

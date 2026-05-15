@@ -31,6 +31,10 @@ describe("App", () => {
     expect(screen.getByRole("button", { name: "Band" })).toBeTruthy();
     expect(screen.getByText("0 datasets")).toBeTruthy();
     expect(screen.getAllByText("No data").length).toBeGreaterThan(0);
+    expect(screen.queryByRole("button", { name: "Demo" })).toBeNull();
+    expect(screen.queryByText("GZIP")).toBeNull();
+    expect(screen.queryByText("Import")).toBeNull();
+    expect(screen.getAllByText("Load CSV data to render this plot.").length).toBeGreaterThan(0);
   });
 
   test("keeps the empty workspace interactive", async () => {
@@ -50,6 +54,7 @@ describe("App", () => {
 
   test("shows project and plot context menus", async () => {
     const user = userEvent.setup();
+    useProjectStore.getState().loadDemo();
     render(<App />);
 
     await user.click(screen.getByRole("button", { name: "Project" }));
@@ -61,17 +66,20 @@ describe("App", () => {
     expect(screen.getAllByText("Import").length).toBeGreaterThan(0);
     expect(screen.getByText("Delete project")).toBeTruthy();
 
-    fireEvent.pointerDown(document.body);
-    await user.click(screen.getByRole("button", { name: "View" }));
+    fireEvent.mouseEnter(screen.getByRole("button", { name: "View" }));
     expect(screen.getByText("Reset view")).toBeTruthy();
+    expect(screen.queryByText("Save Project")).toBeNull();
+
     fireEvent.pointerDown(document.body);
     await user.click(screen.getByRole("button", { name: "Windows" }));
     expect(screen.getAllByText("Data Browser").length).toBeGreaterThan(1);
     fireEvent.pointerDown(document.body);
     await user.click(screen.getByRole("button", { name: "Help" }));
     expect(screen.getByText("About UPS-LEIPS Analyzer")).toBeTruthy();
+    await user.click(screen.getByText("About UPS-LEIPS Analyzer"));
+    expect(screen.getAllByText("UPS-LEIPS Analyzer").length).toBeGreaterThan(1);
+    expect(screen.getByText(/Project menuで保存/)).toBeTruthy();
 
-    await user.click(screen.getByRole("button", { name: "Demo" }));
     expect(screen.queryByRole("button", { name: "Reset" })).toBeNull();
     expect(screen.queryByRole("button", { name: "PNG" })).toBeNull();
     expect(screen.queryByRole("button", { name: "SVG" })).toBeNull();
@@ -90,9 +98,8 @@ describe("App", () => {
   });
 
   test("shows workspace context menu and removes active cursor badges", async () => {
-    const user = userEvent.setup();
+    useProjectStore.getState().loadDemo();
     render(<App />);
-    await user.click(screen.getByRole("button", { name: "Demo" }));
 
     expect(screen.queryByText(/active/)).toBeNull();
     expect(screen.queryByLabelText("A cursor")).toBeNull();
@@ -103,5 +110,6 @@ describe("App", () => {
     expect(screen.getAllByText("View").length).toBeGreaterThan(1);
     expect(screen.getAllByText("Windows").length).toBeGreaterThan(1);
     expect(screen.getAllByText("Help").length).toBeGreaterThan(1);
+    expect(screen.queryByText("Load Demo")).toBeNull();
   });
 });

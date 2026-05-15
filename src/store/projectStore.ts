@@ -31,6 +31,7 @@ interface ProjectStore {
   setActiveFitTarget: (target: FitTarget) => void;
   updateWindow: (id: string, patch: Partial<WindowLayout>) => void;
   focusWindow: (id: string) => void;
+  toggleHelpWindow: () => void;
   recalculate: () => void;
   saveCurrentProject: () => Promise<void>;
   saveProjectAs: (name: string) => Promise<void>;
@@ -156,6 +157,38 @@ export const useProjectStore = create<ProjectStore>((set, get) => ({
           windows: state.project.windows.map((window) =>
             window.id === id ? { ...window, zIndex: nextZ } : window,
           ),
+        }),
+      };
+    });
+  },
+  toggleHelpWindow: () => {
+    set((state) => {
+      const hasHelp = state.project.windows.some((window) => window.id === "help");
+      if (hasHelp) {
+        return {
+          project: touchProject({
+            ...state.project,
+            windows: state.project.windows.filter((window) => window.id !== "help"),
+          }),
+        };
+      }
+      const nextZ = Math.max(...state.project.windows.map((window) => window.zIndex)) + 1;
+      return {
+        project: touchProject({
+          ...state.project,
+          windows: [
+            ...state.project.windows,
+            {
+              id: "help",
+              title: "Help",
+              kind: "help",
+              x: 1500,
+              y: 120,
+              width: 360,
+              height: 320,
+              zIndex: nextZ,
+            },
+          ],
         }),
       };
     });
@@ -506,7 +539,7 @@ function defaultWindows(): WindowLayout[] {
       id: "controls",
       title: "UPS_analysis",
       kind: "controls",
-      x: 1428,
+      x: 1460,
       y: 26,
       width: 420,
       height: 760,

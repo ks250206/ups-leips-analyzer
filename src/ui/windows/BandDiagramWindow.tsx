@@ -209,7 +209,7 @@ function IgorBandDiagramPlot({
       >
         <div className="rounded border border-slate-300 bg-slate-50 px-4 py-3 text-center">
           <div className="font-semibold text-slate-700">No data</div>
-          <div className="mt-1 text-xs">Load CSV or Demo data to render this plot.</div>
+          <div className="mt-1 text-xs">Load CSV data to render this plot.</div>
         </div>
         <ContextMenu menu={menu} onClose={closeMenu} />
       </div>
@@ -320,11 +320,11 @@ function IgorBandDiagramPlot({
                 />
                 <text
                   fill="black"
-                  fontSize={34}
+                  fontSize={24}
                   fontWeight={700}
                   textAnchor="middle"
                   x={x}
-                  y={plotBottom + 58}
+                  y={plotBottom + 38}
                 >
                   {formatNumber(tick, 0)}
                 </text>

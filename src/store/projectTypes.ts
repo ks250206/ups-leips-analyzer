@@ -12,7 +12,8 @@ export interface WindowLayout {
     | "leips"
     | "leips-evac"
     | "band"
-    | "controls";
+    | "controls"
+    | "help";
   x: number;
   y: number;
   width: number;
