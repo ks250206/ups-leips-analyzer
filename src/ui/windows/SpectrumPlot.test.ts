@@ -41,10 +41,10 @@ describe("SpectrumPlot D3 scales", () => {
     const geometry = createPlotGeometry({ width: 320, height: 240 });
 
     expect(geometry.top).toBe(32);
-    expect(geometry.left).toBe(76);
+    expect(geometry.left).toBe(92);
     expect(geometry.right).toBe(30);
     expect(geometry.bottom).toBe(44);
-    expect(geometry.plotWidth).toBe(214);
+    expect(geometry.plotWidth).toBe(198);
     expect(geometry.plotHeight).toBe(164);
   });
 
@@ -52,10 +52,10 @@ describe("SpectrumPlot D3 scales", () => {
     const geometry = createPlotGeometry({ width: 520, height: 360 }, true, true);
 
     expect(geometry.top).toBe(44);
-    expect(geometry.left).toBe(86);
+    expect(geometry.left).toBe(96);
     expect(geometry.right).toBe(78);
     expect(geometry.bottom).toBe(62);
-    expect(geometry.plotWidth).toBe(356);
+    expect(geometry.plotWidth).toBe(346);
     expect(geometry.plotHeight).toBe(254);
   });
 

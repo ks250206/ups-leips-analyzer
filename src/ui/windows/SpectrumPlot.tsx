@@ -696,7 +696,7 @@ export function createPlotGeometry(
   const top = largeAxisLabels ? 44 : 32;
   const right = largeAxisLabels ? 78 : hasRightAxis ? 50 : 30;
   const bottom = largeAxisLabels ? 62 : 44;
-  const left = largeAxisLabels ? 86 : 76;
+  const left = largeAxisLabels ? 96 : 92;
   const plotWidth = Math.max(40, width - left - right);
   const plotHeight = Math.max(40, height - top - bottom);
   return {

@@ -164,7 +164,7 @@ export function UPSIPPlotWindow() {
         ? [
             {
               x: ups.ipEvbm,
-              label: `IP EVBM ${formatNumber(ups.ipEvbm, 2)} eV`,
+              label: `EVBM ${formatNumber(ups.ipEvbm, 2)} eV`,
               color: "#7c3aed",
             },
             {
@@ -181,14 +181,14 @@ export function UPSIPPlotWindow() {
       {
         id: "ups-ip-vbm-edge",
         ...project.analysis.fitRanges.upsIpVbmEdge,
-        label: activeFitTarget === "ups-ip-vbm-edge" ? "active IP VBM edge" : "IP VBM edge",
+        label: activeFitTarget === "ups-ip-vbm-edge" ? "active VBM edge" : "VBM edge",
         color: "#7c3aed",
         cursorLabels: ["A", "B"],
       },
       {
         id: "ups-ip-vbm-bg",
         ...project.analysis.fitRanges.upsIpVbmBackground,
-        label: activeFitTarget === "ups-ip-vbm-bg" ? "active IP VBM BG" : "IP VBM BG",
+        label: activeFitTarget === "ups-ip-vbm-bg" ? "active VBM BG" : "VBM BG",
         color: "#0f766e",
         cursorLabels: ["C", "D"],
       },
