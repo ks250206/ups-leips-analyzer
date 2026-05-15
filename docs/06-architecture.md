@@ -19,6 +19,7 @@
 - `src/ui/workspace/WorkspaceMenu.tsx`: TopBar/background context menuの共通menu definition。
 - `src/ui/workspace/WorkspaceWindows.tsx`: window kindごとのtitle/icon/render/context menu/help window。
 - `src/ui/workspace/WorkspaceModals.tsx`: Save as、Delete、Load Project modal。
+- `src/ui/Settings.ts`: Project/Catalogに含めないユーザー個人設定。表示localeを`localStorage`へ保存し、Sample Infoの表示ラベルを切り替える。
 - `src/ui/windows/SpectrumPlot.tsx`: D3/SVG plot container、viewport state、public props compatibility。
 - `src/ui/windows/SpectrumPlotScales.ts`: plot geometry、domain、scale、tick formatting。
 - `src/ui/windows/SpectrumPlotViewport.ts`: wheel/drag viewport math、range math、series visibility判定。
@@ -34,7 +35,7 @@
 
 ## State
 
-Zustandは現在のCatalog recordとProject snapshotを保持する。DexieはCatalog registry DBとCatalog別Project DBに分かれる。Catalog registryはCatalog metadataだけを持ち、Project情報は参照しない。Project JSONは単一Project共有用、Catalog archiveはCatalog専用DB全体の共有用に使う。
+Zustandは現在のCatalog recordとProject snapshotを保持する。DexieはCatalog registry DBとCatalog別Project DBに分かれる。Catalog registryはCatalog metadataだけを持ち、Project情報は参照しない。Project JSONは単一Project共有用、Catalog archiveはCatalog専用DB全体の共有用に使う。表示localeなど各ユーザーの環境設定は`localStorage`に保存し、Project/Catalog import/exportには含めない。
 
 ## Build
 

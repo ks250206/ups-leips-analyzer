@@ -11,6 +11,12 @@ import { useEffect, useState, type ReactNode } from "react";
 import type { AnalysisSelection, FitRange, FitTarget, SpectrumDataset } from "../../domain/types";
 import { fitRangeKey, useProjectStore } from "../../store/projectStore";
 import { MultiSelectField, SelectField } from "../FormSelect";
+import {
+  containedElementsLabel,
+  sampleInfoLabel,
+  sampleInfoPlaceholder,
+  useUserSettingsStore,
+} from "../Settings";
 import { formatNumber, formatRange } from "../format";
 
 const FIT_TARGETS: Array<{ target: FitTarget; label: string }> = [
@@ -60,6 +66,7 @@ export function AnalysisControls({ activeTab = "sample" }: { activeTab?: Analysi
   const recalculate = useProjectStore((state) => state.recalculate);
   const analysis = project.analysis;
   const sampleInfo = project.ui?.sampleInfo ?? {};
+  const locale = useUserSettingsStore((state) => state.locale);
   const [tab, setTab] = useState<AnalysisTab>(activeTab);
   useEffect(() => setTab(activeTab), [activeTab]);
 
@@ -126,6 +133,7 @@ export function AnalysisControls({ activeTab = "sample" }: { activeTab?: Analysi
                 <FragmentWithElements
                   key={field.field}
                   field={field}
+                  locale={locale}
                   sampleInfo={sampleInfo}
                   onChange={(value) => setSampleInfoField(field.field, value)}
                 />
@@ -262,10 +270,12 @@ export function AnalysisControls({ activeTab = "sample" }: { activeTab?: Analysi
 
 function FragmentWithElements({
   field,
+  locale,
   sampleInfo,
   onChange,
 }: {
   field: SampleInfoFieldDefinition;
+  locale: ReturnType<typeof useUserSettingsStore.getState>["locale"];
   sampleInfo: SampleInfoState;
   onChange: (value: SampleInfoFieldValue) => void;
 }) {
@@ -273,12 +283,13 @@ function FragmentWithElements({
     <>
       <SampleInfoFieldRow
         definition={field}
+        locale={locale}
         value={sampleInfo?.[field.field] ?? (field.kind === "multiselect" ? [] : "")}
         onChange={onChange}
       />
       {field.field === "nominalComposition" ? (
         <label className="grid grid-cols-[118px_1fr] items-center gap-2">
-          <span className="font-semibold text-slate-600">含有元素</span>
+          <span className="font-semibold text-slate-600">{containedElementsLabel(locale)}</span>
           <input
             className="min-w-0 rounded border border-slate-300 bg-slate-50 px-2 py-1 text-slate-600"
             readOnly
@@ -318,10 +329,12 @@ function ResultGrid({ rows }: { rows: Array<[ReactNode, string, string]> }) {
 
 function SampleInfoFieldRow({
   definition,
+  locale,
   value,
   onChange,
 }: {
   definition: SampleInfoFieldDefinition;
+  locale: ReturnType<typeof useUserSettingsStore.getState>["locale"];
   value: SampleInfoFieldValue;
   onChange: (value: SampleInfoFieldValue) => void;
 }) {
@@ -346,20 +359,22 @@ function SampleInfoFieldRow({
   };
   return (
     <label className="grid grid-cols-[118px_1fr] items-start gap-2">
-      <span className="font-semibold text-slate-600">{definition.label}</span>
+      <span className="font-semibold text-slate-600">
+        {sampleInfoLabel(definition.field, definition.label, locale)}
+      </span>
       {definition.kind === "select" ? (
         <SelectField
-          ariaLabel={definition.label}
+          ariaLabel={sampleInfoLabel(definition.field, definition.label, locale)}
           options={definition.options ?? []}
-          placeholder={definition.placeholder}
+          placeholder={sampleInfoPlaceholder(definition.field, definition.placeholder, locale)}
           value={typeof value === "string" ? value : ""}
           onChange={onChange}
         />
       ) : definition.kind === "multiselect" ? (
         <MultiSelectField
-          ariaLabel={definition.label}
+          ariaLabel={sampleInfoLabel(definition.field, definition.label, locale)}
           options={definition.options ?? []}
-          placeholder={definition.placeholder}
+          placeholder={sampleInfoPlaceholder(definition.field, definition.placeholder, locale)}
           values={Array.isArray(value) ? value : value ? [value] : []}
           onChange={onChange}
         />
@@ -367,7 +382,7 @@ function SampleInfoFieldRow({
         <textarea
           className={`${commonClass} min-h-20 resize-y`}
           value={stringValue}
-          placeholder={definition.placeholder}
+          placeholder={sampleInfoPlaceholder(definition.field, definition.placeholder, locale)}
           onChange={(event) => updateTextValue(event.currentTarget.value)}
         />
       ) : (
@@ -381,7 +396,7 @@ function SampleInfoFieldRow({
             name={`ups-leips-${definition.field}`}
             type={definition.kind === "date" ? "date" : "text"}
             value={validatesBasePressure ? draftValue : stringValue}
-            placeholder={definition.placeholder}
+            placeholder={sampleInfoPlaceholder(definition.field, definition.placeholder, locale)}
             onChange={(event) => updateTextValue(event.currentTarget.value)}
           />
           {hasBasePressureError ? (

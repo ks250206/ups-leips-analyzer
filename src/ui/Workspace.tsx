@@ -11,6 +11,7 @@ import { exportProjectGzip, exportProjectJson, importProjectBytes } from "../sto
 import { useProjectStore } from "../store/projectStore";
 import type { CatalogRecord, ProjectRecord, WindowLayout } from "../store/projectTypes";
 import { ContextMenu, useContextMenu } from "./ContextMenu";
+import { useUserSettingsStore } from "./Settings";
 import { ToastViewport, useToastStore } from "./Toast";
 import { buildMenuGroups, TopBar } from "./workspace/WorkspaceMenu";
 import {
@@ -57,6 +58,8 @@ export function Workspace() {
   const exportCatalogBytes = useProjectStore((state) => state.exportCatalog);
   const importCatalogBytes = useProjectStore((state) => state.importCatalog);
   const toggleHelpWindow = useProjectStore((state) => state.toggleHelpWindow);
+  const locale = useUserSettingsStore((state) => state.locale);
+  const setLocale = useUserSettingsStore((state) => state.setLocale);
   const toggleProjectsWindow = useProjectStore((state) => state.toggleProjectsWindow);
   const { menu, openMenu, closeMenu } = useContextMenu();
   const [viewport, setViewport] = useState({ x: 0, y: 0, scale: 1 });
@@ -160,6 +163,7 @@ export function Workspace() {
     }
   };
   const menuGroups = buildMenuGroups({
+    locale,
     project,
     windows,
     recentProjects,
@@ -205,6 +209,7 @@ export function Workspace() {
             pushToast(errorMessage("Project save failed", caught), "error");
           });
       },
+      setLocale,
       switchCatalog: () => {
         refreshCatalogs();
         setCatalogModal("switch");

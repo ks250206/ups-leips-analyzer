@@ -4,6 +4,7 @@ import { afterEach, beforeEach, describe, expect, test } from "vite-plus/test";
 import App from "./App";
 import { DEFAULT_CATALOG_ID, DEFAULT_CATALOG_NAME } from "./store/projectDb";
 import { createInitialProject, useProjectStore } from "./store/projectStore";
+import { USER_LOCALE_STORAGE_KEY, useUserSettingsStore } from "./ui/Settings";
 import { useToastStore } from "./ui/Toast";
 
 const CSV = `2
@@ -31,6 +32,7 @@ describe("App", () => {
       isProjectUnsaved: true,
       project: createInitialProject(),
     });
+    useUserSettingsStore.setState({ locale: "ja-JP" });
     useToastStore.setState({ messages: [] });
   });
 
@@ -204,6 +206,12 @@ describe("App", () => {
     expect(screen.getByText("Reset all window positions")).toBeTruthy();
     expect(screen.getByText("Reset all window sizes")).toBeTruthy();
     fireEvent.pointerDown(document.body);
+    await user.click(screen.getByRole("button", { name: "Setting" }));
+    expect(screen.getByText("Language")).toBeTruthy();
+    fireEvent.mouseEnter(screen.getByText("Language"));
+    expect(screen.getByText("✓ 日本語 (ja-JP)")).toBeTruthy();
+    expect(screen.getByText("English (en-US)")).toBeTruthy();
+    fireEvent.pointerDown(document.body);
     await user.click(screen.getByRole("button", { name: "Help" }));
     expect(screen.getByText("About UPS-LEIPS Analyzer")).toBeTruthy();
     await user.click(screen.getByText("About UPS-LEIPS Analyzer"));
@@ -275,9 +283,25 @@ describe("App", () => {
     expect(screen.getAllByText("Projects").length).toBeGreaterThan(1);
     expect(screen.getAllByText("View").length).toBeGreaterThan(1);
     expect(screen.getAllByText("Windows").length).toBeGreaterThan(1);
-    expect(screen.queryByText("Setting")).toBeNull();
+    expect(screen.getAllByText("Setting").length).toBeGreaterThan(1);
     expect(screen.getAllByText("Help").length).toBeGreaterThan(1);
     expect(screen.queryByText("Load Demo")).toBeNull();
+  });
+
+  test("stores locale locally and switches Sample Info labels to English", async () => {
+    const user = userEvent.setup();
+    render(<App />);
+
+    await user.click(screen.getByRole("button", { name: "Setting" }));
+    fireEvent.mouseEnter(screen.getByText("Language"));
+    await user.click(screen.getByText("English (en-US)"));
+
+    expect(localStorage.getItem(USER_LOCALE_STORAGE_KEY)).toBe("en-US");
+    expect(useUserSettingsStore.getState().locale).toBe("en-US");
+    expect(screen.getByLabelText("Sample state")).toBeTruthy();
+    expect(screen.getByLabelText("Sample name")).toBeTruthy();
+    expect(screen.queryByLabelText("試料状態表記")).toBeNull();
+    expect(JSON.stringify(useProjectStore.getState().project)).not.toContain("en-US");
   });
 
   test("shows sample info fields and cancels load project from backdrop", async () => {

@@ -3,6 +3,7 @@ import { useRef, useState } from "react";
 import type { ProjectRecord, WindowLayout } from "../../store/projectTypes";
 import { useProjectStore } from "../../store/projectStore";
 import { ContextMenu, type ContextMenuItem, useContextMenu } from "../ContextMenu";
+import { localeLabel, USER_LOCALES, type UserLocale } from "../Settings";
 
 export interface MenuGroup {
   label: string;
@@ -103,6 +104,7 @@ function TopBarBadge({ label, value }: { label: string; value: string }) {
 }
 
 export function buildMenuGroups(input: {
+  locale: UserLocale;
   project: { name: string };
   windows: WindowLayout[];
   recentProjects: ProjectRecord[];
@@ -127,6 +129,7 @@ export function buildMenuGroups(input: {
     resetWorkspaceView: () => void;
     saveAsProject: () => void;
     saveCurrentProject: () => void;
+    setLocale: (locale: UserLocale) => void;
     switchCatalog: () => void;
     toggleHelpWindow: () => void;
     toggleProjectsWindow: () => void;
@@ -218,6 +221,20 @@ export function buildMenuGroups(input: {
     {
       label: "Windows",
       items: windowsItems,
+    },
+    {
+      label: "Setting",
+      items: [
+        {
+          type: "submenu",
+          label: "Language",
+          items: USER_LOCALES.map((locale) => ({
+            type: "item",
+            label: `${locale === input.locale ? "✓ " : ""}${localeLabel(locale)}`,
+            action: () => input.actions.setLocale(locale),
+          })),
+        },
+      ],
     },
     {
       label: "Help",
