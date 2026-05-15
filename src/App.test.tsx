@@ -59,6 +59,17 @@ describe("App", () => {
     expect(screen.getByText("Recent project")).toBeTruthy();
     expect(screen.getByText("Export")).toBeTruthy();
     expect(screen.getAllByText("Import").length).toBeGreaterThan(0);
+    expect(screen.getByText("Delete project")).toBeTruthy();
+
+    fireEvent.pointerDown(document.body);
+    await user.click(screen.getByRole("button", { name: "View" }));
+    expect(screen.getByText("Reset view")).toBeTruthy();
+    fireEvent.pointerDown(document.body);
+    await user.click(screen.getByRole("button", { name: "Windows" }));
+    expect(screen.getAllByText("Data Browser").length).toBeGreaterThan(1);
+    fireEvent.pointerDown(document.body);
+    await user.click(screen.getByRole("button", { name: "Help" }));
+    expect(screen.getByText("About UPS-LEIPS Analyzer")).toBeTruthy();
 
     await user.click(screen.getByRole("button", { name: "Demo" }));
     expect(screen.queryByRole("button", { name: "Reset" })).toBeNull();
@@ -76,5 +87,21 @@ describe("App", () => {
     fireEvent.contextMenu(screen.getByLabelText("LEET / LEET(der) / LEIPS plot"));
     expect(screen.getByText("Filter")).toBeTruthy();
     expect(screen.getByText("Band pass 1_4.77 eV ✓")).toBeTruthy();
+  });
+
+  test("shows workspace context menu and removes active cursor badges", async () => {
+    const user = userEvent.setup();
+    render(<App />);
+    await user.click(screen.getByRole("button", { name: "Demo" }));
+
+    expect(screen.queryByText(/active/)).toBeNull();
+    expect(screen.queryByLabelText("A cursor")).toBeNull();
+
+    const plane = document.querySelector("[data-workspace-plane='true']") as HTMLElement;
+    fireEvent.contextMenu(plane);
+    expect(screen.getAllByText("Project").length).toBeGreaterThan(1);
+    expect(screen.getAllByText("View").length).toBeGreaterThan(1);
+    expect(screen.getAllByText("Windows").length).toBeGreaterThan(1);
+    expect(screen.getAllByText("Help").length).toBeGreaterThan(1);
   });
 });

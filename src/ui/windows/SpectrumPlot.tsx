@@ -634,12 +634,11 @@ function CursorHandles({
   if (!band.id) {
     return null;
   }
-  const labels = band.cursorLabels ?? ["A", "B"];
   return (
     <g>
       {[
-        { value: band.min, side: "min" as const, label: labels[0] },
-        { value: band.max, side: "max" as const, label: labels[1] },
+        { value: band.min, side: "min" as const },
+        { value: band.max, side: "max" as const },
       ].map((handle) => {
         const x = xScale(handle.value);
         return (
@@ -652,20 +651,8 @@ function CursorHandles({
               y1={geometry.top}
               y2={geometry.plotBottom}
             />
-            <rect fill={band.color} height={16} rx={3} width={16} x={x - 8} y={geometry.top + 5} />
-            <text
-              fill="#ffffff"
-              fontSize={10}
-              fontWeight={800}
-              pointerEvents="none"
-              textAnchor="middle"
-              x={x}
-              y={geometry.top + 17}
-            >
-              {handle.label}
-            </text>
             <rect
-              aria-label={`${handle.label} cursor`}
+              aria-label={`${band.label} ${handle.side} cursor`}
               className="cursor-ew-resize"
               fill="transparent"
               height={geometry.plotHeight}

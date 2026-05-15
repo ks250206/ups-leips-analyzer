@@ -7,10 +7,10 @@ import {
   Table2,
 } from "lucide-react";
 import {
-  useEffect,
   useMemo,
   useRef,
   useState,
+  type ChangeEvent,
   type MouseEvent,
   type PointerEvent,
   type WheelEvent,
@@ -34,12 +34,86 @@ export function Workspace() {
   const loadDemo = useProjectStore((state) => state.loadDemo);
   const recalculate = useProjectStore((state) => state.recalculate);
   const newProject = useProjectStore((state) => state.newProject);
+  const saveCurrentProject = useProjectStore((state) => state.saveCurrentProject);
+  const saveProjectAs = useProjectStore((state) => state.saveProjectAs);
+  const loadSavedProject = useProjectStore((state) => state.loadSavedProject);
+  const listRecentProjects = useProjectStore((state) => state.listRecentProjects);
+  const importProject = useProjectStore((state) => state.importProject);
+  const deleteCurrentProject = useProjectStore((state) => state.deleteCurrentProject);
   const { menu, openMenu, closeMenu } = useContextMenu();
   const [viewport, setViewport] = useState({ x: 0, y: 0, scale: 1 });
+  const importInputRef = useRef<HTMLInputElement>(null);
+  const [recentProjects, setRecentProjects] = useState<ProjectRecord[]>([]);
   const panStart = useRef<{ x: number; y: number; originX: number; originY: number } | undefined>(
     undefined,
   );
   const windows = useMemo(() => project.windows, [project.windows]);
+  const resetWorkspaceView = () => setViewport({ x: 0, y: 0, scale: 1 });
+  const refreshRecentProjects = () => {
+    void listRecentProjects().then(setRecentProjects);
+  };
+  const exportProject = () => {
+    const compressed = exportProjectGzip(project);
+    const blob = new Blob([compressed.slice().buffer as ArrayBuffer], { type: "application/gzip" });
+    const url = URL.createObjectURL(blob);
+    const anchor = document.createElement("a");
+    anchor.href = url;
+    anchor.download = `${project.name.replace(/[^a-z0-9]+/gi, "-").toLowerCase()}.upsleips.gz`;
+    anchor.click();
+    URL.revokeObjectURL(url);
+  };
+  const importProjectFile = async (files: FileList | null) => {
+    const file = files?.[0];
+    if (!file) {
+      return;
+    }
+    importProject(exportProjectJson(importProjectBytes(await file.arrayBuffer())));
+  };
+  const saveAsProject = () => {
+    const name = window.prompt("Project name", project.name);
+    if (name) {
+      void saveProjectAs(name).then(refreshRecentProjects);
+    }
+  };
+  const deleteProject = () => {
+    if (!window.confirm(`Delete project "${project.name}"?`)) {
+      return;
+    }
+    void deleteCurrentProject().then(refreshRecentProjects);
+  };
+  const showHelp = () => {
+    window.alert(
+      [
+        "UPS-LEIPS Analyzer",
+        "",
+        "Wheel: Y zoom on plots",
+        "Shift + wheel: X zoom on plots",
+        "Alt + drag/wheel: pan plots",
+        "Command/Ctrl + wheel: workspace zoom",
+      ].join("\n"),
+    );
+  };
+  const menuGroups = buildMenuGroups({
+    project,
+    windows,
+    recentProjects,
+    actions: {
+      deleteProject,
+      exportProject,
+      focusWindow,
+      importProject: () => importInputRef.current?.click(),
+      loadSavedProject: (id) => {
+        void loadSavedProject(id);
+      },
+      newProject,
+      resetWorkspaceView,
+      saveAsProject,
+      saveCurrentProject: () => {
+        void saveCurrentProject().then(refreshRecentProjects);
+      },
+      showHelp,
+    },
+  });
   const handleWheel = (event: WheelEvent<HTMLDivElement>) => {
     const target = event.target as HTMLElement;
     if (target.closest("[data-plot-host='true']") && !event.metaKey && !event.ctrlKey) {
@@ -92,12 +166,12 @@ export function Workspace() {
       return;
     }
     event.preventDefault();
-    openMenu(event.clientX, event.clientY, [
-      { type: "item", label: "Load Demo", action: loadDemo },
-      { type: "item", label: "Recalculate", action: recalculate },
-      { type: "separator" },
-      { type: "item", label: "New Project", action: newProject },
-    ]);
+    refreshRecentProjects();
+    openMenu(
+      event.clientX,
+      event.clientY,
+      menuGroups.map((group) => ({ type: "submenu", ...group })),
+    );
   };
   const handlePointerMove = (event: PointerEvent<HTMLDivElement>) => {
     const drag = panStart.current;
@@ -126,7 +200,17 @@ export function Workspace() {
           backgroundSize: `${18 * viewport.scale}px ${18 * viewport.scale}px`,
         }}
       />
-      <TopBar />
+      <input
+        ref={importInputRef}
+        className="sr-only"
+        type="file"
+        accept=".upsleips,.gz,.json,application/json,application/gzip"
+        onChange={(event: ChangeEvent<HTMLInputElement>) => {
+          void importProjectFile(event.currentTarget.files);
+          event.currentTarget.value = "";
+        }}
+      />
+      <TopBar menuGroups={menuGroups} onMenuOpen={refreshRecentProjects} />
       <div
         className="absolute inset-x-0 bottom-0 top-10 cursor-grab overflow-hidden active:cursor-grabbing"
         data-workspace-surface="true"
@@ -165,7 +249,7 @@ export function Workspace() {
   );
 }
 
-function TopBar() {
+function TopBar({ menuGroups, onMenuOpen }: { menuGroups: MenuGroup[]; onMenuOpen: () => void }) {
   const project = useProjectStore((state) => state.project);
   const recalculate = useProjectStore((state) => state.recalculate);
 
@@ -174,7 +258,9 @@ function TopBar() {
       <div className="flex items-center gap-3">
         <Activity size={16} className="text-cyan-300" />
         <h1 className="font-semibold">UPS-LEIPS Analyzer</h1>
-        <ProjectMenu />
+        {menuGroups.map((group) => (
+          <TopMenu key={group.label} group={group} onOpen={onMenuOpen} />
+        ))}
         <span className="rounded bg-slate-800 px-2 py-0.5 text-xs text-slate-300">
           {project.name}
         </span>
@@ -192,177 +278,93 @@ function TopBar() {
   );
 }
 
-function ProjectMenu() {
-  const project = useProjectStore((state) => state.project);
-  const newProject = useProjectStore((state) => state.newProject);
-  const saveCurrentProject = useProjectStore((state) => state.saveCurrentProject);
-  const saveProjectAs = useProjectStore((state) => state.saveProjectAs);
-  const loadSavedProject = useProjectStore((state) => state.loadSavedProject);
-  const listRecentProjects = useProjectStore((state) => state.listRecentProjects);
-  const importProject = useProjectStore((state) => state.importProject);
-  const menuRef = useRef<HTMLDivElement>(null);
-  const inputRef = useRef<HTMLInputElement>(null);
-  const [open, setOpen] = useState(false);
-  const [saveAsOpen, setSaveAsOpen] = useState(false);
-  const [draftName, setDraftName] = useState(project.name);
-  const [recentProjects, setRecentProjects] = useState<ProjectRecord[]>([]);
+interface MenuGroup {
+  label: string;
+  items: ContextMenuItem[];
+}
 
-  useEffect(() => {
-    if (!open) {
-      return undefined;
-    }
-    void listRecentProjects().then(setRecentProjects);
-    const handlePointerDown = (event: globalThis.PointerEvent) => {
-      if (!menuRef.current?.contains(event.target as Node)) {
-        setOpen(false);
-      }
-    };
-    const handleKeyDown = (event: KeyboardEvent) => {
-      if (event.key === "Escape") {
-        setOpen(false);
-      }
-    };
-    window.addEventListener("pointerdown", handlePointerDown);
-    window.addEventListener("keydown", handleKeyDown);
-    return () => {
-      window.removeEventListener("pointerdown", handlePointerDown);
-      window.removeEventListener("keydown", handleKeyDown);
-    };
-  }, [listRecentProjects, open]);
-
-  function exportProject() {
-    const compressed = exportProjectGzip(project);
-    const blob = new Blob([compressed.slice().buffer as ArrayBuffer], { type: "application/gzip" });
-    const url = URL.createObjectURL(blob);
-    const anchor = document.createElement("a");
-    anchor.href = url;
-    anchor.download = `${project.name.replace(/[^a-z0-9]+/gi, "-").toLowerCase()}.upsleips.gz`;
-    anchor.click();
-    URL.revokeObjectURL(url);
-  }
-
-  async function importProjectFile(files: FileList | null) {
-    const file = files?.[0];
-    if (!file) {
-      return;
-    }
-    importProject(exportProjectJson(importProjectBytes(await file.arrayBuffer())));
-  }
-
+function TopMenu({ group, onOpen }: { group: MenuGroup; onOpen: () => void }) {
+  const buttonRef = useRef<HTMLButtonElement>(null);
+  const { menu, openMenu, closeMenu } = useContextMenu();
   return (
-    <div ref={menuRef} className="relative">
+    <>
       <button
+        ref={buttonRef}
         className="rounded px-2 py-1 text-xs font-semibold text-slate-200 hover:bg-slate-800"
         type="button"
-        onClick={() => setOpen((current) => !current)}
-      >
-        Project
-      </button>
-      <input
-        ref={inputRef}
-        className="sr-only"
-        type="file"
-        accept=".upsleips,.gz,.json,application/json,application/gzip"
-        onChange={(event) => {
-          void importProjectFile(event.currentTarget.files);
-          event.currentTarget.value = "";
-          setOpen(false);
+        onClick={() => {
+          const rect = buttonRef.current?.getBoundingClientRect();
+          onOpen();
+          openMenu(rect?.left ?? 0, rect?.bottom ?? 0, group.items);
         }}
-      />
-      {open ? (
-        <div className="absolute left-0 top-full z-[1000] mt-1 min-w-48 rounded border border-slate-700 bg-slate-900 py-1 text-xs text-slate-100 shadow-xl">
-          <TopMenuItem
-            label="New Project"
-            onClick={() => {
-              newProject();
-              setOpen(false);
-            }}
-          />
-          <TopMenuItem
-            label="Save Project"
-            onClick={() => {
-              void saveCurrentProject();
-              setOpen(false);
-            }}
-          />
-          <TopMenuItem
-            label="Save as"
-            onClick={() => {
-              setDraftName(project.name);
-              setSaveAsOpen(true);
-            }}
-          />
-          {saveAsOpen ? (
-            <form
-              className="mx-2 my-1 grid grid-cols-[1fr_auto] gap-1"
-              onSubmit={(event) => {
-                event.preventDefault();
-                void saveProjectAs(draftName);
-                setSaveAsOpen(false);
-                setOpen(false);
-              }}
-            >
-              <input
-                className="min-w-0 rounded border border-slate-700 bg-slate-950 px-2 py-1 text-slate-100 outline-none focus:border-cyan-500"
-                aria-label="Save as project name"
-                value={draftName}
-                onChange={(event) => setDraftName(event.currentTarget.value)}
-              />
-              <button
-                className="rounded border border-cyan-600 px-2 py-1 font-semibold text-cyan-200 hover:bg-slate-800"
-                type="submit"
-              >
-                Save
-              </button>
-            </form>
-          ) : null}
-          <div className="group relative">
-            <div className="flex cursor-default items-center justify-between px-3 py-1.5 hover:bg-slate-800">
-              <span>Recent project</span>
-              <span className="text-slate-400">›</span>
-            </div>
-            <div className="invisible absolute left-full top-0 min-w-56 rounded border border-slate-700 bg-slate-900 py-1 shadow-xl group-hover:visible">
-              {recentProjects.length > 0 ? (
-                recentProjects.map((record) => (
-                  <TopMenuItem
-                    key={record.id}
-                    label={record.name}
-                    onClick={() => {
-                      void loadSavedProject(record.id);
-                      setOpen(false);
-                    }}
-                  />
-                ))
-              ) : (
-                <div className="px-3 py-1.5 text-slate-400">No recent projects</div>
-              )}
-            </div>
-          </div>
-          <div className="my-1 border-t border-slate-700" />
-          <TopMenuItem
-            label="Export"
-            onClick={() => {
-              exportProject();
-              setOpen(false);
-            }}
-          />
-          <TopMenuItem label="Import" onClick={() => inputRef.current?.click()} />
-        </div>
-      ) : null}
-    </div>
+      >
+        {group.label}
+      </button>
+      <ContextMenu menu={menu} onClose={closeMenu} />
+    </>
   );
 }
 
-function TopMenuItem({ label, onClick }: { label: string; onClick: () => void }) {
-  return (
-    <button
-      className="block w-full px-3 py-1.5 text-left hover:bg-slate-800"
-      type="button"
-      onClick={onClick}
-    >
-      {label}
-    </button>
-  );
+function buildMenuGroups(input: {
+  project: { name: string };
+  windows: WindowLayout[];
+  recentProjects: ProjectRecord[];
+  actions: {
+    deleteProject: () => void;
+    exportProject: () => void;
+    focusWindow: (id: string) => void;
+    importProject: () => void;
+    loadSavedProject: (id: string) => void;
+    newProject: () => void;
+    resetWorkspaceView: () => void;
+    saveAsProject: () => void;
+    saveCurrentProject: () => void;
+    showHelp: () => void;
+  };
+}): MenuGroup[] {
+  return [
+    {
+      label: "Project",
+      items: [
+        { type: "item", label: "New Project", action: input.actions.newProject },
+        { type: "item", label: "Save Project", action: input.actions.saveCurrentProject },
+        { type: "item", label: "Save as", action: input.actions.saveAsProject },
+        {
+          type: "submenu",
+          label: "Recent project",
+          items:
+            input.recentProjects.length > 0
+              ? input.recentProjects.map((record) => ({
+                  type: "item",
+                  label: record.name,
+                  action: () => input.actions.loadSavedProject(record.id),
+                }))
+              : [{ type: "item", label: "No recent projects", disabled: true }],
+        },
+        { type: "separator" },
+        { type: "item", label: "Export", action: input.actions.exportProject },
+        { type: "item", label: "Import", action: input.actions.importProject },
+        { type: "separator" },
+        { type: "item", label: "Delete project", action: input.actions.deleteProject },
+      ],
+    },
+    {
+      label: "View",
+      items: [{ type: "item", label: "Reset view", action: input.actions.resetWorkspaceView }],
+    },
+    {
+      label: "Windows",
+      items: input.windows.map((window) => ({
+        type: "item",
+        label: window.title,
+        action: () => input.actions.focusWindow(window.id),
+      })),
+    },
+    {
+      label: "Help",
+      items: [{ type: "item", label: "About UPS-LEIPS Analyzer", action: input.actions.showHelp }],
+    },
+  ];
 }
 
 function renderWindow(window: WindowLayout) {

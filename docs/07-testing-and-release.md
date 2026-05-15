@@ -6,6 +6,7 @@
 - parserはコミット可能な合成fixtureで確認し、`sample/` に依存しない。
 - storeはfake-indexeddbでDexie roundtripを確認する。
 - UIはTesting Libraryで主要ラベルと結果表示を確認する。
+- menu、cursor、plot操作はTesting Libraryとunit helperで、表示ラベルとviewport変換を固定する。
 
 ## Gates
 
@@ -22,5 +23,7 @@ pnpm binary:build
 1. `vp dev` で起動する。
 2. demo datasetが表示される。
 3. UPS/LEIPS計算結果とBand Diagramが表示される。
-4. Project JSON export/importが動く。
-5. Goバイナリで `/` と `/assets/...` が返る。
+4. Project gzip export/importとDelete projectが動く。
+5. Top menuと背景右クリックmenuが表示される。
+6. Band Diagramのズーム、パン、ダブルクリックリセットが動く。
+7. Goバイナリで `/` と `/assets/...` が返る。

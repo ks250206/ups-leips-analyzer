@@ -8,7 +8,13 @@ import {
 import { bandpassEnergy } from "../domain/constants";
 import { createDemoDatasets, createInitialAnalysis, DEFAULT_FIT_RANGES } from "../domain/demoData";
 import type { AnalysisState, FitRange, FitTarget, Point, SpectrumDataset } from "../domain/types";
-import { importProjectJson, listProjects, loadProject, saveProject } from "./projectDb";
+import {
+  deleteProject,
+  importProjectJson,
+  listProjects,
+  loadProject,
+  saveProject,
+} from "./projectDb";
 import type { ProjectRecord, ProjectSnapshot, WindowLayout } from "./projectTypes";
 
 interface ProjectStore {
@@ -28,6 +34,7 @@ interface ProjectStore {
   recalculate: () => void;
   saveCurrentProject: () => Promise<void>;
   saveProjectAs: (name: string) => Promise<void>;
+  deleteCurrentProject: () => Promise<void>;
   loadSavedProject: (id: string) => Promise<void>;
   listRecentProjects: () => Promise<ProjectRecord[]>;
   importProject: (json: string) => void;
@@ -173,6 +180,10 @@ export const useProjectStore = create<ProjectStore>((set, get) => ({
     });
     set({ project });
     await saveProject(project);
+  },
+  deleteCurrentProject: async () => {
+    await deleteProject(get().project.id);
+    set({ activeFitTarget: "ups-vb-edge", project: createEmptyProject() });
   },
   loadSavedProject: async (id) => {
     const project = await loadProject(id);

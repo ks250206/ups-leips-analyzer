@@ -69,9 +69,8 @@ export function LEIPSPlotWindow() {
       {
         id: "leet-der-peak",
         ...project.analysis.fitRanges.leetDerPeak,
-        label: activeFitTarget === "leet-der-peak" ? "active peak" : "peak",
+        label: "peak",
         color: "#2563eb",
-        cursorLabels: ["A", "B"],
       },
     ],
     [activeFitTarget, project.analysis.fitRanges.leetDerPeak],
@@ -185,16 +184,14 @@ export function LEIPSEvacPlotWindow() {
       {
         id: "leips-edge",
         ...project.analysis.fitRanges.leipsEdge,
-        label: activeFitTarget === "leips-edge" ? "active edge" : "edge",
+        label: "edge",
         color: "#dc2626",
-        cursorLabels: ["A", "B"],
       },
       {
         id: "leips-bg",
         ...project.analysis.fitRanges.leipsBackground,
-        label: activeFitTarget === "leips-bg" ? "active BG" : "BG",
+        label: "BG",
         color: "#15803d",
-        cursorLabels: ["C", "D"],
       },
     ],
     [

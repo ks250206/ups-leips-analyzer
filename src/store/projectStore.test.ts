@@ -116,6 +116,18 @@ describe("project store", () => {
     expect(useProjectStore.getState().project.datasets).toHaveLength(5);
   });
 
+  test("deletes the current saved project and returns to an empty project", async () => {
+    await useProjectStore.getState().saveProjectAs("Delete Me");
+    const savedId = useProjectStore.getState().project.id;
+
+    await useProjectStore.getState().deleteCurrentProject();
+
+    expect(useProjectStore.getState().project.datasets).toHaveLength(0);
+    expect(useProjectStore.getState().project.name).toBe("UPS-LEIPS Project");
+    const recent = await useProjectStore.getState().listRecentProjects();
+    expect(recent.some((record) => record.id === savedId)).toBe(false);
+  });
+
   test("adds datasets and imports project JSON", () => {
     const incoming = createDemoDatasets().map((dataset) => ({
       ...dataset,
