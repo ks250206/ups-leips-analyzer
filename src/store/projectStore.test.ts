@@ -304,6 +304,25 @@ describe("project store", () => {
     expect(recent.filter((record) => record.name === name)).toHaveLength(1);
   });
 
+  test("renames the current project without changing its saved id", async () => {
+    const originalName = `Rename Source ${crypto.randomUUID()}`;
+    const renamedName = `Rename Target ${crypto.randomUUID()}`;
+    await useProjectStore.getState().saveProjectAs(originalName);
+    const savedId = useProjectStore.getState().project.id;
+
+    await useProjectStore.getState().renameCurrentProject(renamedName);
+
+    const recent = await useProjectStore.getState().listRecentProjects();
+    expect(useProjectStore.getState().project.id).toBe(savedId);
+    expect(useProjectStore.getState().project.name).toBe(renamedName);
+    expect(recent.some((record) => record.id === savedId && record.name === renamedName)).toBe(
+      true,
+    );
+    expect(recent.some((record) => record.id === savedId && record.name === originalName)).toBe(
+      false,
+    );
+  });
+
   test("deletes the current saved project and returns to an empty project", async () => {
     await useProjectStore.getState().saveProjectAs("Delete Me");
     const savedId = useProjectStore.getState().project.id;

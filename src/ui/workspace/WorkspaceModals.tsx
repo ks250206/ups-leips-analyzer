@@ -4,16 +4,22 @@ import { ProjectTable } from "../windows/ProjectListWindow";
 
 export function SaveAsModal({
   defaultName,
+  title = "Save as ...",
+  actionLabel = "Save",
+  helpText = "If a saved project has the same name, it will be overwritten.",
   onCancel,
   onSave,
 }: {
   defaultName: string;
+  title?: string;
+  actionLabel?: string;
+  helpText?: string;
   onCancel: () => void;
   onSave: (name: string) => void;
 }) {
   const [name, setName] = useState(defaultName);
   return (
-    <Modal title="Save as ...">
+    <Modal title={title}>
       <label className="block text-xs font-semibold text-slate-600" htmlFor="save-as-name">
         Project name
       </label>
@@ -23,9 +29,7 @@ export function SaveAsModal({
         value={name}
         onChange={(event) => setName(event.currentTarget.value)}
       />
-      <p className="mt-2 text-xs text-slate-500">
-        If a saved project has the same name, it will be overwritten.
-      </p>
+      <p className="mt-2 text-xs text-slate-500">{helpText}</p>
       <div className="mt-4 flex justify-end gap-2">
         <button
           className="rounded border border-slate-300 px-3 py-1 text-xs"
@@ -40,7 +44,7 @@ export function SaveAsModal({
           type="button"
           onClick={() => onSave(name)}
         >
-          Save
+          {actionLabel}
         </button>
       </div>
     </Modal>

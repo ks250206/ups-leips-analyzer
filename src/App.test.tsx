@@ -143,6 +143,7 @@ describe("App", () => {
     expect(screen.getByText("New Project")).toBeTruthy();
     expect(screen.getByText("Save Project")).toBeTruthy();
     expect(screen.getByText("Save as ...")).toBeTruthy();
+    expect(screen.getByText("Rename Project")).toBeTruthy();
     expect(screen.getByText("Load Project")).toBeTruthy();
     expect(screen.getByText("Recent project")).toBeTruthy();
     expect(screen.getByText("Export")).toBeTruthy();
@@ -152,6 +153,13 @@ describe("App", () => {
     await user.click(screen.getByText("Save as ..."));
     expect(screen.getByRole("heading", { name: "Save as ..." })).toBeTruthy();
     expect(screen.getByText(/same name/)).toBeTruthy();
+    await user.click(screen.getByRole("button", { name: "Cancel" }));
+
+    fireEvent.pointerDown(document.body);
+    await user.click(screen.getByRole("button", { name: "Projects" }));
+    await user.click(screen.getByText("Rename Project"));
+    expect(screen.getByRole("heading", { name: "Rename Project" })).toBeTruthy();
+    expect(screen.getByText(/without changing its project ID/)).toBeTruthy();
     await user.click(screen.getByRole("button", { name: "Cancel" }));
 
     fireEvent.pointerDown(document.body);

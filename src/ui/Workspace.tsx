@@ -43,6 +43,7 @@ export function Workspace() {
   const newProject = useProjectStore((state) => state.newProject);
   const saveCurrentProject = useProjectStore((state) => state.saveCurrentProject);
   const saveProjectAs = useProjectStore((state) => state.saveProjectAs);
+  const renameCurrentProject = useProjectStore((state) => state.renameCurrentProject);
   const loadSavedProject = useProjectStore((state) => state.loadSavedProject);
   const listRecentProjects = useProjectStore((state) => state.listRecentProjects);
   const importProject = useProjectStore((state) => state.importProject);
@@ -62,6 +63,7 @@ export function Workspace() {
   const [activeWindowId, setActiveWindowId] = useState<string>();
   const [analysisTab, setAnalysisTab] = useState<AnalysisControlTab>("sample");
   const [saveAsOpen, setSaveAsOpen] = useState(false);
+  const [renameProjectOpen, setRenameProjectOpen] = useState(false);
   const [deleteOpen, setDeleteOpen] = useState(false);
   const [loadProjectOpen, setLoadProjectOpen] = useState(false);
   const [catalogModal, setCatalogModal] = useState<
@@ -182,6 +184,7 @@ export function Workspace() {
       },
       newProject,
       renameCatalog: () => setCatalogModal("rename"),
+      renameProject: () => setRenameProjectOpen(true),
       resetWorkspaceView,
       resetAllWindowPositions,
       resetAllWindowSizes,
@@ -384,6 +387,26 @@ export function Workspace() {
               })
               .catch((caught: unknown) => {
                 pushToast(errorMessage("Project save failed", caught), "error");
+              });
+          }}
+        />
+      ) : null}
+      {renameProjectOpen ? (
+        <SaveAsModal
+          actionLabel="Rename"
+          defaultName={project.name}
+          helpText="This changes the current project name without changing its project ID."
+          title="Rename Project"
+          onCancel={() => setRenameProjectOpen(false)}
+          onSave={(name) => {
+            void renameCurrentProject(name)
+              .then(() => {
+                refreshRecentProjects();
+                setRenameProjectOpen(false);
+                pushToast("Project renamed.", "success");
+              })
+              .catch((caught: unknown) => {
+                pushToast(errorMessage("Project rename failed", caught), "error");
               });
           }}
         />

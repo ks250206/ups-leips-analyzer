@@ -86,6 +86,7 @@ interface ProjectStore {
   recalculate: () => void;
   saveCurrentProject: () => Promise<"saved" | "needs-name">;
   saveProjectAs: (name: string) => Promise<void>;
+  renameCurrentProject: (name: string) => Promise<void>;
   deleteCurrentProject: () => Promise<void>;
   loadSavedProject: (id: string) => Promise<void>;
   listRecentProjects: () => Promise<ProjectRecord[]>;
@@ -544,6 +545,24 @@ export const useProjectStore = create<ProjectStore>((set, get) => ({
     });
     set({ isProjectUnsaved: false, project });
     await saveProject(project, db);
+  },
+  renameCurrentProject: async (name) => {
+    const trimmed = name.trim();
+    if (!trimmed) {
+      return;
+    }
+    const db = await activeProjectDb(get().activeCatalog.id);
+    const existing = await findProjectByName(trimmed, db);
+    if (existing && existing.id !== get().project.id) {
+      throw new Error("Project name already exists.");
+    }
+    const wasUnsaved = get().isProjectUnsaved;
+    const wasSaved = await loadProject(get().project.id, db);
+    const project = touchProject({ ...get().project, name: trimmed });
+    set({ project });
+    if (!wasUnsaved && wasSaved) {
+      await saveProject(project, db);
+    }
   },
   deleteCurrentProject: async () => {
     const db = await activeProjectDb(get().activeCatalog.id);

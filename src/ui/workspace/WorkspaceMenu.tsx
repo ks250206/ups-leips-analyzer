@@ -79,7 +79,7 @@ export function TopBar({
         ) : null}
       </div>
       <div className="flex items-center gap-2">
-        <span className="rounded border border-slate-700 px-2 py-1 text-xs text-slate-300">
+        <span className="rounded border border-cyan-200/60 bg-white/10 px-2 py-1 text-xs font-medium text-white">
           Zoom {Math.round(zoomScale * 100)}%
         </span>
       </div>
@@ -91,13 +91,13 @@ export function TopBar({
 function TopBarBadge({ label, value }: { label: string; value: string }) {
   return (
     <span
-      className="flex max-w-[220px] items-center overflow-hidden rounded border border-slate-700 bg-slate-900 text-xs shadow-sm"
+      className="flex max-w-[220px] items-center overflow-hidden rounded border border-cyan-200/70 bg-white/10 text-xs shadow-[0_0_0_1px_rgba(255,255,255,0.10)]"
       title={`${label}: ${value}`}
     >
-      <span className="shrink-0 border-r border-slate-700 bg-slate-800 px-1.5 py-0.5 font-semibold text-slate-400">
+      <span className="shrink-0 border-r border-cyan-200/50 bg-cyan-300/25 px-1.5 py-0.5 font-semibold text-cyan-50">
         {label}
       </span>
-      <span className="truncate px-2 py-0.5 text-slate-100">{value}</span>
+      <span className="truncate bg-slate-900/30 px-2 py-0.5 font-medium text-white">{value}</span>
     </span>
   );
 }
@@ -119,6 +119,7 @@ export function buildMenuGroups(input: {
     loadSavedProject: (id: string) => void;
     newProject: () => void;
     renameCatalog: () => void;
+    renameProject: () => void;
     resetAllWindowPositions: () => void;
     resetAllWindowSizes: () => void;
     resetWindowPosition: (id: string) => void;
@@ -188,6 +189,7 @@ export function buildMenuGroups(input: {
         { type: "item", label: "New Project", action: input.actions.newProject },
         { type: "item", label: "Save Project", action: input.actions.saveCurrentProject },
         { type: "item", label: "Save as ...", action: input.actions.saveAsProject },
+        { type: "item", label: "Rename Project", action: input.actions.renameProject },
         { type: "item", label: "Load Project", action: input.actions.loadProject },
         { type: "item", label: "Delete project", action: input.actions.deleteProject },
         { type: "separator" },
