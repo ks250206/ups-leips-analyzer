@@ -1,6 +1,6 @@
 import { create } from "zustand";
 
-export type CursorStyle = "point" | "range" | "reels-bg-single";
+export type CursorStyle = "point" | "range";
 
 interface SettingsState {
   cursorStyle: CursorStyle;
@@ -16,8 +16,6 @@ export function cursorStyleLabel(style: CursorStyle): string {
   switch (style) {
     case "range":
       return "Range cursor";
-    case "reels-bg-single":
-      return "Point cursor + REELS BG single point";
     default:
       return "Point cursor";
   }

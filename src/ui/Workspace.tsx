@@ -244,7 +244,11 @@ export function Workspace() {
           event.currentTarget.value = "";
         }}
       />
-      <TopBar menuGroups={menuGroups} onMenuOpen={refreshRecentProjects} />
+      <TopBar
+        menuGroups={menuGroups}
+        onMenuOpen={refreshRecentProjects}
+        zoomScale={viewport.scale}
+      />
       <div
         className="absolute inset-x-0 bottom-0 top-10 cursor-grab overflow-hidden active:cursor-grabbing"
         data-workspace-surface="true"

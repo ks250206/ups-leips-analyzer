@@ -13,12 +13,13 @@ export interface MenuGroup {
 export function TopBar({
   menuGroups,
   onMenuOpen,
+  zoomScale = 1,
 }: {
   menuGroups: MenuGroup[];
   onMenuOpen: () => void;
+  zoomScale?: number;
 }) {
   const project = useProjectStore((state) => state.project);
-  const recalculate = useProjectStore((state) => state.recalculate);
   const cursorStyle = useSettingsStore((state) => state.cursorStyle);
   const setCursorStyle = useSettingsStore((state) => state.setCursorStyle);
   const { menu, openMenu, closeMenu } = useContextMenu();
@@ -75,13 +76,9 @@ export function TopBar({
         </span>
       </div>
       <div className="flex items-center gap-2">
-        <button
-          className="rounded border border-slate-600 px-2 py-1 text-xs hover:bg-slate-800"
-          type="button"
-          onClick={recalculate}
-        >
-          Recalculate
-        </button>
+        <span className="rounded border border-slate-700 px-2 py-1 text-xs text-slate-300">
+          Zoom {Math.round(zoomScale * 100)}%
+        </span>
       </div>
       <ContextMenu menu={menu} onClose={closeTopMenu} />
     </header>
@@ -197,7 +194,7 @@ export function buildMenuGroups(input: {
   ];
 }
 
-const cursorStyles: readonly CursorStyle[] = ["point", "range", "reels-bg-single"];
+const cursorStyles: readonly CursorStyle[] = ["point", "range"];
 
 const settingMenuItems: ContextMenuItem[] = [
   {

@@ -36,6 +36,12 @@ export interface ProjectUiState {
     y?: UiScaleRange;
     y2?: UiScaleRange;
   };
+  reelsPlotViewport?: {
+    x?: UiScaleRange;
+    y?: UiScaleRange;
+    y2?: UiScaleRange;
+  };
+  reelsBackgroundMode?: "fit-range" | "single-point";
 }
 
 export interface ProjectSnapshot {

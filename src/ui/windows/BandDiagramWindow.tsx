@@ -10,7 +10,7 @@ import {
 
 export const DEFAULT_BAND_INDICATOR_FONT_SIZE = 30;
 export const DEFAULT_BAND_INDICATOR_ARROW_SCALE = 0.7;
-export const DEFAULT_BAND_SIGNIFICANT_DIGITS = 4;
+export const DEFAULT_BAND_SIGNIFICANT_DIGITS = 3;
 
 export function BandDiagramWindow() {
   const band = useProjectStore((state) => state.project.analysis.band);
@@ -53,8 +53,8 @@ export function BandDiagramWindow() {
       leipsScale: 1,
       leipsOffset: 0,
     });
-    setXMin(Number(next.x.min.toFixed(3)));
-    setXMax(Number(next.x.max.toFixed(3)));
+    setXMin(Number(next.x.min.toFixed(2)));
+    setXMax(Number(next.x.max.toFixed(2)));
     setViewport(next);
     setBandDiagramViewport(next);
   }, [band, bandXDomain, setBandDiagramViewport]);
@@ -92,8 +92,8 @@ export function BandDiagramWindow() {
     setViewport(next);
     setBandDiagramViewport(next);
     if (next.x) {
-      setXMin(Number(next.x.min.toFixed(3)));
-      setXMax(Number(next.x.max.toFixed(3)));
+      setXMin(Number(next.x.min.toFixed(2)));
+      setXMax(Number(next.x.max.toFixed(2)));
     } else if (!next.y && !next.y2) {
       setXMin(bandXDomain.min);
       setXMax(bandXDomain.max);
@@ -256,7 +256,7 @@ function BandDomainInput({
   return (
     <input
       className="min-w-0 rounded border border-slate-200 bg-white px-1 py-0.5 font-mono"
-      value={value}
+      value={Number.isFinite(value) ? value.toFixed(2) : ""}
       onChange={(event) => onChange(Number(event.currentTarget.value))}
     />
   );

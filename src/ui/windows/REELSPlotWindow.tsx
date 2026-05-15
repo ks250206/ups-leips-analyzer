@@ -18,10 +18,15 @@ export function REELSPlotWindow() {
   const project = useProjectStore((state) => state.project);
   const activeFitTarget = useProjectStore((state) => state.activeFitTarget);
   const setFitRange = useProjectStore((state) => state.setFitRange);
+  const setReelsPlotViewport = useProjectStore((state) => state.setReelsPlotViewport);
+  const setReelsBackgroundMode = useProjectStore((state) => state.setReelsBackgroundMode);
   const reelsDataset = project.datasets.find(
     (dataset) => dataset.id === project.analysis.selection.reelsDatasetId,
   );
   const reels = project.analysis.reels;
+  const persistedViewport = project.ui?.reelsPlotViewport ?? {};
+  const persistedViewportKey = JSON.stringify(persistedViewport);
+  const reelsBackgroundMode = project.ui?.reelsBackgroundMode ?? "fit-range";
   const lossDataset = useMemo(
     () =>
       reelsDataset
@@ -53,22 +58,41 @@ export function REELSPlotWindow() {
           extent,
           "onset edge",
         ),
-        lineFitSeries(
-          "REELS BG",
-          reels.backgroundFit,
-          project.analysis.fitRanges.reelsBackground,
-          "#0f766e",
-          extent,
-          "BG",
-        ),
       );
+      if (reelsBackgroundMode !== "single-point") {
+        items.push(
+          lineFitSeries(
+            "REELS BG",
+            reels.backgroundFit,
+            project.analysis.fitRanges.reelsBackground,
+            "#0f766e",
+            extent,
+            "BG",
+          ),
+        );
+      }
     }
     return items;
-  }, [lossDataset, project.analysis.fitRanges, reels]);
+  }, [lossDataset, project.analysis.fitRanges, reels, reelsBackgroundMode]);
+
+  const displayBandGap = useMemo(() => {
+    if (!reels) {
+      return undefined;
+    }
+    if (reelsBackgroundMode !== "single-point" || !lossDataset) {
+      return reels.bandGap;
+    }
+    const x = rangeCenter(project.analysis.fitRanges.reelsBackground);
+    const y = interpolateY(lossDataset.points, x);
+    if (Math.abs(reels.edgeFit.slope) < 1e-12) {
+      return reels.bandGap;
+    }
+    return (y - reels.edgeFit.intercept) / reels.edgeFit.slope;
+  }, [lossDataset, project.analysis.fitRanges.reelsBackground, reels, reelsBackgroundMode]);
 
   const markers = useMemo<PlotMarker[]>(
     () =>
-      reels
+      displayBandGap !== undefined
         ? [
             {
               x: 0,
@@ -76,32 +100,32 @@ export function REELSPlotWindow() {
               color: "#111827",
             },
             {
-              x: reels.bandGap,
-              label: `Eg ${formatNumber(reels.bandGap, 2)} eV`,
+              x: displayBandGap,
+              label: `Eg ${formatNumber(displayBandGap, 2)} eV`,
               color: "#111827",
             },
           ]
         : [],
-    [reels],
+    [displayBandGap],
   );
 
   const annotations = useMemo<PlotAnnotation[]>(
     () =>
-      reels
+      displayBandGap !== undefined
         ? [
             {
               type: "x-arrow",
-              label: `Eg=${formatNumber(reels.bandGap, 2)} eV`,
+              label: `Eg=${formatNumber(displayBandGap, 2)} eV`,
               color: "#111827",
               x1: 0,
-              x2: reels.bandGap,
+              x2: displayBandGap,
               yFraction: 0.32,
               fontSize: 14,
               strokeWidth: 1.3,
             },
           ]
         : [],
-    [reels],
+    [displayBandGap],
   );
 
   const rangeBands = useMemo<PlotRangeBand[]>(
@@ -117,14 +141,37 @@ export function REELSPlotWindow() {
         ...project.analysis.fitRanges.reelsBackground,
         label: "BG",
         color: "#0f766e",
-        singlePointMode: "horizontal",
+        singlePointMode: reelsBackgroundMode === "single-point" ? "horizontal" : undefined,
       },
     ],
     [
       activeFitTarget,
       project.analysis.fitRanges.reelsBackground,
       project.analysis.fitRanges.reelsEdge,
+      reelsBackgroundMode,
     ],
+  );
+
+  const contextItems = useMemo(
+    () => [
+      {
+        type: "submenu" as const,
+        label: "REELS BG mode",
+        items: [
+          {
+            type: "item" as const,
+            label: `${reelsBackgroundMode === "fit-range" ? "✓ " : ""}Fit range`,
+            action: () => setReelsBackgroundMode("fit-range"),
+          },
+          {
+            type: "item" as const,
+            label: `${reelsBackgroundMode === "single-point" ? "✓ " : ""}Single point y=const`,
+            action: () => setReelsBackgroundMode("single-point"),
+          },
+        ],
+      },
+    ],
+    [reelsBackgroundMode, setReelsBackgroundMode],
   );
 
   return (
@@ -137,6 +184,12 @@ export function REELSPlotWindow() {
       rangeBands={rangeBands}
       annotations={annotations}
       xDirection="reverse"
+      viewportRequest={{
+        id: `${project.id}-${project.analysis.selection.reelsDatasetId ?? "none"}-${persistedViewportKey}`,
+        viewport: persistedViewport,
+      }}
+      extraContextMenuItems={contextItems}
+      onViewportChange={setReelsPlotViewport}
       onSelectRange={(range) => {
         if (activeFitTarget === "reels-bg" || activeFitTarget === "reels-edge") {
           setFitRange(activeFitTarget, range);
@@ -147,4 +200,28 @@ export function REELSPlotWindow() {
       onRangeBandChange={(target, range) => setFitRange(target as FitTarget, range)}
     />
   );
+}
+
+function rangeCenter(range: { min: number; max: number }): number {
+  return (range.min + range.max) / 2;
+}
+
+function interpolateY(points: readonly { x: number; y: number }[], x: number): number {
+  if (points.length === 0) {
+    return 0;
+  }
+  const sorted = [...points].sort((left, right) => left.x - right.x);
+  if (x <= sorted[0].x) {
+    return sorted[0].y;
+  }
+  for (let index = 1; index < sorted.length; index += 1) {
+    const previous = sorted[index - 1];
+    const current = sorted[index];
+    if (x <= current.x) {
+      const span = current.x - previous.x || 1;
+      const ratio = (x - previous.x) / span;
+      return previous.y + (current.y - previous.y) * ratio;
+    }
+  }
+  return sorted[sorted.length - 1].y;
 }

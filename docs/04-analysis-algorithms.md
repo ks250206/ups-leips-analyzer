@@ -51,6 +51,7 @@ Eg_REELS = intersection(onsetEdgeFit, backgroundFit)
 ```
 
 `incidentEnergy` はAnalysis ControlsのREELS tabで編集できる。REELS Egは独立解析結果として扱い、UPS-LEIPS Band Diagramの `Eg = IP - EA` には反映しない。
+REELS BG single point modeでは、BG cursorの中心点 `(x0, y0)` を使い、BGを `y = y0` の水平線として扱う。
 
 ## Rounding
 

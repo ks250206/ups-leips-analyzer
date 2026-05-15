@@ -67,7 +67,7 @@ interface SpectrumPlotProps {
   rangeBands?: PlotRangeBand[];
   annotations?: PlotAnnotation[];
   xDirection?: "normal" | "reverse";
-  viewportRequest?: { id: number; viewport: PlotViewport };
+  viewportRequest?: { id: number | string; viewport: PlotViewport };
   extraContextMenuItems?: ContextMenuItem[];
   onSelectRange?: (range: FitRange) => void;
   onRangeBandChange?: (bandId: string, range: FitRange) => void;
@@ -96,6 +96,7 @@ export function SpectrumPlot({
   const containerRef = useRef<HTMLDivElement>(null);
   const svgRef = useRef<SVGSVGElement>(null);
   const scalesRef = useRef<PlotScales | undefined>(undefined);
+  const onViewportChangeRef = useRef(onViewportChange);
   const xDirectionRef = useRef<"normal" | "reverse">(xDirection);
   const clipId = useId();
   const [size, setSize] = useState(DEFAULT_SIZE);
@@ -110,7 +111,6 @@ export function SpectrumPlot({
   const updateViewport = (next: PlotViewport | ((current: PlotViewport) => PlotViewport)) => {
     setViewport((current) => {
       const resolved = typeof next === "function" ? next(current) : next;
-      onViewportChange?.(resolved);
       return resolved;
     });
   };
@@ -172,6 +172,14 @@ export function SpectrumPlot({
     updateViewport(viewportRequest.viewport);
   }, [viewportRequest?.id]);
 
+  useEffect(() => {
+    onViewportChangeRef.current = onViewportChange;
+  }, [onViewportChange]);
+
+  useEffect(() => {
+    onViewportChangeRef.current?.(viewport);
+  }, [viewport]);
+
   const scales = useMemo(
     () =>
       hasData
@@ -226,14 +234,8 @@ export function SpectrumPlot({
   }
 
   const { geometry, xScale, yScale, yRightScale } = scales;
-  const singlePointBands =
-    cursorStyle === "reels-bg-single"
-      ? rangeBands.filter((band) => band.singlePointMode === "horizontal")
-      : [];
-  const standardBands =
-    cursorStyle === "reels-bg-single"
-      ? rangeBands.filter((band) => band.singlePointMode !== "horizontal")
-      : rangeBands;
+  const singlePointBands = rangeBands.filter((band) => band.singlePointMode === "horizontal");
+  const standardBands = rangeBands.filter((band) => band.singlePointMode !== "horizontal");
   const selection = drag
     ? selectionRectForMode(drag.start, clampPlotPosition(drag.current, geometry), {
         width: geometry.plotWidth,
@@ -334,7 +336,7 @@ export function SpectrumPlot({
                 />
               ))
             : null}
-          {showCursorRanges && cursorStyle === "reels-bg-single" ? (
+          {showCursorRanges && singlePointBands.length > 0 ? (
             <HorizontalSinglePointLines
               geometry={geometry}
               rangeBands={singlePointBands}
@@ -375,7 +377,7 @@ export function SpectrumPlot({
               />
             ))
           : null}
-        {showCursorRanges && cursorStyle !== "range" ? (
+        {showCursorRanges && cursorStyle === "point" ? (
           <CursorPointMarkers
             geometry={geometry}
             onRangeBandChange={onRangeBandChange}
@@ -386,7 +388,7 @@ export function SpectrumPlot({
             yScale={yScale}
           />
         ) : null}
-        {showCursorRanges && cursorStyle === "reels-bg-single" ? (
+        {showCursorRanges && singlePointBands.length > 0 ? (
           <CursorSinglePointMarkers
             geometry={geometry}
             onRangeBandChange={onRangeBandChange}
@@ -405,7 +407,7 @@ export function SpectrumPlot({
   );
 }
 
-const cursorStyles: readonly CursorStyle[] = ["point", "range", "reels-bg-single"];
+const cursorStyles: readonly CursorStyle[] = ["point", "range"];
 
 function cursorStyleItems(
   cursorStyle: CursorStyle,

@@ -80,7 +80,7 @@ describe("App", () => {
     await user.click(screen.getByRole("button", { name: "Fit" }));
     expect(screen.getByText("Cursor / fitting ranges")).toBeTruthy();
 
-    await user.click(screen.getByRole("button", { name: "Recalculate" }));
+    expect(screen.getByText("Zoom 100%")).toBeTruthy();
     expect(screen.getByText("0 datasets")).toBeTruthy();
     expect(screen.queryByText("Cannot fit an empty range.")).toBeNull();
   });
@@ -111,9 +111,6 @@ describe("App", () => {
     fireEvent.mouseEnter(screen.getByText("Cursor style"));
     expect(screen.getByText("✓ Point cursor")).toBeTruthy();
     expect(screen.getByText("Range cursor")).toBeTruthy();
-    expect(screen.getByText("Point cursor + REELS BG single point")).toBeTruthy();
-    await user.click(screen.getByText("Point cursor + REELS BG single point"));
-    expect(screen.getByLabelText("BG single point cursor")).toBeTruthy();
 
     fireEvent.pointerDown(document.body);
     await user.click(screen.getByRole("button", { name: "Project" }));
@@ -166,6 +163,13 @@ describe("App", () => {
     expect(screen.getByText("Export SVG")).toBeTruthy();
     expect(screen.getByText("Save VBM view")).toBeTruthy();
     expect(screen.getByText("Recall Cut-off view")).toBeTruthy();
+
+    fireEvent.pointerDown(document.body);
+    fireEvent.contextMenu(screen.getByLabelText("REELS plot"));
+    expect(screen.getByText("REELS BG mode")).toBeTruthy();
+    fireEvent.mouseEnter(screen.getByText("REELS BG mode"));
+    await user.click(screen.getByText("Single point y=const"));
+    expect(screen.getByLabelText("BG single point cursor")).toBeTruthy();
 
     fireEvent.pointerDown(document.body);
     fireEvent.contextMenu(screen.getByLabelText("LEET / LEET(der) / LEIPS plot"));

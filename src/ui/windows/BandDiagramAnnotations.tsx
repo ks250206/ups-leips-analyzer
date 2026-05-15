@@ -7,12 +7,14 @@ export function BandVerticalLine({
   label,
   labelY,
   fontSize,
+  upperOffset = 90,
 }: {
   model: IgorBandModel;
   value: number;
   label: string;
   labelY: number;
   fontSize: number;
+  upperOffset?: number;
 }) {
   const x = model.xScale(value);
   return (
@@ -23,7 +25,7 @@ export function BandVerticalLine({
         strokeWidth={3}
         x1={x}
         x2={x}
-        y1={model.plotTop + 90}
+        y1={model.plotTop + upperOffset}
         y2={model.plotBottom - 8}
       />
       <text

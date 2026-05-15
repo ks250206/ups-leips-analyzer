@@ -50,7 +50,7 @@ describe("Igor-style band diagram plot model", () => {
   test("uses compact default annotation controls", () => {
     expect(DEFAULT_BAND_INDICATOR_FONT_SIZE).toBe(30);
     expect(DEFAULT_BAND_INDICATOR_ARROW_SCALE).toBe(0.7);
-    expect(DEFAULT_BAND_SIGNIFICANT_DIGITS).toBe(4);
+    expect(DEFAULT_BAND_SIGNIFICANT_DIGITS).toBe(3);
     expect(clampSignificantDigits(2.2)).toBe(2);
     expect(clampSignificantDigits(99)).toBe(8);
     expect(formatSignificant(5.1, 3)).toBe("5.10");

@@ -41,6 +41,8 @@ interface ProjectStore {
   setEfMinusEvbm: (value: number) => void;
   setActiveFitTarget: (target: FitTarget) => void;
   setBandDiagramViewport: (viewport: ProjectUiState["bandDiagramViewport"]) => void;
+  setReelsPlotViewport: (viewport: ProjectUiState["reelsPlotViewport"]) => void;
+  setReelsBackgroundMode: (mode: NonNullable<ProjectUiState["reelsBackgroundMode"]>) => void;
   updateWindow: (id: string, patch: Partial<WindowLayout>) => void;
   focusWindow: (id: string) => void;
   resetWindowPosition: (id: string) => void;
@@ -208,6 +210,22 @@ export const useProjectStore = create<ProjectStore>((set, get) => ({
       }),
     }));
   },
+  setReelsPlotViewport: (viewport) => {
+    set((state) => ({
+      project: touchProject({
+        ...state.project,
+        ui: { ...state.project.ui, reelsPlotViewport: viewport },
+      }),
+    }));
+  },
+  setReelsBackgroundMode: (mode) => {
+    set((state) => ({
+      project: touchProject({
+        ...state.project,
+        ui: { ...state.project.ui, reelsBackgroundMode: mode },
+      }),
+    }));
+  },
   updateWindow: (id, patch) => {
     set((state) => ({
       project: touchProject({
@@ -319,7 +337,7 @@ export const useProjectStore = create<ProjectStore>((set, get) => ({
               title: "Help",
               kind: "help",
               x: 1500,
-              y: 120,
+              y: 796,
               width: 360,
               height: 320,
               zIndex: nextZ,
