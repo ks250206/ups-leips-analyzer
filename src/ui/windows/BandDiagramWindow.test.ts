@@ -44,6 +44,21 @@ describe("Igor-style band diagram plot model", () => {
     expect(current.leipsPath).toContain("L");
   });
 
+  test("applies UPS and LEIPS offsets as percent of each raw intensity span", () => {
+    const shifted = createIgorBandModel({
+      band: BAND,
+      xDomain: { min: -6, max: 4 },
+      upsScale: 1,
+      upsOffset: 10,
+      leipsScale: 1,
+      leipsOffset: 10,
+      geometry: { left: 100, top: 50, plotRight: 800, plotBottom: 500 },
+    });
+
+    expect(shifted.yDomain.min).toBeCloseTo(0.8);
+    expect(shifted.yRightDomain.min).toBeCloseTo(1.6);
+  });
+
   test("zooms x with shift wheel and y axes with normal wheel", () => {
     const current = model();
     const base = { x: { min: -6, max: 4 }, y: current.yDomain, y2: current.yRightDomain };

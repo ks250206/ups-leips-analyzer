@@ -37,6 +37,14 @@ export async function listProjects(db = projectDb): Promise<ProjectRecord[]> {
   return db.projects.orderBy("updatedAt").reverse().toArray();
 }
 
+export async function findProjectByName(
+  name: string,
+  db = projectDb,
+): Promise<ProjectRecord | undefined> {
+  const projects = await listProjects(db);
+  return projects.find((project) => project.name === name);
+}
+
 export async function deleteProject(id: string, db = projectDb): Promise<void> {
   await db.projects.delete(id);
 }

@@ -21,6 +21,8 @@ export function BandDiagramWindow() {
   const [upsOffset, setUpsOffset] = useState(0);
   const [leipsScale, setLeipsScale] = useState(1);
   const [leipsOffset, setLeipsOffset] = useState(0);
+  const [indicatorFontSize, setIndicatorFontSize] = useState(34);
+  const [indicatorArrowScale, setIndicatorArrowScale] = useState(1);
   const bandXDomain = useMemo(() => {
     const points = band ? [...band.upsPoints, ...band.leipsPoints] : [];
     if (points.length === 0) {
@@ -40,26 +42,46 @@ export function BandDiagramWindow() {
     setXMax(bandXDomain.max);
     setViewport({});
   }, [bandXDomain.min, bandXDomain.max]);
+  const handleViewportChange = (next: BandViewport) => {
+    setViewport(next);
+    if (next.x) {
+      setXMin(Number(next.x.min.toFixed(3)));
+      setXMax(Number(next.x.max.toFixed(3)));
+    } else if (!next.y && !next.y2) {
+      setXMin(bandXDomain.min);
+      setXMax(bandXDomain.max);
+    }
+  };
 
   return (
-    <div className="flex h-full flex-col bg-white">
+    <div className="flex h-full flex-col bg-white select-none">
+      <div className="min-h-0 flex-1">
+        <IgorBandDiagramPlot
+          band={band}
+          xDomain={{ min: Math.min(xMin, xMax), max: Math.max(xMin, xMax) }}
+          upsScale={upsScale}
+          upsOffset={upsOffset}
+          leipsScale={leipsScale}
+          leipsOffset={leipsOffset}
+          indicatorFontSize={indicatorFontSize}
+          indicatorArrowScale={indicatorArrowScale}
+          viewport={viewport}
+          onViewportChange={handleViewportChange}
+        />
+      </div>
       {band ? (
-        <div className="border-b border-slate-200 bg-slate-50 px-2 py-1 text-[11px]">
-          <div className="grid grid-cols-5 gap-1">
-            <Metric label="Vac" value={band.vacuumRelativeToEf} />
-            <Metric label="VBM" value={band.efMinusEvbm} />
-            <Metric label="CBM" value={band.cbmRelativeToEf} />
-            <Metric label="IP" value={band.ip} />
-            <Metric
-              label="EA / Eg"
-              text={`${formatNumber(band.ea, 2)} / ${formatNumber(band.eg, 2)} eV`}
-            />
-          </div>
-          <div className="mt-1 grid grid-cols-5 gap-1">
+        <div className="border-t border-slate-200 bg-slate-50 px-2 py-1 text-[11px]">
+          <div className="grid grid-cols-7 gap-1">
             <SmallNumber label="UPS×" value={upsScale} onChange={setUpsScale} />
-            <SmallNumber label="UPS+" value={upsOffset} onChange={setUpsOffset} />
+            <SmallNumber label="UPS+%" value={upsOffset} onChange={setUpsOffset} />
             <SmallNumber label="LEIPS×" value={leipsScale} onChange={setLeipsScale} />
-            <SmallNumber label="LEIPS+" value={leipsOffset} onChange={setLeipsOffset} />
+            <SmallNumber label="LEIPS+%" value={leipsOffset} onChange={setLeipsOffset} />
+            <SmallNumber label="Font" value={indicatorFontSize} onChange={setIndicatorFontSize} />
+            <SmallNumber
+              label="Arrow"
+              value={indicatorArrowScale}
+              onChange={setIndicatorArrowScale}
+            />
             <span className="grid grid-cols-[1fr_1fr_auto] gap-1">
               <input
                 className="min-w-0 rounded border border-slate-200 bg-white px-1 py-0.5 font-mono"
@@ -100,18 +122,6 @@ export function BandDiagramWindow() {
           </div>
         </div>
       ) : null}
-      <div className="min-h-0 flex-1">
-        <IgorBandDiagramPlot
-          band={band}
-          xDomain={{ min: Math.min(xMin, xMax), max: Math.max(xMin, xMax) }}
-          upsScale={upsScale}
-          upsOffset={upsOffset}
-          leipsScale={leipsScale}
-          leipsOffset={leipsOffset}
-          viewport={viewport}
-          onViewportChange={setViewport}
-        />
-      </div>
     </div>
   );
 }
@@ -123,6 +133,8 @@ function IgorBandDiagramPlot({
   upsOffset,
   leipsScale,
   leipsOffset,
+  indicatorFontSize,
+  indicatorArrowScale,
   viewport,
   onViewportChange,
 }: {
@@ -132,6 +144,8 @@ function IgorBandDiagramPlot({
   upsOffset: number;
   leipsScale: number;
   leipsOffset: number;
+  indicatorFontSize: number;
+  indicatorArrowScale: number;
   viewport: BandViewport;
   onViewportChange: (viewport: BandViewport) => void;
 }) {
@@ -220,7 +234,7 @@ function IgorBandDiagramPlot({
     <div
       ref={containerRef}
       aria-label="UPS-LEIPS Band Diagram plot"
-      className="relative h-full w-full overflow-hidden bg-white"
+      className="relative h-full w-full overflow-hidden bg-white select-none"
       onContextMenu={(event) => {
         event.preventDefault();
         openPlotMenu(event.clientX, event.clientY);
@@ -230,7 +244,9 @@ function IgorBandDiagramPlot({
         ref={svgRef}
         className="h-full w-full"
         height={size.height}
+        preserveAspectRatio="xMidYMid meet"
         role="img"
+        style={{ userSelect: "none" }}
         viewBox={`0 0 ${size.width} ${size.height}`}
         width={size.width}
         onDoubleClick={(event) => {
@@ -320,11 +336,12 @@ function IgorBandDiagramPlot({
                 />
                 <text
                   fill="black"
-                  fontSize={24}
+                  fontFamily="Arial, Helvetica, sans-serif"
+                  fontSize={20}
                   fontWeight={700}
                   textAnchor="middle"
                   x={x}
-                  y={plotBottom + 38}
+                  y={plotBottom + 32}
                 >
                   {formatNumber(tick, 0)}
                 </text>
@@ -395,6 +412,8 @@ function IgorBandDiagramPlot({
         <BandArrow
           arrowId={arrowId}
           label={`IP=${formatNumber(band.ip, 2)} eV`}
+          fontSize={indicatorFontSize}
+          arrowScale={indicatorArrowScale}
           model={model}
           x1={band.efMinusEvbm}
           x2={band.vacuumRelativeToEf}
@@ -403,6 +422,8 @@ function IgorBandDiagramPlot({
         <BandArrow
           arrowId={arrowId}
           label={`EA= ${formatNumber(band.ea, 2)} eV`}
+          fontSize={indicatorFontSize}
+          arrowScale={indicatorArrowScale}
           model={model}
           x1={band.cbmRelativeToEf}
           x2={band.vacuumRelativeToEf}
@@ -419,6 +440,8 @@ function IgorBandDiagramPlot({
               = {formatNumber(band.eg, 2)} eV
             </>
           }
+          fontSize={indicatorFontSize}
+          arrowScale={indicatorArrowScale}
           model={model}
           x1={band.efMinusEvbm}
           x2={band.cbmRelativeToEf}
@@ -487,11 +510,11 @@ export function createIgorBandModel(input: {
   };
   const upsPoints = input.band.upsPoints.map((point) => ({
     x: point.x,
-    y: point.y * input.upsScale + input.upsOffset,
+    y: point.y * input.upsScale + offsetFromPercent(input.band.upsPoints, input.upsOffset),
   }));
   const leipsPoints = input.band.leipsPoints.map((point) => ({
     x: point.x,
-    y: point.y * input.leipsScale + input.leipsOffset,
+    y: point.y * input.leipsScale + offsetFromPercent(input.band.leipsPoints, input.leipsOffset),
   }));
   const xDomain = input.viewport?.x ?? input.xDomain;
   const yDomain = input.viewport?.y ?? domainForY(upsPoints);
@@ -534,6 +557,14 @@ function domainForY(points: readonly Point[]): BandScaleRange {
   const max = Math.max(...values);
   const span = Math.max(max - min, 1);
   return { min: min - span * 0.02, max: max + span * 0.12 };
+}
+
+function offsetFromPercent(points: readonly Point[], percent: number): number {
+  if (points.length === 0) {
+    return 0;
+  }
+  const values = points.map((point) => point.y);
+  return ((Math.max(...values) - Math.min(...values)) * percent) / 100;
 }
 
 function sortedByX(points: readonly Point[]): Point[] {
@@ -584,6 +615,8 @@ function BandArrow({
   y,
   label,
   arrowId,
+  fontSize,
+  arrowScale,
 }: {
   model: IgorBandModel;
   x1: number;
@@ -591,6 +624,8 @@ function BandArrow({
   y: number;
   label: ReactNode;
   arrowId: string;
+  fontSize: number;
+  arrowScale: number;
 }) {
   const left = model.xScale(x1);
   const right = model.xScale(x2);
@@ -602,13 +637,13 @@ function BandArrow({
         markerEnd={`url(#${arrowId})`}
         markerStart={`url(#${arrowId})`}
         stroke="black"
-        strokeWidth={3}
+        strokeWidth={Math.max(1, 3 * arrowScale)}
         x1={start}
         x2={end}
         y1={y}
         y2={y}
       />
-      <text fill="black" fontSize={34} textAnchor="middle" x={(start + end) / 2} y={y - 18}>
+      <text fill="black" fontSize={fontSize} textAnchor="middle" x={(start + end) / 2} y={y - 18}>
         {label}
       </text>
     </g>
@@ -666,6 +701,7 @@ function startBandDrag(
   setDrag: (drag: BandDragState | undefined) => void,
   onComplete: (start: { left: number; top: number }, end: { left: number; top: number }) => void,
 ): void {
+  event.preventDefault();
   const svg = event.currentTarget;
   const start = eventPositionInBandPlot(event, model, svg);
   setDrag({ start, current: start });
@@ -694,6 +730,7 @@ function startBandPan(
   viewport: BandViewport,
   updateViewport: (next: BandViewport) => void,
 ): void {
+  event.preventDefault();
   const svg = event.currentTarget;
   const start = eventPositionInBandPlot(event, model, svg);
   const startViewport = currentBandViewport(model, viewport);
@@ -816,13 +853,31 @@ function eventPositionInBandPlot(
   model: IgorBandModel,
   svg: SVGSVGElement,
 ): { left: number; top: number } {
-  const rect = svg.getBoundingClientRect();
-  const scaleX = 860 / Math.max(rect.width, 1);
-  const scaleY = 620 / Math.max(rect.height, 1);
+  const svgLike = svg as SVGSVGElement & { createSVGPoint?: SVGSVGElement["createSVGPoint"] };
+  if (typeof svgLike.createSVGPoint !== "function") {
+    const rect = svg.getBoundingClientRect();
+    const scaleX = 860 / Math.max(rect.width, 1);
+    const scaleY = 620 / Math.max(rect.height, 1);
+    return clampBandPosition(
+      {
+        left: (event.clientX - rect.left) * scaleX - model.geometry.left,
+        top: (event.clientY - rect.top) * scaleY - model.geometry.top,
+      },
+      model.geometry,
+    );
+  }
+  const point = svgLike.createSVGPoint();
+  point.x = event.clientX;
+  point.y = event.clientY;
+  const matrix = svg.getScreenCTM();
+  if (!matrix) {
+    return { left: 0, top: 0 };
+  }
+  const transformed = point.matrixTransform(matrix.inverse());
   return clampBandPosition(
     {
-      left: (event.clientX - rect.left) * scaleX - model.geometry.left,
-      top: (event.clientY - rect.top) * scaleY - model.geometry.top,
+      left: transformed.x - model.geometry.left,
+      top: transformed.y - model.geometry.top,
     },
     model.geometry,
   );
@@ -910,7 +965,7 @@ function SmallNumber({
       onWheel={(event) => {
         event.preventDefault();
         event.stopPropagation();
-        const baseStep = label.includes("×") ? 0.1 : 0.1;
+        const baseStep = label === "Font" ? 1 : label === "Arrow" ? 0.1 : 0.1;
         const step = event.shiftKey ? baseStep * 10 : baseStep;
         const direction = event.deltaY < 0 ? 1 : -1;
         onChange(Number((value + direction * step).toFixed(4)));
@@ -924,14 +979,5 @@ function SmallNumber({
         onChange={(event) => onChange(Number(event.currentTarget.value))}
       />
     </label>
-  );
-}
-
-function Metric({ label, value, text }: { label: string; value?: number; text?: string }) {
-  return (
-    <div className="truncate rounded border border-slate-200 bg-white px-2 py-1">
-      <span className="mr-1 font-semibold text-slate-500">{label}</span>
-      <span className="font-mono text-slate-900">{text ?? `${formatNumber(value, 2)} eV`}</span>
-    </div>
   );
 }

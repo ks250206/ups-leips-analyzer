@@ -10,6 +10,7 @@ import { createDemoDatasets, createInitialAnalysis, DEFAULT_FIT_RANGES } from ".
 import type { AnalysisState, FitRange, FitTarget, Point, SpectrumDataset } from "../domain/types";
 import {
   deleteProject,
+  findProjectByName,
   importProjectJson,
   listProjects,
   loadProject,
@@ -32,6 +33,7 @@ interface ProjectStore {
   updateWindow: (id: string, patch: Partial<WindowLayout>) => void;
   focusWindow: (id: string) => void;
   toggleHelpWindow: () => void;
+  toggleProjectsWindow: () => void;
   recalculate: () => void;
   saveCurrentProject: () => Promise<void>;
   saveProjectAs: (name: string) => Promise<void>;
@@ -193,6 +195,11 @@ export const useProjectStore = create<ProjectStore>((set, get) => ({
       };
     });
   },
+  toggleProjectsWindow: () => {
+    set((state) =>
+      toggleUtilityWindow(state.project, "projects", "Project List", 1120, 116, 520, 420),
+    );
+  },
   recalculate: () => {
     set((state) => ({ project: recalculateProject(touchProject(state.project)) }));
   },
@@ -205,11 +212,12 @@ export const useProjectStore = create<ProjectStore>((set, get) => ({
       return;
     }
     const now = new Date().toISOString();
+    const existing = await findProjectByName(trimmed);
     const project = touchProject({
       ...get().project,
-      id: `project-${Date.now()}`,
+      id: existing?.id ?? `project-${Date.now()}`,
       name: trimmed,
-      createdAt: now,
+      createdAt: existing?.createdAt ?? now,
     });
     set({ project });
     await saveProject(project);
@@ -521,6 +529,45 @@ function findDataset(
 
 function touchProject(project: ProjectSnapshot): ProjectSnapshot {
   return { ...project, updatedAt: new Date().toISOString() };
+}
+
+function toggleUtilityWindow(
+  project: ProjectSnapshot,
+  kind: "help" | "projects",
+  title: string,
+  x: number,
+  y: number,
+  width: number,
+  height: number,
+): { project: ProjectSnapshot } {
+  const existing = project.windows.find((window) => window.id === kind);
+  if (existing) {
+    return {
+      project: touchProject({
+        ...project,
+        windows: project.windows.filter((window) => window.id !== kind),
+      }),
+    };
+  }
+  const nextZ = Math.max(...project.windows.map((window) => window.zIndex)) + 1;
+  return {
+    project: touchProject({
+      ...project,
+      windows: [
+        ...project.windows,
+        {
+          id: kind,
+          title,
+          kind,
+          x,
+          y,
+          width,
+          height,
+          zIndex: nextZ,
+        },
+      ],
+    }),
+  };
 }
 
 function defaultWindows(): WindowLayout[] {

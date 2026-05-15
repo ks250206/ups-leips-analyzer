@@ -116,6 +116,19 @@ describe("project store", () => {
     expect(useProjectStore.getState().project.datasets).toHaveLength(5);
   });
 
+  test("save as overwrites a saved project with the same name", async () => {
+    const name = `Same Name ${crypto.randomUUID()}`;
+    await useProjectStore.getState().saveProjectAs(name);
+    const firstId = useProjectStore.getState().project.id;
+    useProjectStore.getState().newProject();
+
+    await useProjectStore.getState().saveProjectAs(name);
+
+    const recent = await useProjectStore.getState().listRecentProjects();
+    expect(useProjectStore.getState().project.id).toBe(firstId);
+    expect(recent.filter((record) => record.name === name)).toHaveLength(1);
+  });
+
   test("deletes the current saved project and returns to an empty project", async () => {
     await useProjectStore.getState().saveProjectAs("Delete Me");
     const savedId = useProjectStore.getState().project.id;

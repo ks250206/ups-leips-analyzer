@@ -60,12 +60,32 @@ describe("App", () => {
     await user.click(screen.getByRole("button", { name: "Project" }));
     expect(screen.getByText("New Project")).toBeTruthy();
     expect(screen.getByText("Save Project")).toBeTruthy();
-    expect(screen.getByText("Save as")).toBeTruthy();
+    expect(screen.getByText("Save as ...")).toBeTruthy();
     expect(screen.getByText("Recent project")).toBeTruthy();
     expect(screen.getByText("Export")).toBeTruthy();
     expect(screen.getAllByText("Import").length).toBeGreaterThan(0);
+    expect(screen.getByText("Project list")).toBeTruthy();
     expect(screen.getByText("Delete project")).toBeTruthy();
+    await user.click(screen.getByText("Save as ..."));
+    expect(screen.getByRole("heading", { name: "Save as ..." })).toBeTruthy();
+    expect(screen.getByText(/same name/)).toBeTruthy();
+    await user.click(screen.getByRole("button", { name: "Cancel" }));
 
+    fireEvent.pointerDown(document.body);
+    await user.click(screen.getByRole("button", { name: "Project" }));
+    await user.click(screen.getByText("Delete project"));
+    expect(screen.getByRole("heading", { name: "Delete project" })).toBeTruthy();
+    expect(screen.getByText(/return to an empty project/)).toBeTruthy();
+    await user.click(screen.getByRole("button", { name: "Cancel" }));
+
+    fireEvent.pointerDown(document.body);
+    await user.click(screen.getByRole("button", { name: "Project" }));
+    await user.click(screen.getByText("Project list"));
+    expect(screen.getAllByText("Project List").length).toBeGreaterThan(0);
+    expect(screen.getByText("Project name")).toBeTruthy();
+
+    fireEvent.pointerDown(document.body);
+    await user.click(screen.getByRole("button", { name: "Project" }));
     fireEvent.mouseEnter(screen.getByRole("button", { name: "View" }));
     expect(screen.getByText("Reset view")).toBeTruthy();
     expect(screen.queryByText("Save Project")).toBeNull();
@@ -78,7 +98,7 @@ describe("App", () => {
     expect(screen.getByText("About UPS-LEIPS Analyzer")).toBeTruthy();
     await user.click(screen.getByText("About UPS-LEIPS Analyzer"));
     expect(screen.getAllByText("UPS-LEIPS Analyzer").length).toBeGreaterThan(1);
-    expect(screen.getByText(/Project menuで保存/)).toBeTruthy();
+    expect(screen.getByText(/Use the Project menu/)).toBeTruthy();
 
     expect(screen.queryByRole("button", { name: "Reset" })).toBeNull();
     expect(screen.queryByRole("button", { name: "PNG" })).toBeNull();
