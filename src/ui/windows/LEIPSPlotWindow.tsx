@@ -256,7 +256,7 @@ export function LEIPSEvacPlotWindow() {
           "LEIPS edge",
           leips.leipsEdge,
           project.analysis.fitRanges.leipsEdge,
-          "#b91c1c",
+          "#f97316",
           extent,
           "edge",
         ),
@@ -285,7 +285,7 @@ export function LEIPSEvacPlotWindow() {
         id: "leips-edge",
         ...project.analysis.fitRanges.leipsEdge,
         label: "edge",
-        color: "#dc2626",
+        color: "#f97316",
       },
       {
         id: "leips-bg",

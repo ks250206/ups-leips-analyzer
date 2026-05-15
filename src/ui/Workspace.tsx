@@ -12,7 +12,8 @@ import { useProjectStore } from "../store/projectStore";
 import type { ProjectRecord, WindowLayout } from "../store/projectTypes";
 import { ContextMenu, useContextMenu } from "./ContextMenu";
 import { ToastViewport, useToastStore } from "./Toast";
-import { buildMenuGroups, TopBar } from "./workspace/WorkspaceMenu";
+import { useSettingsStore } from "./Settings";
+import { buildMenuGroups, resolveMenuItems, TopBar } from "./workspace/WorkspaceMenu";
 import { DeleteProjectModal, LoadProjectModal, SaveAsModal } from "./workspace/WorkspaceModals";
 import {
   type AnalysisControlTab,
@@ -52,6 +53,8 @@ export function Workspace() {
   const importInputRef = useRef<HTMLInputElement>(null);
   const [recentProjects, setRecentProjects] = useState<ProjectRecord[]>([]);
   const pushToast = useToastStore((state) => state.pushToast);
+  const cursorStyle = useSettingsStore((state) => state.cursorStyle);
+  const setCursorStyle = useSettingsStore((state) => state.setCursorStyle);
   const panStart = useRef<{ x: number; y: number; originX: number; originY: number } | undefined>(
     undefined,
   );
@@ -197,7 +200,11 @@ export function Workspace() {
     openMenu(
       event.clientX,
       event.clientY,
-      menuGroups.map((group) => ({ type: "submenu", ...group })),
+      menuGroups.map((group) => ({
+        type: "submenu",
+        label: group.label,
+        items: resolveMenuItems(group, cursorStyle, setCursorStyle),
+      })),
     );
   };
   const handlePointerMove = (event: PointerEvent<HTMLDivElement>) => {

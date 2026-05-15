@@ -1,6 +1,7 @@
 import { useEffect, useId, useMemo, useRef, useState } from "react";
 import type { FitRange } from "../../domain/types";
 import { ContextMenu, type ContextMenuItem, useContextMenu } from "../ContextMenu";
+import { cursorStyleLabel, useSettingsStore, type CursorStyle } from "../Settings";
 import type { PlotAnnotation, PlotMarker, PlotRangeBand, PlotSeries } from "../plotData";
 import {
   clampPlotPosition,
@@ -22,6 +23,8 @@ import { NoDataPlot, SelectionOverlay } from "./SpectrumPlotChrome";
 import {
   CursorHandles,
   CursorPointMarkers,
+  CursorSinglePointMarkers,
+  HorizontalSinglePointLines,
   MarkerLine,
   PlotAnnotations,
   PlotAxes,
@@ -99,7 +102,8 @@ export function SpectrumPlot({
   const [viewport, setViewport] = useState<PlotViewport>({});
   const [drag, setDrag] = useState<DragState | undefined>();
   const [showCursorRanges, setShowCursorRanges] = useState(true);
-  const [cursorMode, setCursorMode] = useState<"range" | "point">("range");
+  const cursorStyle = useSettingsStore((state) => state.cursorStyle);
+  const setCursorStyle = useSettingsStore((state) => state.setCursorStyle);
   const { menu, openMenu, closeMenu } = useContextMenu();
   const hasData = series.some((item) => item.points.length > 0);
 
@@ -123,9 +127,9 @@ export function SpectrumPlot({
       ...(showCursorRanges
         ? ([
             {
-              type: "item",
-              label: cursorMode === "range" ? "Use point cursors" : "Use range cursors",
-              action: () => setCursorMode((current) => (current === "range" ? "point" : "range")),
+              type: "submenu",
+              label: "Cursor style",
+              items: cursorStyleItems(cursorStyle, setCursorStyle),
             },
           ] as ContextMenuItem[])
         : []),
@@ -222,6 +226,14 @@ export function SpectrumPlot({
   }
 
   const { geometry, xScale, yScale, yRightScale } = scales;
+  const singlePointBands =
+    cursorStyle === "reels-bg-single"
+      ? rangeBands.filter((band) => band.singlePointMode === "horizontal")
+      : [];
+  const standardBands =
+    cursorStyle === "reels-bg-single"
+      ? rangeBands.filter((band) => band.singlePointMode !== "horizontal")
+      : rangeBands;
   const selection = drag
     ? selectionRectForMode(drag.start, clampPlotPosition(drag.current, geometry), {
         width: geometry.plotWidth,
@@ -311,8 +323,8 @@ export function SpectrumPlot({
           yRightLabel={yRightLabel}
         />
         <g clipPath={`url(#${clipId})`}>
-          {showCursorRanges && cursorMode === "range"
-            ? rangeBands.map((band) => (
+          {showCursorRanges && cursorStyle === "range"
+            ? standardBands.map((band) => (
                 <RangeBand
                   key={band.id ?? `${band.label}-${band.min}-${band.max}`}
                   band={band}
@@ -322,6 +334,15 @@ export function SpectrumPlot({
                 />
               ))
             : null}
+          {showCursorRanges && cursorStyle === "reels-bg-single" ? (
+            <HorizontalSinglePointLines
+              geometry={geometry}
+              rangeBands={singlePointBands}
+              series={series}
+              yRightScale={yRightScale}
+              yScale={yScale}
+            />
+          ) : null}
           {series.map((item) => (
             <SeriesPath
               key={item.name}
@@ -343,8 +364,8 @@ export function SpectrumPlot({
             />
           ))}
         </g>
-        {showCursorRanges && cursorMode === "range"
-          ? rangeBands.map((band) => (
+        {showCursorRanges && cursorStyle === "range"
+          ? standardBands.map((band) => (
               <CursorHandles
                 key={band.id ?? `${band.label}-${band.min}-${band.max}`}
                 band={band}
@@ -354,11 +375,22 @@ export function SpectrumPlot({
               />
             ))
           : null}
-        {showCursorRanges && cursorMode === "point" ? (
+        {showCursorRanges && cursorStyle !== "range" ? (
           <CursorPointMarkers
             geometry={geometry}
             onRangeBandChange={onRangeBandChange}
-            rangeBands={rangeBands}
+            rangeBands={standardBands}
+            series={series}
+            xScale={xScale}
+            yRightScale={yRightScale}
+            yScale={yScale}
+          />
+        ) : null}
+        {showCursorRanges && cursorStyle === "reels-bg-single" ? (
+          <CursorSinglePointMarkers
+            geometry={geometry}
+            onRangeBandChange={onRangeBandChange}
+            rangeBands={singlePointBands}
             series={series}
             xScale={xScale}
             yRightScale={yRightScale}
@@ -371,4 +403,17 @@ export function SpectrumPlot({
       <ContextMenu menu={menu} onClose={closeMenu} />
     </div>
   );
+}
+
+const cursorStyles: readonly CursorStyle[] = ["point", "range", "reels-bg-single"];
+
+function cursorStyleItems(
+  cursorStyle: CursorStyle,
+  setCursorStyle: (style: CursorStyle) => void,
+): ContextMenuItem[] {
+  return cursorStyles.map((style) => ({
+    type: "item",
+    label: `${cursorStyle === style ? "✓ " : ""}${cursorStyleLabel(style)}`,
+    action: () => setCursorStyle(style),
+  }));
 }

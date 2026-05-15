@@ -34,6 +34,7 @@ export interface PlotRangeBand {
   color: string;
   cursorLabels?: readonly [string, string];
   cursorSeriesName?: string;
+  singlePointMode?: "horizontal";
 }
 
 export type PlotAnnotation =

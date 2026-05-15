@@ -117,6 +117,7 @@ export function REELSPlotWindow() {
         ...project.analysis.fitRanges.reelsBackground,
         label: "BG",
         color: "#0f766e",
+        singlePointMode: "horizontal",
       },
     ],
     [

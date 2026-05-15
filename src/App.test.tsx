@@ -3,6 +3,7 @@ import userEvent from "@testing-library/user-event";
 import { afterEach, beforeEach, describe, expect, test } from "vite-plus/test";
 import App from "./App";
 import { createInitialProject, useProjectStore } from "./store/projectStore";
+import { useSettingsStore } from "./ui/Settings";
 import { useToastStore } from "./ui/Toast";
 
 const CSV = `2
@@ -21,6 +22,7 @@ describe("App", () => {
       activeFitTarget: "ups-vb-edge",
       project: createInitialProject(),
     });
+    useSettingsStore.setState({ cursorStyle: "point" });
     useToastStore.setState({ messages: [] });
   });
 
@@ -104,6 +106,16 @@ describe("App", () => {
     await user.click(screen.getByRole("button", { name: "Cancel" }));
 
     fireEvent.pointerDown(document.body);
+    await user.click(screen.getByRole("button", { name: "Setting" }));
+    expect(screen.getByText("Cursor style")).toBeTruthy();
+    fireEvent.mouseEnter(screen.getByText("Cursor style"));
+    expect(screen.getByText("✓ Point cursor")).toBeTruthy();
+    expect(screen.getByText("Range cursor")).toBeTruthy();
+    expect(screen.getByText("Point cursor + REELS BG single point")).toBeTruthy();
+    await user.click(screen.getByText("Point cursor + REELS BG single point"));
+    expect(screen.getByLabelText("BG single point cursor")).toBeTruthy();
+
+    fireEvent.pointerDown(document.body);
     await user.click(screen.getByRole("button", { name: "Project" }));
     await user.click(screen.getByText("Delete project"));
     expect(screen.getByRole("heading", { name: "Delete project" })).toBeTruthy();
@@ -147,11 +159,8 @@ describe("App", () => {
 
     fireEvent.contextMenu(screen.getByLabelText("UPS IP plot"));
     expect(screen.getByText("Hide cursor ranges")).toBeTruthy();
-    expect(screen.getByText("Use point cursors")).toBeTruthy();
-    await user.click(screen.getByText("Use point cursors"));
-    expect(screen.getByLabelText("A cursor")).toBeTruthy();
-    fireEvent.contextMenu(screen.getByLabelText("UPS IP plot"));
-    expect(screen.getByText("Use range cursors")).toBeTruthy();
+    expect(screen.getAllByLabelText("A cursor").length).toBeGreaterThan(0);
+    expect(screen.getByText("Cursor style")).toBeTruthy();
     expect(screen.getByText("Reset view")).toBeTruthy();
     expect(screen.getByText("Export PNG")).toBeTruthy();
     expect(screen.getByText("Export SVG")).toBeTruthy();
@@ -188,13 +197,14 @@ describe("App", () => {
     render(<App />);
 
     expect(screen.queryByText(/active/)).toBeNull();
-    expect(screen.queryByLabelText("A cursor")).toBeNull();
+    expect(screen.getAllByLabelText("A cursor").length).toBeGreaterThan(0);
 
     const plane = document.querySelector("[data-workspace-plane='true']") as HTMLElement;
     fireEvent.contextMenu(plane);
     expect(screen.getAllByText("Project").length).toBeGreaterThan(1);
     expect(screen.getAllByText("View").length).toBeGreaterThan(1);
     expect(screen.getAllByText("Windows").length).toBeGreaterThan(1);
+    expect(screen.getAllByText("Setting").length).toBeGreaterThan(1);
     expect(screen.getAllByText("Help").length).toBeGreaterThan(1);
     expect(screen.queryByText("Load Demo")).toBeNull();
   });

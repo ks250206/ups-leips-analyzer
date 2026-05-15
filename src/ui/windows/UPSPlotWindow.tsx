@@ -143,7 +143,7 @@ export function UPSIPPlotWindow() {
           "Cut-off edge",
           ups.cutoffEdge,
           project.analysis.fitRanges.upsIpEdge,
-          "#b91c1c",
+          "#f97316",
           extent,
           "cut-off edge",
         ),
@@ -198,7 +198,7 @@ export function UPSIPPlotWindow() {
         id: "ups-ip-edge",
         ...project.analysis.fitRanges.upsIpEdge,
         label: "cut-off edge",
-        color: "#dc2626",
+        color: "#f97316",
       },
       {
         id: "ups-ip-bg",
