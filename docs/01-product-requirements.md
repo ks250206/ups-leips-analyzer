@@ -6,9 +6,10 @@ UPS/LEIPS解析をIGOR Proマクロからブラウザ内ワークベンチへ移
 
 ## v1 Scope
 
-- MultiPak CSVのUPS VB/IP、LEET、LEET(der)、LEIPS読み込み。
+- MultiPak CSVのUPS VB/IP、LEET、LEET(der)、LEIPS、REELS読み込み。
 - UPS: VBとIPスペクトルの表示、edge/BG線形fit、VBM/cut-off/IP計算。
 - LEIPS: LEET/LEET(der)/LEIPS表示、LEET(der)ガウスfit、bandpass補正、真空準位基準への変換、EA計算。
+- REELS: Kinetic Energy CSVをElectron loss energyへ変換し、onset edge/BG線形fitからEgを計算。
 - UPS-LEIPS: VBとLEIPSをEnergy relative to Ef/eV軸で重ね、IP/EA/Egを表示。
 - ProjectはIndexedDBに保存し、JSON import/exportで共有する。
 - Go単一バイナリはビルド済みWebアプリをローカルHTTPで配信する。

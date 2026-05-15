@@ -26,7 +26,7 @@ pnpm binary:build:macos-app:arm64
 
 1. `vp dev` で起動する。
 2. demo datasetが表示される。
-3. UPS/LEIPS計算結果とBand Diagramが表示される。
+3. UPS/LEIPS/REELS計算結果とBand Diagramが表示される。
 4. Project gzip export/importとDelete projectが動く。
 5. Top menuと背景右クリックmenuが表示される。
 6. Band Diagramのズーム、パン、ダブルクリックリセットが動く。

@@ -28,6 +28,7 @@ x,y1,y2,...
 - LEET: filenameまたはkindに `LEET` を含み、`der` を含まない。
 - LEET(der): filenameまたはkindに `LEET` と `der` を含む。
 - LEIPS: filenameまたはkindに `LEIPS` を含む。
+- REELS: filenameまたはkindに `REELS` を含む。raw x軸はKinetic Energy / eVとして扱う。
 
 ## SPE
 

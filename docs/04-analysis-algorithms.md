@@ -40,6 +40,18 @@ Evac = Epeak + bandpassEnergy
 EnergyFromEvac = Evac - Vbias
 ```
 
+## REELS
+
+raw datasetはKinetic Energyとして保持し、解析時にloss軸へ変換する。
+
+```text
+ElectronLossEnergy = incidentEnergy - kineticEnergy
+incidentEnergy = 1000 eV
+Eg_REELS = intersection(onsetEdgeFit, backgroundFit)
+```
+
+`incidentEnergy` はAnalysis ControlsのREELS tabで編集できる。REELS Egは独立解析結果として扱い、UPS-LEIPS Band Diagramの `Eg = IP - EA` には反映しない。
+
 ## Rounding
 
 計算内部は丸めない。UI表示は小数第3位を基本にする。

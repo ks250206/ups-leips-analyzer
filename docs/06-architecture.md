@@ -2,7 +2,7 @@
 
 ## Layers
 
-- `src/domain`: スペクトル型、線形fit、ガウスfit、UPS/LEIPS/バンド図計算。
+- `src/domain`: スペクトル型、線形fit、ガウスfit、UPS/LEIPS/REELS/バンド図計算。
 - `src/io`: MultiPak CSV parserとdataset kind推定。
 - `src/store`: Zustand store、Dexie database、Project JSON import/export。
 - `src/ui`: Workspace window、Data Browser、Table、D3/SVG plot wrapper、解析パネル。
