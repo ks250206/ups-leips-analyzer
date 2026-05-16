@@ -185,7 +185,7 @@ describe("App", () => {
     fireEvent.pointerDown(document.body);
     await user.click(screen.getByRole("button", { name: "Projects" }));
     await user.click(screen.getByText("Save Project"));
-    expect(screen.getByRole("heading", { name: "Save as ..." })).toBeTruthy();
+    expect(await screen.findByRole("heading", { name: "Save as ..." })).toBeTruthy();
     await user.click(screen.getByRole("button", { name: "Cancel" }));
     useProjectStore.getState().loadDemo();
 
@@ -222,17 +222,19 @@ describe("App", () => {
     expect(screen.getByText("Reset all window sizes")).toBeTruthy();
     expect(screen.getByText("Show Help")).toBeTruthy();
     expect(screen.getByText("Hide Project List")).toBeTruthy();
+    fireEvent.mouseEnter(screen.getAllByText("Data Browser").at(-1)!);
+    expect(screen.getByText("Go to position")).toBeTruthy();
     await user.click(screen.getByText("Hide Project List"));
     expect(screen.queryByText("Project name")).toBeNull();
     fireEvent.pointerDown(document.body);
     await user.click(screen.getByRole("button", { name: "Windows" }));
     expect(screen.getByText("Show Project List")).toBeTruthy();
     await user.click(screen.getByText("Show Help"));
-    expect(screen.getAllByText("UPS-LEIPS Analyzer").length).toBeGreaterThan(1);
+    expect(screen.getByText("UPS-LEIPS Analyzer ヘルプ")).toBeTruthy();
     fireEvent.pointerDown(document.body);
     await user.click(screen.getByRole("button", { name: "Windows" }));
     await user.click(screen.getByText("Hide Help"));
-    expect(screen.queryByText(/Use the Catalogs menu/)).toBeNull();
+    expect(screen.queryByText("UPS-LEIPS Analyzer ヘルプ")).toBeNull();
     fireEvent.pointerDown(document.body);
     fireEvent.pointerDown(document.body);
     await user.click(screen.getByRole("button", { name: "Setting" }));
@@ -244,8 +246,9 @@ describe("App", () => {
     await user.click(screen.getByRole("button", { name: "Help" }));
     expect(screen.getByText("About UPS-LEIPS Analyzer")).toBeTruthy();
     await user.click(screen.getByText("About UPS-LEIPS Analyzer"));
-    expect(screen.getAllByText("UPS-LEIPS Analyzer").length).toBeGreaterThan(1);
-    expect(screen.getByText(/Use the Catalogs menu/)).toBeTruthy();
+    expect(screen.getByText("UPS-LEIPS Analyzer ヘルプ")).toBeTruthy();
+    await user.click(screen.getByRole("tab", { name: "データ" }));
+    expect(screen.getByText("データのロード")).toBeTruthy();
 
     expect(screen.queryByRole("button", { name: "Reset" })).toBeNull();
     expect(screen.queryByRole("button", { name: "PNG" })).toBeNull();
@@ -326,6 +329,8 @@ describe("App", () => {
     fireEvent.mouseEnter(screen.getAllByText("Windows")[1]!);
     expect(screen.getByText("Show Help")).toBeTruthy();
     expect(screen.getByText("Show Project List")).toBeTruthy();
+    fireEvent.mouseEnter(screen.getAllByText("Data Browser").at(-1)!);
+    expect(screen.getByText("Go to position")).toBeTruthy();
     await user.click(screen.getByText("Show Project List"));
     expect(screen.getByText("Project name")).toBeTruthy();
 
@@ -351,6 +356,11 @@ describe("App", () => {
     expect(screen.getByLabelText("Sample name")).toBeTruthy();
     expect(screen.queryByLabelText("試料状態表記")).toBeNull();
     expect(JSON.stringify(useProjectStore.getState().project)).not.toContain("en-US");
+
+    await user.click(screen.getByRole("button", { name: "Help" }));
+    await user.click(screen.getByText("About UPS-LEIPS Analyzer"));
+    await user.click(screen.getByRole("tab", { name: "Data" }));
+    expect(screen.getByText("Load data")).toBeTruthy();
   });
 
   test("shows sample info fields and cancels load project from backdrop", async () => {

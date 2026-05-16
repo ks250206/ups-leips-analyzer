@@ -115,6 +115,7 @@ export function buildMenuGroups(input: {
     exportCatalog: () => void;
     exportProject: () => void;
     focusWindow: (id: string) => void;
+    goToWindow: (id: string) => void;
     importCatalog: () => void;
     importProject: () => void;
     loadProject: () => void;
@@ -164,6 +165,11 @@ export function buildMenuGroups(input: {
           type: "item" as const,
           label: "Bring to front",
           action: () => input.actions.focusWindow(window.id),
+        },
+        {
+          type: "item" as const,
+          label: "Go to position",
+          action: () => input.actions.goToWindow(window.id),
         },
         {
           type: "item" as const,

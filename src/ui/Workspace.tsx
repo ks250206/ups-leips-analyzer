@@ -73,9 +73,11 @@ export function Workspace() {
     handlePointerMove,
     handlePointerUp,
     handleWheel,
+    goToWindow,
     resetWorkspaceView,
     viewport,
   } = useWorkspaceViewport();
+  const workspaceSurfaceRef = useRef<HTMLDivElement>(null);
   const [activeWindowId, setActiveWindowId] = useState<string>();
   const [analysisTab, setAnalysisTab] = useState<AnalysisControlTab>("sample");
   const [saveAsOpen, setSaveAsOpen] = useState(false);
@@ -153,6 +155,17 @@ export function Workspace() {
     setSaveAsOpen,
     switchCatalog,
   });
+  const goToWindowPosition = (id: string) => {
+    const targetWindow = project.windows.find((window) => window.id === id);
+    const viewportRect = workspaceSurfaceRef.current?.getBoundingClientRect();
+    if (!targetWindow || !viewportRect) {
+      return;
+    }
+    goToWindow(targetWindow, {
+      height: viewportRect.height,
+      width: viewportRect.width,
+    });
+  };
   const menuGroups = buildMenuGroups({
     locale,
     project,
@@ -165,6 +178,7 @@ export function Workspace() {
       exportCatalog: fileActions.exportActiveCatalog,
       exportProject: fileActions.exportProject,
       focusWindow: focusAndActivateWindow,
+      goToWindow: goToWindowPosition,
       importCatalog: () => catalogImportInputRef.current?.click(),
       importProject: () => importInputRef.current?.click(),
       loadProject: () => setLoadProjectOpen(true),
@@ -273,6 +287,7 @@ export function Workspace() {
         zoomScale={viewport.scale}
       />
       <div
+        ref={workspaceSurfaceRef}
         className="absolute inset-x-0 bottom-0 top-10 cursor-grab overflow-hidden active:cursor-grabbing"
         data-workspace-surface="true"
         onPointerDown={handlePointerDown}

@@ -1,11 +1,43 @@
 import { useRef, useState, type PointerEvent, type WheelEvent } from "react";
 
+export interface WorkspaceViewportState {
+  x: number;
+  y: number;
+  scale: number;
+}
+
+export interface WorkspaceViewportSize {
+  width: number;
+  height: number;
+}
+
+export interface WorkspaceViewportWindow {
+  x: number;
+  y: number;
+  width: number;
+  height: number;
+}
+
+export function viewportCenteredOnWindow(
+  current: WorkspaceViewportState,
+  window: WorkspaceViewportWindow,
+  visibleArea: WorkspaceViewportSize,
+): WorkspaceViewportState {
+  return {
+    ...current,
+    x: visibleArea.width / 2 - (window.x + window.width / 2) * current.scale,
+    y: visibleArea.height / 2 - (window.y + window.height / 2) * current.scale,
+  };
+}
+
 export function useWorkspaceViewport() {
   const [viewport, setViewport] = useState({ x: 0, y: 0, scale: 1 });
   const panStart = useRef<{ x: number; y: number; originX: number; originY: number } | undefined>(
     undefined,
   );
   const resetWorkspaceView = () => setViewport({ x: 0, y: 0, scale: 1 });
+  const goToWindow = (window: WorkspaceViewportWindow, visibleArea: WorkspaceViewportSize) =>
+    setViewport((current) => viewportCenteredOnWindow(current, window, visibleArea));
   const handleWheel = (event: WheelEvent<HTMLDivElement>) => {
     const target = event.target as HTMLElement;
     if (target.closest("[data-plot-host='true']") && !event.metaKey && !event.ctrlKey) {
@@ -71,6 +103,7 @@ export function useWorkspaceViewport() {
     handlePointerMove,
     handlePointerUp,
     handleWheel,
+    goToWindow,
     resetWorkspaceView,
     viewport,
   };
