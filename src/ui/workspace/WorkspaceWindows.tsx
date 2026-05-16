@@ -265,40 +265,46 @@ function HelpWindow() {
   const [activeTabId, setActiveTabId] = useState<HelpTabId>("overview");
   const activeTab = tabs.find((tab) => tab.id === activeTabId) ?? tabs[0]!;
   return (
-    <div className="h-full overflow-auto bg-white p-4 text-sm text-slate-700">
-      <h2 className="text-base font-semibold text-slate-900">{helpTitle(locale)}</h2>
-      <div
-        className="mt-3 grid grid-cols-4 gap-1 text-[11px]"
-        role="tablist"
-        aria-label="Help sections"
-      >
-        {tabs.map((tab) => (
-          <button
-            key={tab.id}
-            type="button"
-            role="tab"
-            aria-selected={activeTab.id === tab.id}
-            className={
-              activeTab.id === tab.id
-                ? "rounded border border-slate-700 bg-slate-800 px-1.5 py-1 font-semibold text-white shadow-sm"
-                : "rounded border border-slate-300 bg-white px-1.5 py-1 text-slate-700 hover:bg-slate-100"
-            }
-            onClick={() => setActiveTabId(tab.id)}
-          >
-            {tab.label}
-          </button>
-        ))}
+    <div className="flex h-full flex-col bg-slate-100 text-sm text-slate-700">
+      <div className="border-b border-slate-300 bg-slate-200 p-2">
+        <div className="mb-2 rounded bg-white px-3 py-2 shadow-sm">
+          <h2 className="text-base font-semibold text-slate-900">{helpTitle(locale)}</h2>
+        </div>
+        <div
+          className="grid grid-cols-4 gap-1 text-[11px]"
+          role="tablist"
+          aria-label="Help sections"
+        >
+          {tabs.map((tab) => (
+            <button
+              key={tab.id}
+              type="button"
+              role="tab"
+              aria-selected={activeTab.id === tab.id}
+              className={
+                activeTab.id === tab.id
+                  ? "rounded border border-slate-700 bg-slate-800 px-1.5 py-1 font-semibold text-white shadow-sm"
+                  : "rounded border border-slate-300 bg-white px-1.5 py-1 text-slate-700 hover:bg-slate-100"
+              }
+              onClick={() => setActiveTabId(tab.id)}
+            >
+              {tab.label}
+            </button>
+          ))}
+        </div>
       </div>
-      <div className="mt-4 space-y-4 text-xs leading-5">
+      <div className="min-h-0 flex-1 overflow-auto bg-white p-4 text-xs leading-5">
         <h3 className="text-sm font-semibold text-slate-900">{activeTab.title}</h3>
-        {activeTab.sections.map((section) => (
-          <section key={section.heading} className="space-y-1">
-            <h4 className="font-semibold text-slate-900">{section.heading}</h4>
-            {section.body.map((paragraph) => (
-              <p key={paragraph}>{paragraph}</p>
-            ))}
-          </section>
-        ))}
+        <div className="mt-4 space-y-4">
+          {activeTab.sections.map((section) => (
+            <section key={section.heading} className="space-y-1">
+              <h4 className="font-semibold text-slate-900">{section.heading}</h4>
+              {section.body.map((paragraph) => (
+                <p key={paragraph}>{paragraph}</p>
+              ))}
+            </section>
+          ))}
+        </div>
       </div>
     </div>
   );

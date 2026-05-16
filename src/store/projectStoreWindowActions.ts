@@ -124,7 +124,7 @@ export function createProjectStoreWindowActions(
         const nextZ = Math.max(...state.project.windows.map((window) => window.zIndex)) + 1;
         const controlsWindow = state.project.windows.find((window) => window.id === "controls");
         const helpX = controlsWindow?.x ?? 1448;
-        const helpY = (controlsWindow?.y ?? 26) + 620;
+        const helpY = controlsWindow ? controlsWindow.y + controlsWindow.height + 18 : 646;
         const helpWidth = Math.max(controlsWindow?.width ?? 560, 520);
         return {
           project: touchProject({

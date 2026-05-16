@@ -373,7 +373,7 @@ describe("project store analysis, model and UI state", () => {
       height: 560,
       width: 520,
       x: 1448,
-      y: 646,
+      y: 1106,
     });
     useProjectStore.getState().toggleHelpWindow();
     expect(useProjectStore.getState().project.windows.some((window) => window.id === "help")).toBe(
