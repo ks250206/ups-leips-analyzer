@@ -1,37 +1,21 @@
 import { useEffect, useId, useMemo, useRef, useState } from "react";
 import type { FitRange } from "../../domain/types";
-import { ContextMenu, type ContextMenuItem, useContextMenu } from "../ContextMenu";
-import { cursorStyleLabel, type CursorStyle } from "../Settings";
+import { ContextMenu, type ContextMenuItem } from "../ContextMenu";
+import type { CursorStyle } from "../Settings";
 import type { PlotAnnotation, PlotMarker, PlotRangeBand, PlotSeries } from "../plotData";
 import {
-  clampPlotPosition,
   createPlotScales,
   DEFAULT_SIZE,
-  nextViewportAfterDrag,
   nextViewportAfterWheel,
-  normalizeRange,
-  plotXToValue,
-  selectionRectForMode,
   sizeFor,
-  startPlotDrag,
-  startPlotPan,
   type DragState,
   type PlotScales,
   type PlotViewport,
 } from "./SpectrumPlotModel";
-import { NoDataPlot, SelectionOverlay } from "./SpectrumPlotChrome";
-import {
-  CursorHandles,
-  CursorPointMarkers,
-  CursorSinglePointMarkers,
-  HorizontalSinglePointLines,
-  MarkerLine,
-  PlotAnnotations,
-  PlotAxes,
-  RangeBand,
-  SeriesPath,
-} from "./SpectrumPlotParts";
-import { copyPng, exportPng, exportSvg } from "./plotExport";
+import { NoDataPlot } from "./SpectrumPlotChrome";
+import { useSpectrumPlotContextMenu } from "./SpectrumPlotContextMenu";
+import { SpectrumPlotSvg } from "./SpectrumPlotSvg";
+import { useSpectrumPlotViewport } from "./SpectrumPlotViewportState";
 
 export type { PlotGeometry, PlotScaleRange, PlotScales, PlotViewport } from "./SpectrumPlotModel";
 
@@ -102,65 +86,27 @@ export function SpectrumPlot({
   const containerRef = useRef<HTMLDivElement>(null);
   const svgRef = useRef<SVGSVGElement>(null);
   const scalesRef = useRef<PlotScales | undefined>(undefined);
-  const onViewportChangeRef = useRef(onViewportChange);
-  const applyingViewportRequestRef = useRef(false);
   const xDirectionRef = useRef<"normal" | "reverse">(xDirection);
   const clipId = useId();
   const [size, setSize] = useState(DEFAULT_SIZE);
-  const [viewport, setViewport] = useState<PlotViewport>({});
   const [drag, setDrag] = useState<DragState | undefined>();
   const [showCursorRanges, setShowCursorRanges] = useState(true);
-  const { menu, openMenu, closeMenu } = useContextMenu();
   const hasData = series.some((item) => item.points.length > 0);
-
-  const updateViewport = (next: PlotViewport | ((current: PlotViewport) => PlotViewport)) => {
-    setViewport((current) => {
-      const resolved = typeof next === "function" ? next(current) : next;
-      if (!isValidPlotViewport(resolved)) {
-        return current;
-      }
-      return plotViewportEquals(current, resolved) ? current : resolved;
-    });
-  };
-  const openPlotContextMenu = (x: number, y: number) =>
-    openMenu(x, y, [
-      ...(extraContextMenuItems.length > 0
-        ? ([...extraContextMenuItems, { type: "separator" }] as ContextMenuItem[])
-        : []),
-      {
-        type: "item",
-        label: showCursorRanges ? "Hide cursor ranges" : "Show cursor ranges",
-        action: () => setShowCursorRanges((current) => !current),
-      },
-      ...(showCursorRanges
-        ? ([
-            {
-              type: "submenu",
-              label: "Cursor style",
-              items: cursorStyleItems(cursorStyle, onCursorStyleChange),
-            },
-          ] as ContextMenuItem[])
-        : []),
-      { type: "item", label: "Reset view", action: () => updateViewport({}) },
-      {
-        type: "item",
-        label: "Copy PNG",
-        action: () => copyPng(svgRef.current),
-        disabled: !hasData,
-      },
-      {
-        type: "item",
-        label: "Export PNG",
-        action: () => exportPng(svgRef.current, title),
-        disabled: !hasData,
-      },
-      {
-        type: "item",
-        label: "Export SVG",
-        action: () => exportSvg(svgRef.current, title),
-        disabled: !hasData,
-      },
-    ]);
+  const { resetViewport, updateViewport, viewport } = useSpectrumPlotViewport({
+    onViewportChange,
+    viewportRequest,
+  });
+  const { closeMenu, menu, openPlotContextMenu } = useSpectrumPlotContextMenu({
+    cursorStyle,
+    extraContextMenuItems,
+    hasData,
+    onCursorStyleChange,
+    resetViewport,
+    setShowCursorRanges,
+    showCursorRanges,
+    svgRef,
+    title,
+  });
 
   useEffect(() => {
     const container = containerRef.current;
@@ -178,34 +124,6 @@ export function SpectrumPlot({
     observer.observe(container);
     return () => observer.disconnect();
   }, [hasData]);
-
-  useEffect(() => {
-    if (!viewportRequest) {
-      return;
-    }
-    setViewport((current) => {
-      if (
-        !isValidPlotViewport(viewportRequest.viewport) ||
-        plotViewportEquals(current, viewportRequest.viewport)
-      ) {
-        return current;
-      }
-      applyingViewportRequestRef.current = true;
-      return viewportRequest.viewport;
-    });
-  }, [viewportRequest?.id]);
-
-  useEffect(() => {
-    onViewportChangeRef.current = onViewportChange;
-  }, [onViewportChange]);
-
-  useEffect(() => {
-    if (applyingViewportRequestRef.current) {
-      applyingViewportRequestRef.current = false;
-      return;
-    }
-    onViewportChangeRef.current?.(viewport);
-  }, [viewport]);
 
   const scales = useMemo(
     () =>
@@ -260,16 +178,6 @@ export function SpectrumPlot({
     );
   }
 
-  const { geometry, xScale, yScale, yRightScale } = scales;
-  const singlePointBands = rangeBands.filter((band) => band.singlePointMode === "horizontal");
-  const standardBands = rangeBands.filter((band) => band.singlePointMode !== "horizontal");
-  const selection = drag
-    ? selectionRectForMode(drag.start, clampPlotPosition(drag.current, geometry), {
-        width: geometry.plotWidth,
-        height: geometry.plotHeight,
-      })
-    : undefined;
-
   return (
     <div
       ref={containerRef}
@@ -284,197 +192,32 @@ export function SpectrumPlot({
         openPlotContextMenu(event.clientX, event.clientY);
       }}
     >
-      <svg
-        ref={svgRef}
-        className="absolute inset-0 h-full w-full touch-none select-none"
-        height={size.height}
-        role="img"
-        viewBox={`0 0 ${size.width} ${size.height}`}
-        width={size.width}
-        onDoubleClick={(event) => {
-          event.preventDefault();
-          setViewport({});
-        }}
-        onPointerDown={(event) => {
-          if (event.button === 2) {
-            event.preventDefault();
-            event.stopPropagation();
-            openPlotContextMenu(event.clientX, event.clientY);
-            return;
-          }
-          if (event.altKey) {
-            startPlotPan(event, geometry, scales, updateViewport);
-            return;
-          }
-          startPlotDrag(event, geometry, setDrag, (start, end, shiftKey) => {
-            if (shiftKey && onSelectRange) {
-              onSelectRange(
-                normalizeRange({
-                  min: plotXToValue(scales, start.left),
-                  max: plotXToValue(scales, end.left),
-                }),
-              );
-              return;
-            }
-            updateViewport((current) => nextViewportAfterDrag(current, scales, start, end));
-          });
-        }}
-      >
-        <rect fill="#ffffff" height={size.height} width={size.width} x={0} y={0} />
-        <defs>
-          <clipPath id={clipId}>
-            <rect
-              height={geometry.plotHeight}
-              width={geometry.plotWidth}
-              x={geometry.left}
-              y={geometry.top}
-            />
-          </clipPath>
-          <marker
-            id="plot-arrow"
-            markerHeight="8"
-            markerWidth="8"
-            orient="auto"
-            refX="7"
-            refY="4"
-            viewBox="0 0 8 8"
-          >
-            <path d="M 0 1 L 7 4 L 0 7 z" fill="black" />
-          </marker>
-        </defs>
-        <PlotAxes
-          geometry={geometry}
-          hideYTicks={hideYTicks}
-          largeAxisLabels={largeAxisLabels}
-          scales={scales}
-          xLabel={xLabel}
-          xLabelBottomPadding={xLabelBottomPadding}
-          yLabel={yLabel}
-          yRightLabel={yRightLabel}
-        />
-        <g clipPath={`url(#${clipId})`}>
-          {showCursorRanges && cursorStyle === "range"
-            ? standardBands.map((band) => (
-                <RangeBand
-                  key={band.id ?? `${band.label}-${band.min}-${band.max}`}
-                  band={band}
-                  geometry={geometry}
-                  onRangeBandChange={onRangeBandChange}
-                  xScale={xScale}
-                />
-              ))
-            : null}
-          {showCursorRanges && singlePointBands.length > 0 ? (
-            <HorizontalSinglePointLines
-              geometry={geometry}
-              rangeBands={singlePointBands}
-              series={series}
-              yRightScale={yRightScale}
-              yScale={yScale}
-            />
-          ) : null}
-          {series.map((item) => (
-            <SeriesPath
-              key={item.name}
-              clipId={clipId}
-              geometry={geometry}
-              visibleXDomain={scales.xDomain}
-              series={item}
-              showFitLabel={!showCursorRanges || rangeBands.length === 0}
-              xScale={xScale}
-              yScale={item.yAxis === "right" && yRightScale ? yRightScale : yScale}
-            />
-          ))}
-          {markers.map((marker) => (
-            <MarkerLine
-              key={`${marker.label}-${marker.x}`}
-              geometry={geometry}
-              marker={marker}
-              xScale={xScale}
-            />
-          ))}
-        </g>
-        {showCursorRanges && cursorStyle === "range"
-          ? standardBands.map((band) => (
-              <CursorHandles
-                key={band.id ?? `${band.label}-${band.min}-${band.max}`}
-                band={band}
-                geometry={geometry}
-                xScale={xScale}
-                onRangeBandChange={onRangeBandChange}
-              />
-            ))
-          : null}
-        {showCursorRanges && cursorStyle === "point" ? (
-          <CursorPointMarkers
-            geometry={geometry}
-            onRangeBandChange={onRangeBandChange}
-            rangeBands={standardBands}
-            series={series}
-            xScale={xScale}
-            yRightScale={yRightScale}
-            yScale={yScale}
-          />
-        ) : null}
-        {showCursorRanges && singlePointBands.length > 0 ? (
-          <CursorSinglePointMarkers
-            geometry={geometry}
-            onRangeBandChange={onRangeBandChange}
-            rangeBands={singlePointBands}
-            series={series}
-            xScale={xScale}
-            yRightScale={yRightScale}
-            yScale={yScale}
-          />
-        ) : null}
-        <PlotAnnotations annotations={annotations} geometry={geometry} xScale={xScale} />
-        <SelectionOverlay drag={drag} geometry={geometry} selection={selection} />
-      </svg>
+      <SpectrumPlotSvg
+        annotations={annotations}
+        clipId={clipId}
+        cursorStyle={cursorStyle}
+        drag={drag}
+        hideYTicks={hideYTicks}
+        largeAxisLabels={largeAxisLabels}
+        markers={markers}
+        onRangeBandChange={onRangeBandChange}
+        onSelectRange={onSelectRange}
+        openPlotContextMenu={openPlotContextMenu}
+        rangeBands={rangeBands}
+        resetViewport={resetViewport}
+        scales={scales}
+        series={series}
+        setDrag={setDrag}
+        showCursorRanges={showCursorRanges}
+        size={size}
+        svgRef={svgRef}
+        updateViewport={updateViewport}
+        xLabel={xLabel}
+        xLabelBottomPadding={xLabelBottomPadding}
+        yLabel={yLabel}
+        yRightLabel={yRightLabel}
+      />
       <ContextMenu menu={menu} onClose={closeMenu} />
     </div>
   );
-}
-
-const cursorStyles: readonly CursorStyle[] = ["point", "range"];
-
-function plotViewportEquals(left: PlotViewport, right: PlotViewport): boolean {
-  return (
-    rangeEquals(left.x, right.x) && rangeEquals(left.y, right.y) && rangeEquals(left.y2, right.y2)
-  );
-}
-
-function isValidPlotViewport(viewport: PlotViewport): boolean {
-  return rangeIsValid(viewport.x) && rangeIsValid(viewport.y) && rangeIsValid(viewport.y2);
-}
-
-function rangeIsValid(range: PlotViewport["x"] | undefined): boolean {
-  if (!range) {
-    return true;
-  }
-  return (
-    Number.isFinite(range.min) &&
-    Number.isFinite(range.max) &&
-    Math.abs(range.max - range.min) > 1e-12
-  );
-}
-
-function rangeEquals(
-  left: PlotViewport["x"] | undefined,
-  right: PlotViewport["x"] | undefined,
-): boolean {
-  if (!left || !right) {
-    return left === right;
-  }
-  return left.min === right.min && left.max === right.max;
-}
-
-function cursorStyleItems(
-  cursorStyle: CursorStyle,
-  setCursorStyle: ((style: CursorStyle) => void) | undefined,
-): ContextMenuItem[] {
-  return cursorStyles.map((style) => ({
-    type: "item",
-    label: `${cursorStyle === style ? "✓ " : ""}${cursorStyleLabel(style)}`,
-    action: () => setCursorStyle?.(style),
-  }));
 }
