@@ -230,11 +230,11 @@ describe("App", () => {
     await user.click(screen.getByRole("button", { name: "Windows" }));
     expect(screen.getByText("Show Project List")).toBeTruthy();
     await user.click(screen.getByText("Show Help"));
-    expect(screen.getByText("UPS-LEIPS Analyzer ヘルプ")).toBeTruthy();
+    expect(screen.getByText("解析の全体像")).toBeTruthy();
     fireEvent.pointerDown(document.body);
     await user.click(screen.getByRole("button", { name: "Windows" }));
     await user.click(screen.getByText("Hide Help"));
-    expect(screen.queryByText("UPS-LEIPS Analyzer ヘルプ")).toBeNull();
+    expect(screen.queryByText("解析の全体像")).toBeNull();
     fireEvent.pointerDown(document.body);
     fireEvent.pointerDown(document.body);
     await user.click(screen.getByRole("button", { name: "Setting" }));
@@ -246,7 +246,7 @@ describe("App", () => {
     await user.click(screen.getByRole("button", { name: "Help" }));
     expect(screen.getByText("About UPS-LEIPS Analyzer")).toBeTruthy();
     await user.click(screen.getByText("About UPS-LEIPS Analyzer"));
-    expect(screen.getByText("UPS-LEIPS Analyzer ヘルプ")).toBeTruthy();
+    expect(screen.getByText("解析の全体像")).toBeTruthy();
     await user.click(screen.getByRole("tab", { name: "データ" }));
     expect(screen.getByText("データのロード")).toBeTruthy();
 
