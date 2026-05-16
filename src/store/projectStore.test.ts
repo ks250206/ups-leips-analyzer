@@ -1,6 +1,5 @@
 import { beforeEach, describe, expect, test } from "vite-plus/test";
 import { createDemoDatasets } from "../domain/demoData";
-import type { FitTarget } from "../domain/types";
 import { DEFAULT_CATALOG_ID, DEFAULT_CATALOG_NAME, exportProjectJson } from "./projectDb";
 import {
   LAST_OPENED_WORKSPACE_KEY,
@@ -10,34 +9,16 @@ import {
 } from "./lastOpenedWorkspace";
 import { fitRangeKey, useProjectStore } from "./projectStore";
 import { normalizeProject, resolveBandIp } from "./projectModel";
-
-const TARGETS: FitTarget[] = [
-  "ups-vb-edge",
-  "ups-vb-bg",
-  "ups-ip-vbm-edge",
-  "ups-ip-vbm-bg",
-  "ups-ip-edge",
-  "ups-ip-bg",
-  "leet-der-peak",
-  "leips-edge",
-  "leips-bg",
-  "reels-edge",
-  "reels-bg",
-];
+import {
+  FIT_TARGETS,
+  prefixedDemoDatasets,
+  resetProjectStoreWithDemo,
+  upsIpResultFixture,
+} from "./projectStoreTestUtils";
 
 describe("project store", () => {
   beforeEach(() => {
-    useProjectStore.setState({
-      activeCatalog: {
-        id: DEFAULT_CATALOG_ID,
-        name: DEFAULT_CATALOG_NAME,
-        createdAt: new Date(0).toISOString(),
-        updatedAt: new Date(0).toISOString(),
-        lastOpenedAt: new Date(0).toISOString(),
-      },
-      isProjectUnsaved: true,
-    });
-    useProjectStore.getState().loadDemo();
+    resetProjectStoreWithDemo();
   });
 
   test("starts with no datasets and loads demo datasets only on request", () => {
@@ -66,7 +47,7 @@ describe("project store", () => {
   });
 
   test("maps every fit target to a fit range key", () => {
-    expect(TARGETS.map((target) => fitRangeKey(target))).toEqual([
+    expect(FIT_TARGETS.map((target) => fitRangeKey(target))).toEqual([
       "upsVbEdge",
       "upsVbBackground",
       "upsIpVbmEdge",
@@ -82,7 +63,7 @@ describe("project store", () => {
   });
 
   test("updates fit ranges and recalculates analysis", () => {
-    for (const target of TARGETS) {
+    for (const target of FIT_TARGETS) {
       useProjectStore.getState().setFitRange(target, { min: -2, max: -1 });
       expect(useProjectStore.getState().activeFitTarget).toBe(target);
     }
@@ -288,40 +269,11 @@ describe("project store", () => {
   });
 
   test("resolves an unspecified Band IP source from result voltages", () => {
-    const base = {
-      datasetName: "IP",
-      photonEnergy: 21.22,
-      ipEvbm: 0,
-      ecutoff: 0,
-      ipVbmEdge: { intercept: 0, slope: 0, rSquared: 1, range: { min: 0, max: 1 }, pointsUsed: 2 },
-      ipVbmBackground: {
-        intercept: 0,
-        slope: 0,
-        rSquared: 1,
-        range: { min: 0, max: 1 },
-        pointsUsed: 2,
-      },
-      cutoffEdge: {
-        intercept: 0,
-        slope: 0,
-        rSquared: 1,
-        range: { min: 0, max: 1 },
-        pointsUsed: 2,
-      },
-      cutoffBackground: {
-        intercept: 0,
-        slope: 0,
-        rSquared: 1,
-        range: { min: 0, max: 1 },
-        pointsUsed: 2,
-      },
-    };
-
     expect(
       resolveBandIp(
         [
-          { ...base, datasetId: "minus", appliedVoltage: -5, ip: 4 },
-          { ...base, datasetId: "zero", appliedVoltage: 0, ip: 6 },
+          upsIpResultFixture({ datasetId: "minus", appliedVoltage: -5, ip: 4 }),
+          upsIpResultFixture({ datasetId: "zero", appliedVoltage: 0, ip: 6 }),
         ],
         undefined,
       ),
@@ -329,14 +281,17 @@ describe("project store", () => {
     expect(
       resolveBandIp(
         [
-          { ...base, datasetId: "minus-10", appliedVoltage: -10, ip: 4 },
-          { ...base, datasetId: "minus-5", appliedVoltage: -5, ip: 5 },
+          upsIpResultFixture({ datasetId: "minus-10", appliedVoltage: -10, ip: 4 }),
+          upsIpResultFixture({ datasetId: "minus-5", appliedVoltage: -5, ip: 5 }),
         ],
         undefined,
       ),
     ).toBeCloseTo(6);
     expect(
-      resolveBandIp([{ ...base, datasetId: "single", appliedVoltage: -5, ip: 7 }], undefined),
+      resolveBandIp(
+        [upsIpResultFixture({ datasetId: "single", appliedVoltage: -5, ip: 7 })],
+        undefined,
+      ),
     ).toBe(7);
   });
 
@@ -627,11 +582,7 @@ describe("project store", () => {
   });
 
   test("adds datasets and imports project JSON", () => {
-    const incoming = createDemoDatasets().map((dataset) => ({
-      ...dataset,
-      id: `incoming-${dataset.id}`,
-      name: `Incoming ${dataset.name}`,
-    }));
+    const incoming = prefixedDemoDatasets("incoming");
     useProjectStore.getState().addDatasets(incoming);
     expect(
       useProjectStore.getState().project.datasets.some((dataset) => dataset.id === incoming[0]?.id),
@@ -670,11 +621,7 @@ describe("project store", () => {
   });
 
   test("switches analysis slots from demo datasets to imported datasets of the same kind", () => {
-    const incoming = createDemoDatasets().map((dataset) => ({
-      ...dataset,
-      id: `loaded-${dataset.id}`,
-      name: `Loaded ${dataset.name}`,
-    }));
+    const incoming = prefixedDemoDatasets("loaded");
 
     useProjectStore.getState().addDatasets(incoming);
 
