@@ -2,10 +2,8 @@ import { create } from "zustand";
 import { createEmptyProject } from "./projectFactory";
 import { createProjectStoreAnalysisActions } from "./projectStoreAnalysisActions";
 import { createProjectStoreDatasetActions } from "./projectStoreDatasetActions";
-import {
-  DEFAULT_CATALOG,
-  createProjectStoreLifecycleActions,
-} from "./projectStoreLifecycleActions";
+import { createProjectStoreLifecycleActions } from "./projectStoreLifecycleActions";
+import { DEFAULT_CATALOG } from "./projectStoreLifecycleHelpers";
 import { createProjectStoreUiActions } from "./projectStoreUiActions";
 import { createProjectStoreWindowActions } from "./projectStoreWindowActions";
 import type { ProjectStore } from "./projectStoreTypes";

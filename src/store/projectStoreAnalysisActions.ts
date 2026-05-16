@@ -8,6 +8,7 @@ import {
 } from "./projectModel";
 import type { ProjectStore } from "./projectStoreTypes";
 import type { ProjectStoreGet, ProjectStoreSet } from "./projectStoreSliceTypes";
+import { recalculateTouchedProject } from "./projectStoreUpdateHelpers";
 
 type AnalysisActions = Pick<
   ProjectStore,
@@ -174,7 +175,7 @@ export function createProjectStoreAnalysisActions(
       set({ activeFitTarget: target });
     },
     recalculate: () => {
-      set((state) => ({ project: recalculateProject(touchProject(state.project)) }));
+      set((state) => ({ project: recalculateTouchedProject(state.project) }));
     },
   };
 }

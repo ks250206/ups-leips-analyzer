@@ -1,6 +1,6 @@
-import { touchProject } from "./projectModel";
 import type { ProjectStore } from "./projectStoreTypes";
 import type { ProjectStoreGet, ProjectStoreSet } from "./projectStoreSliceTypes";
+import { touchProjectUi } from "./projectStoreUpdateHelpers";
 
 type UiActions = Pick<
   ProjectStore,
@@ -25,115 +25,75 @@ export function createProjectStoreUiActions(
   return {
     setBandDiagramViewport: (viewport) => {
       set((state) => ({
-        project: touchProject({
-          ...state.project,
-          ui: { ...state.project.ui, bandDiagramViewport: viewport },
-        }),
+        project: touchProjectUi(state.project, { bandDiagramViewport: viewport }),
       }));
     },
     setReelsPlotViewport: (viewport) => {
       set((state) => ({
-        project: touchProject({
-          ...state.project,
-          ui: { ...state.project.ui, reelsPlotViewport: viewport },
-        }),
+        project: touchProjectUi(state.project, { reelsPlotViewport: viewport }),
       }));
     },
     setUpsVbPlotViewport: (viewport) => {
       set((state) => ({
-        project: touchProject({
-          ...state.project,
-          ui: { ...state.project.ui, upsVbPlotViewport: viewport },
-        }),
+        project: touchProjectUi(state.project, { upsVbPlotViewport: viewport }),
       }));
     },
     setUpsIpPlotViewport: (viewport) => {
       set((state) => ({
-        project: touchProject({
-          ...state.project,
-          ui: { ...state.project.ui, upsIpPlotViewport: viewport },
-        }),
+        project: touchProjectUi(state.project, { upsIpPlotViewport: viewport }),
       }));
     },
     setUpsIpPlotViewportForDataset: (datasetId, viewport) => {
       set((state) => ({
-        project: touchProject({
-          ...state.project,
-          ui: {
-            ...state.project.ui,
-            upsIpPlotViewportsByDatasetId: {
-              ...state.project.ui?.upsIpPlotViewportsByDatasetId,
-              ...(viewport ? { [datasetId]: viewport } : {}),
-            },
+        project: touchProjectUi(state.project, {
+          upsIpPlotViewportsByDatasetId: {
+            ...state.project.ui?.upsIpPlotViewportsByDatasetId,
+            ...(viewport ? { [datasetId]: viewport } : {}),
           },
         }),
       }));
     },
     setUpsBiasPlotViewport: (plot, viewport) => {
       set((state) => ({
-        project: touchProject({
-          ...state.project,
-          ui: {
-            ...state.project.ui,
-            upsBiasPlotViewports: {
-              ...state.project.ui?.upsBiasPlotViewports,
-              [plot]: viewport,
-            },
+        project: touchProjectUi(state.project, {
+          upsBiasPlotViewports: {
+            ...state.project.ui?.upsBiasPlotViewports,
+            [plot]: viewport,
           },
         }),
       }));
     },
     setActiveUpsIpDatasetId: (datasetId) => {
       set((state) => ({
-        project: touchProject({
-          ...state.project,
-          ui: { ...state.project.ui, activeUpsIpDatasetId: datasetId },
-        }),
+        project: touchProjectUi(state.project, { activeUpsIpDatasetId: datasetId }),
       }));
     },
     setLeipsPlotViewport: (viewport) => {
       set((state) => ({
-        project: touchProject({
-          ...state.project,
-          ui: { ...state.project.ui, leipsPlotViewport: viewport },
-        }),
+        project: touchProjectUi(state.project, { leipsPlotViewport: viewport }),
       }));
     },
     setLeipsEvacPlotViewport: (viewport) => {
       set((state) => ({
-        project: touchProject({
-          ...state.project,
-          ui: { ...state.project.ui, leipsEvacPlotViewport: viewport },
-        }),
+        project: touchProjectUi(state.project, { leipsEvacPlotViewport: viewport }),
       }));
     },
     setReelsBackgroundMode: (mode) => {
       set((state) => ({
-        project: touchProject({
-          ...state.project,
-          ui: { ...state.project.ui, reelsBackgroundMode: mode },
-        }),
+        project: touchProjectUi(state.project, { reelsBackgroundMode: mode }),
       }));
     },
     setPlotCursorStyle: (plot, style) => {
       set((state) => ({
-        project: touchProject({
-          ...state.project,
-          ui: {
-            ...state.project.ui,
-            cursorStyles: { ...state.project.ui?.cursorStyles, [plot]: style },
-          },
+        project: touchProjectUi(state.project, {
+          cursorStyles: { ...state.project.ui?.cursorStyles, [plot]: style },
         }),
       }));
     },
     setSampleInfoField: (field, value) => {
       set((state) => ({
-        project: touchProject({
-          ...state.project,
-          ui: {
-            ...state.project.ui,
-            sampleInfo: { ...state.project.ui?.sampleInfo, [field]: value },
-          },
+        project: touchProjectUi(state.project, {
+          sampleInfo: { ...state.project.ui?.sampleInfo, [field]: value },
         }),
       }));
     },
