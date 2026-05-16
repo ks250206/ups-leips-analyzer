@@ -1,7 +1,5 @@
 import { create } from "zustand";
 import { CUSTOM_BANDPASS_TYPE } from "../domain/constants";
-import type { SampleInfoField, SampleInfoFieldValue } from "../domain/sampleInfo";
-import type { AnalysisState, FitRange, FitTarget, SpectrumDataset } from "../domain/types";
 import {
   axisLabelForDatasetKind,
   autoFitRanges,
@@ -36,87 +34,18 @@ import {
   saveProject,
   touchCatalog,
 } from "./projectDb";
-import type {
-  CatalogRecord,
-  CursorStyle,
-  PlotCursorStyleKey,
-  ProjectRecord,
-  ProjectSnapshot,
-  ProjectUiState,
-  WindowLayout,
-} from "./projectTypes";
+import type { CatalogRecord, ProjectSnapshot } from "./projectTypes";
 import { toggleUtilityWindow } from "./windowModel";
-import type { LastOpenedWorkspaceRef } from "./lastOpenedWorkspace";
+import type { ProjectStore } from "./projectStoreTypes";
+import {
+  keepOnlyMatchingSelections,
+  omitKeys,
+  seedUpsIpConfigs,
+  seedUpsIpFitRanges,
+} from "./projectStoreHelpers";
 
 export { createInitialProject } from "./projectFactory";
 export { fitRangeKey, resolvedBandpassEnergy } from "./projectModel";
-
-interface ProjectStore {
-  activeCatalog: CatalogRecord;
-  project: ProjectSnapshot;
-  isProjectUnsaved: boolean;
-  activeFitTarget: FitTarget;
-  newProject: () => void;
-  loadDemo: () => void;
-  addDatasets: (datasets: SpectrumDataset[]) => void;
-  deleteDataset: (datasetId: string) => void;
-  setDatasetKind: (datasetId: string, kind: SpectrumDataset["kind"]) => void;
-  selectDataset: (datasetId: string) => void;
-  assignDataset: (slot: keyof AnalysisState["selection"], datasetId: string) => void;
-  assignUpsIpDatasets: (datasetIds: string[]) => void;
-  setFitRange: (target: FitTarget, range: FitRange) => void;
-  setUpsIpFitRange: (datasetId: string, target: FitTarget, range: FitRange) => void;
-  setUpsIpAppliedVoltage: (datasetId: string, voltage: number) => void;
-  setBandIpSource: (source: NonNullable<AnalysisState["bandIpSource"]>) => void;
-  setBandpassType: (type: number) => void;
-  setCustomBandpassEnergy: (energy: number) => void;
-  setReelsIncidentEnergy: (energy: number) => void;
-  setEfMinusEvbm: (value: number) => void;
-  setActiveFitTarget: (target: FitTarget) => void;
-  setBandDiagramViewport: (viewport: ProjectUiState["bandDiagramViewport"]) => void;
-  setReelsPlotViewport: (viewport: ProjectUiState["reelsPlotViewport"]) => void;
-  setUpsVbPlotViewport: (viewport: ProjectUiState["upsVbPlotViewport"]) => void;
-  setUpsIpPlotViewport: (viewport: ProjectUiState["upsIpPlotViewport"]) => void;
-  setUpsIpPlotViewportForDataset: (
-    datasetId: string,
-    viewport: ProjectUiState["upsIpPlotViewport"],
-  ) => void;
-  setUpsBiasPlotViewport: (
-    plot: "ecutoff" | "evbm" | "ip",
-    viewport: NonNullable<ProjectUiState["upsBiasPlotViewports"]>["ecutoff"],
-  ) => void;
-  setActiveUpsIpDatasetId: (datasetId: string) => void;
-  setLeipsPlotViewport: (viewport: ProjectUiState["leipsPlotViewport"]) => void;
-  setLeipsEvacPlotViewport: (viewport: ProjectUiState["leipsEvacPlotViewport"]) => void;
-  setReelsBackgroundMode: (mode: NonNullable<ProjectUiState["reelsBackgroundMode"]>) => void;
-  setPlotCursorStyle: (plot: PlotCursorStyleKey, style: CursorStyle) => void;
-  setSampleInfoField: (field: SampleInfoField, value: SampleInfoFieldValue) => void;
-  updateWindow: (id: string, patch: Partial<WindowLayout>) => void;
-  focusWindow: (id: string) => void;
-  resetWindowPosition: (id: string) => void;
-  resetWindowSize: (id: string) => void;
-  resetAllWindowPositions: () => void;
-  resetAllWindowSizes: () => void;
-  toggleHelpWindow: () => void;
-  toggleProjectsWindow: () => void;
-  recalculate: () => void;
-  saveCurrentProject: () => Promise<"saved" | "needs-name">;
-  saveProjectAs: (name: string) => Promise<void>;
-  renameCurrentProject: (name: string) => Promise<void>;
-  deleteCurrentProject: () => Promise<void>;
-  loadSavedProject: (id: string) => Promise<void>;
-  listRecentProjects: () => Promise<ProjectRecord[]>;
-  importProject: (json: string) => void;
-  createCatalog: (name: string) => Promise<void>;
-  switchCatalog: (id: string) => Promise<void>;
-  renameCatalog: (id: string, name: string) => Promise<void>;
-  deleteCatalog: (id: string) => Promise<void>;
-  listCatalogs: () => Promise<CatalogRecord[]>;
-  exportCatalog: (id: string) => Promise<Uint8Array>;
-  importCatalog: (bytes: ArrayBuffer | Uint8Array) => Promise<CatalogRecord>;
-  restoreLastOpenedWorkspace: (ref: LastOpenedWorkspaceRef) => Promise<void>;
-  resetToDefaultEmptyWorkspace: () => Promise<void>;
-}
 
 const DEFAULT_CATALOG: CatalogRecord = {
   id: DEFAULT_CATALOG_ID,
@@ -900,78 +829,4 @@ async function latestProjectForCatalog(catalogId: string): Promise<ProjectSnapsh
   }
   const { savedAt: _savedAt, ...project } = projects[0]!;
   return project;
-}
-
-const SELECTION_KIND: Record<
-  Exclude<keyof AnalysisState["selection"], "upsIpDatasetIds" | "upsIpDatasetId">,
-  SpectrumDataset["kind"]
-> = {
-  upsVbDatasetId: "ups-vb",
-  leetDatasetId: "leet",
-  leetDerDatasetId: "leet-der",
-  leipsDatasetId: "leips",
-  reelsDatasetId: "reels",
-};
-
-function keepOnlyMatchingSelections(
-  datasets: readonly SpectrumDataset[],
-  selection: AnalysisState["selection"],
-): AnalysisState["selection"] {
-  const next: AnalysisState["selection"] = {};
-  for (const [slot, kind] of Object.entries(SELECTION_KIND) as Array<
-    [
-      Exclude<keyof AnalysisState["selection"], "upsIpDatasetIds" | "upsIpDatasetId">,
-      SpectrumDataset["kind"],
-    ]
-  >) {
-    const datasetId = selection[slot];
-    if (datasets.some((dataset) => dataset.id === datasetId && dataset.kind === kind)) {
-      next[slot] = datasetId;
-    }
-  }
-  next.upsIpDatasetIds = selectedUpsIpDatasetIds(selection).filter((datasetId) =>
-    datasets.some((dataset) => dataset.id === datasetId && dataset.kind === "ups-ip"),
-  );
-  return next;
-}
-
-function seedUpsIpFitRanges(
-  current: AnalysisState["upsIpFitRangesByDatasetId"] | undefined,
-  datasetIds: readonly string[],
-): NonNullable<AnalysisState["upsIpFitRangesByDatasetId"]> {
-  const next = { ...current };
-  for (const datasetId of datasetIds) {
-    next[datasetId] = next[datasetId] ?? defaultUpsIpRanges();
-  }
-  return next;
-}
-
-function seedUpsIpConfigs(
-  current: AnalysisState["upsIpConfigsByDatasetId"] | undefined,
-  datasets: readonly SpectrumDataset[],
-  datasetIds: readonly string[],
-): NonNullable<AnalysisState["upsIpConfigsByDatasetId"]> {
-  const next = { ...current };
-  for (const datasetId of datasetIds) {
-    const dataset = datasets.find((item) => item.id === datasetId);
-    const voltage = Number(dataset?.metadata.appliedVoltage);
-    next[datasetId] = next[datasetId] ?? {
-      appliedVoltage: Number.isFinite(voltage) ? voltage : 0,
-    };
-  }
-  return next;
-}
-
-function omitKeys<T>(
-  record: Record<string, T> | undefined,
-  keys: readonly string[],
-): Record<string, T> | undefined {
-  if (!record) {
-    return undefined;
-  }
-  const next = { ...record };
-  for (const key of keys) {
-    delete next[key];
-  }
-  return next;
 }
