@@ -36,6 +36,8 @@ pnpm binary:build:macos-app:amd64
 
 macOSのアイコン付き配布物は `.app.zip`、Windowsはfaviconを埋め込んだ `.exe` を生成します。
 
+macOS `.app` はFinderから開くとローカルHTTPサーバーを起動し、既定ブラウザで解析画面を開きます。`4173` が使用中の場合は次の空きportを使います。未notarize配布のため、初回起動時はGatekeeperの確認が出る場合があります。終了はActivity Monitorなどから `ups-leips-analyzer` を終了してください。ブラウザを自動で開かない検証用途では、bundle内の実行ファイルに `--no-open` を付けて起動できます。
+
 ## Nix / Docker
 
 ```sh

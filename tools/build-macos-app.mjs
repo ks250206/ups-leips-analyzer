@@ -98,10 +98,15 @@ writeFileSync(
   <string>0.1.0</string>
   <key>LSMinimumSystemVersion</key>
   <string>11.0</string>
+  <key>LSUIElement</key>
+  <true/>
 </dict>
 </plist>
 `,
 );
 
 cpSync("public/favicon.ico", join(resourcesDir, "favicon.ico"));
-run("ditto", ["-c", "-k", "--keepParent", appDir, zipPath]);
+run("codesign", ["--force", "--deep", "--sign", "-", appDir]);
+run("ditto", ["--norsrc", "--noextattr", "-c", "-k", "--keepParent", appDir, zipPath], {
+  env: { ...process.env, COPYFILE_DISABLE: "1" },
+});
