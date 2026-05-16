@@ -9,26 +9,53 @@
 
 ## Module Responsibilities
 
-- `src/store/projectStore.ts`: Zustand state/action wiring、active Catalog、Dexie呼び出し、公開store API。
+- `src/store/projectStore.ts`: Zustand state/action wiring、active Catalog、Dexie呼び出し、公開store API。低レベルhelperと型は分離済みだが、action slice化は後続。
+- `src/store/projectStoreTypes.ts`: Zustand storeの公開interface。
+- `src/store/projectStoreHelpers.ts`: dataset selection repair、UPS IP fit range/config seed、record key omit helper。
 - `src/store/projectFactory.ts`: 空Project、demo Project、初期dataset/window生成。
-- `src/store/projectModel.ts`: 解析再計算、dataset auto selection、dataset role変更時のaxis label補正、fit range migration、Project JSON変換。
+- `src/store/projectModel.ts`: 解析再計算、normalization、fit range migration、Project JSON変換。
+- `src/store/projectModelSelection.ts`: dataset merge、demo判定、auto selection、UPS IP selection/range/applied voltage helper。
 - `src/store/projectDb.ts`: Catalog registry DB、Catalog別Project DB生成、legacy Project DB migration、Project/Catalog gzip import/export。
 - `src/store/lastOpenedWorkspace.ts`: 前回最後に開いたCatalog/Project IDを`localStorage`へ保存するユーザー環境state。Project/Catalog archiveには含めない。
 - `src/store/windowModel.ts`: workspace window生成とdefault layout。
 - `ProjectSnapshot.ui`: UPS/LEIPS/REELS/Band Diagram plot viewport、UPS IP dataset別plot viewport、plot別cursor表示設定、Sample Info、Help window状態などProjectと一緒に復元したいUI state。Sample Infoのmulti-select値はProject JSON import時に旧string値から配列へ軽量migrationする。
-- `src/ui/Workspace.tsx`: workspace viewport、background pan/context menu、window frame配置、modal open state。
+- `src/ui/Workspace.tsx`: workspace shell、window frame配置、modal open state、top-level orchestration。
+- `src/ui/workspace/WorkspaceViewport.ts`: workspace pan/zoom state and handlers。
+- `src/ui/workspace/WorkspaceLastOpened.ts`: 前回workspace復元とlocalStorage書き込みeffect。
+- `src/ui/workspace/WorkspaceFileActions.ts`: Project/Catalog import/export download/upload。
+- `src/ui/workspace/WorkspaceModalActions.ts`: Project/Catalog modal action side effects。
+- `src/ui/workspace/WorkspaceModalLayer.tsx`: Project/Catalog modal rendering。
 - `src/ui/workspace/WorkspaceMenu.tsx`: TopBar/background context menuの共通menu definition。
 - `src/ui/workspace/WorkspaceWindows.tsx`: window kindごとのtitle/icon/render/context menu/help window。
+- `src/ui/workspace/UpsIpTitleSelector.tsx`: UPS IP window titlebar dataset selector。
+- `src/ui/workspace/workspaceTabs.ts`: window kindからAnalysis tabへの対応。
 - `AnalysisState.upsIpDatasetIds`: 複数UPS IP dataset選択。旧`upsIpDatasetId`はProject import時に配列へmigrationする。
 - `AnalysisState.upsIpFitRangesByDatasetId` / `upsIpConfigsByDatasetId`: UPS IP datasetごとのfit rangeと印加電圧設定。CSV推定値で初期化し、UPS tabで手動編集する。
 - `AnalysisState.bandIpSource`: Band Diagramに渡すIP値のsource。特定dataset、平均、0 V外挿を選ぶ。
 - `src/ui/workspace/WorkspaceModals.tsx`: Save as、Delete、Load Project modal。
 - `src/ui/Settings.ts`: Project/Catalogに含めないユーザー個人設定。表示localeを`localStorage`へ保存し、Sample Infoの表示ラベルを切り替える。
-- `src/ui/windows/SpectrumPlot.tsx`: D3/SVG plot container、viewport state、public props compatibility。
+- `src/ui/windows/SpectrumPlot.tsx`: D3/SVG plot container、public props compatibility。
+- `src/ui/windows/SpectrumPlotSvg.tsx`: SVG composition and pointer event wiring。
+- `src/ui/windows/SpectrumPlotAxes.tsx`: 軸、tick、軸ラベル。
+- `src/ui/windows/SpectrumPlotSeries.tsx`: series path、fit label位置計算。
+- `src/ui/windows/SpectrumPlotCursors.tsx`: range band、range cursor、point cursor。
+- `src/ui/windows/SpectrumPlotSinglePointCursors.tsx`: REELS single point cursor。
+- `src/ui/windows/SpectrumPlotCursorModel.ts`: cursor対象seriesと補間helper。
+- `src/ui/windows/SpectrumPlotMarkers.tsx`: marker線、annotation。
+- `src/ui/windows/SpectrumPlotContextMenu.ts`: plot context menu。
+- `src/ui/windows/SpectrumPlotViewportState.ts`: viewport request同期とecho guard。
 - `src/ui/windows/SpectrumPlotScales.ts`: plot geometry、domain、scale、tick formatting。
 - `src/ui/windows/SpectrumPlotViewport.ts`: wheel/drag viewport math、range math、series visibility判定。
 - `src/ui/windows/SpectrumPlotInteraction.ts`: pointer lifecycle for plot drag/pan/cursor/range drag。
-- `src/ui/windows/SpectrumPlotParts.tsx`: axis、series path、range band、marker、cursor handle SVG部品。
+- `src/ui/windows/SpectrumPlotParts.tsx`: 既存import互換のためのplot部品re-export。
+- `src/ui/windows/UPSVBPlotWindow.tsx`: UPS VB plot。
+- `src/ui/windows/UPSIPPlotWindow.tsx`: UPS IP plot、dataset context menu、snapshot view。
+- `src/ui/windows/UPSBiasDependenceWindow.tsx`: Cutoff/EVBM/IP bias dependence plot。
+- `src/ui/windows/UPSPlotModel.ts`: UPS plot shared constants/helper。
+- `src/ui/windows/AnalysisControls.tsx`: Analysis tab state and panel routing。
+- `src/ui/windows/AnalysisControlModel.ts`: fit target/dataset slot/IP source helper。
+- `src/ui/windows/AnalysisControlParts.tsx`: shared analysis form components。
+- `src/ui/windows/AnalysisRangeInput.tsx`: fit range number input draft state。
 - `src/ui/windows/BandDiagramWindow.tsx`: Band Diagram control stateとplot/control composition。
 - `src/ui/windows/bandDiagramModel.ts`: Igor風Band Diagram model、auto viewport、data signature、percent offset。
 - `src/ui/windows/bandDiagramInteraction.ts`: Band Diagram wheel/drag/pan viewport math。
