@@ -33,6 +33,6 @@ pnpm binary:build:macos-app:arm64
 7. Goバイナリで `/` と `/assets/...` が返る。
 8. macOS `.app` は `Contents/Resources/favicon.icns`、`CFBundleIconFile`、`LSUIElement=true` を持つ。
 9. macOS `.app` zipには `._*` AppleDouble fileを含めず、app bundle全体がad-hoc署名されている。
-10. macOS `.app` をFinderから開くとローカルサーバーが起動し、既定ブラウザで解析画面が開く。終了はActivity Monitorなどから `ups-leips-analyzer` を終了する。
+10. macOS `.app` をFinderから開くとローカルサーバーが起動し、既定ブラウザで解析画面が開く。ブラウザページを閉じるとheartbeat停止によりサーバーも自動終了する。
 11. Windows `.exe` はfavicon resourceを埋め込んで生成される。
 12. Caddyコンテナを `podman compose up` で起動し、`http://127.0.0.1:4173/` が返る。
