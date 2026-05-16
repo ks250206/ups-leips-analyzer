@@ -20,6 +20,10 @@
 - `src/store/projectStoreLifecycleHelpers.ts`: default catalog、active Catalog DB解決、Catalog内最新Project取得。
 - `src/store/projectStoreUpdateHelpers.ts`: Project touch/recalculate、UI state patch helper。
 - `src/store/projectStoreSliceTypes.ts`: Zustand slice factory用 `set/get` 型。
+- `src/store/projectStoreTestUtils.ts`: store tests共通のCatalog reset、demo fixture、UPS IP result fixture。
+- `src/store/projectStoreLifecycle.test.ts`: Project/Catalog persistence、last-opened restore、Catalog import/exportのstore integration tests。
+- `src/store/projectStoreAnalysis.test.ts`: analysis recalculation、normalization、UI state、window geometryのstore-adjacent tests。
+- `src/store/projectStoreDatasets.test.ts`: dataset load/import/delete/role change、auto-selection、UPS IP multi-selectのstore integration tests。
 - `src/store/projectFactory.ts`: 空Project、demo Project、初期dataset/window生成。
 - `src/store/projectModel.ts`: 既存import互換のProject model re-export、`fitRangeKey`、`touchProject`。
 - `src/store/projectAnalysisRecalculation.ts`: UPS/LEIPS/REELS/Band Diagramの解析再計算とエラー集約。
