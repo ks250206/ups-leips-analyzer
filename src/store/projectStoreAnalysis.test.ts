@@ -373,5 +373,14 @@ describe("project store analysis, model and UI state", () => {
     expect(useProjectStore.getState().project.windows.some((window) => window.id === "help")).toBe(
       false,
     );
+
+    useProjectStore.getState().toggleProjectsWindow();
+    expect(
+      useProjectStore.getState().project.windows.some((window) => window.id === "projects"),
+    ).toBe(true);
+    useProjectStore.getState().toggleProjectsWindow();
+    expect(
+      useProjectStore.getState().project.windows.some((window) => window.id === "projects"),
+    ).toBe(false);
   });
 });

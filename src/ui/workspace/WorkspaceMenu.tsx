@@ -135,6 +135,8 @@ export function buildMenuGroups(input: {
     toggleProjectsWindow: () => void;
   };
 }): MenuGroup[] {
+  const hasHelpWindow = input.windows.some((window) => window.id === "help");
+  const hasProjectsWindow = input.windows.some((window) => window.id === "projects");
   const windowsItems: ContextMenuItem[] = [
     {
       type: "item",
@@ -142,6 +144,17 @@ export function buildMenuGroups(input: {
       action: input.actions.resetAllWindowPositions,
     },
     { type: "item", label: "Reset all window sizes", action: input.actions.resetAllWindowSizes },
+    { type: "separator" },
+    {
+      type: "item",
+      label: hasHelpWindow ? "Hide Help" : "Show Help",
+      action: input.actions.toggleHelpWindow,
+    },
+    {
+      type: "item",
+      label: hasProjectsWindow ? "Hide Project List" : "Show Project List",
+      action: input.actions.toggleProjectsWindow,
+    },
     { type: "separator" },
     ...input.windows.map((window) => ({
       type: "submenu" as const,
@@ -165,13 +178,6 @@ export function buildMenuGroups(input: {
       ],
     })),
   ];
-  if (!input.windows.some((window) => window.id === "help")) {
-    windowsItems.push({
-      type: "item",
-      label: "Help",
-      action: input.actions.toggleHelpWindow,
-    });
-  }
   return [
     {
       label: "Catalogs",

@@ -220,6 +220,20 @@ describe("App", () => {
     expect(screen.getAllByText("Data Browser").length).toBeGreaterThan(1);
     expect(screen.getByText("Reset all window positions")).toBeTruthy();
     expect(screen.getByText("Reset all window sizes")).toBeTruthy();
+    expect(screen.getByText("Show Help")).toBeTruthy();
+    expect(screen.getByText("Hide Project List")).toBeTruthy();
+    await user.click(screen.getByText("Hide Project List"));
+    expect(screen.queryByText("Project name")).toBeNull();
+    fireEvent.pointerDown(document.body);
+    await user.click(screen.getByRole("button", { name: "Windows" }));
+    expect(screen.getByText("Show Project List")).toBeTruthy();
+    await user.click(screen.getByText("Show Help"));
+    expect(screen.getAllByText("UPS-LEIPS Analyzer").length).toBeGreaterThan(1);
+    fireEvent.pointerDown(document.body);
+    await user.click(screen.getByRole("button", { name: "Windows" }));
+    await user.click(screen.getByText("Hide Help"));
+    expect(screen.queryByText(/Use the Catalogs menu/)).toBeNull();
+    fireEvent.pointerDown(document.body);
     fireEvent.pointerDown(document.body);
     await user.click(screen.getByRole("button", { name: "Setting" }));
     expect(screen.getByText("Language")).toBeTruthy();
@@ -294,6 +308,7 @@ describe("App", () => {
   });
 
   test("shows workspace context menu and removes active cursor badges", async () => {
+    const user = userEvent.setup();
     useProjectStore.getState().loadDemo();
     render(<App />);
 
@@ -308,6 +323,17 @@ describe("App", () => {
     expect(screen.getAllByText("Windows").length).toBeGreaterThan(1);
     expect(screen.getAllByText("Setting").length).toBeGreaterThan(1);
     expect(screen.getAllByText("Help").length).toBeGreaterThan(1);
+    fireEvent.mouseEnter(screen.getAllByText("Windows")[1]!);
+    expect(screen.getByText("Show Help")).toBeTruthy();
+    expect(screen.getByText("Show Project List")).toBeTruthy();
+    await user.click(screen.getByText("Show Project List"));
+    expect(screen.getByText("Project name")).toBeTruthy();
+
+    fireEvent.contextMenu(plane);
+    fireEvent.mouseEnter(screen.getAllByText("Windows")[1]!);
+    expect(screen.getByText("Hide Project List")).toBeTruthy();
+    await user.click(screen.getByText("Hide Project List"));
+    expect(screen.queryByText("Project name")).toBeNull();
     expect(screen.queryByText("Load Demo")).toBeNull();
   });
 
