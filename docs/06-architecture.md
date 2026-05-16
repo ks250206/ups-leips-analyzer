@@ -9,11 +9,24 @@
 
 ## Module Responsibilities
 
-- `src/store/projectStore.ts`: Zustand state/action wiring、active Catalog、Dexie呼び出し、公開store API。低レベルhelperと型は分離済みだが、action slice化は後続。
+- `src/store/projectStore.ts`: Zustand store composition、初期state、公開store APIの入口。
 - `src/store/projectStoreTypes.ts`: Zustand storeの公開interface。
 - `src/store/projectStoreHelpers.ts`: dataset selection repair、UPS IP fit range/config seed、record key omit helper。
+- `src/store/projectStoreDatasetActions.ts`: dataset load/add/delete/role変更、Data tab assignment、UPS IP multi-select。
+- `src/store/projectStoreAnalysisActions.ts`: fit range、UPS IP applied voltage、Band IP source、bandpass、REELS incident energy、manual EF-EVBM、再計算。
+- `src/store/projectStoreUiActions.ts`: plot viewport、active UPS IP dataset、REELS BG mode、plot cursor style、Sample Info。
+- `src/store/projectStoreWindowActions.ts`: window update/focus/reset、Help/Project List utility window。
+- `src/store/projectStoreLifecycleActions.ts`: Project/Catalog save/load/import/export/delete/rename、last-opened restore。
+- `src/store/projectStoreLifecycleHelpers.ts`: default catalog、active Catalog DB解決、Catalog内最新Project取得。
+- `src/store/projectStoreUpdateHelpers.ts`: Project touch/recalculate、UI state patch helper。
+- `src/store/projectStoreSliceTypes.ts`: Zustand slice factory用 `set/get` 型。
 - `src/store/projectFactory.ts`: 空Project、demo Project、初期dataset/window生成。
-- `src/store/projectModel.ts`: 解析再計算、normalization、fit range migration、Project JSON変換。
+- `src/store/projectModel.ts`: 既存import互換のProject model re-export、`fitRangeKey`、`touchProject`。
+- `src/store/projectAnalysisRecalculation.ts`: UPS/LEIPS/REELS/Band Diagramの解析再計算とエラー集約。
+- `src/store/projectNormalization.ts`: Project JSON/load時のnormalization、window migration、Sample Info/UPS IP migration。
+- `src/store/projectFitRanges.ts`: LEIPS/REELS fit range自動推定、bandpass energy解決。
+- `src/store/projectBandIpSource.ts`: Band Diagram用IP source解決、0 V外挿、平均、dataset指定。
+- `src/store/projectAxisLabels.ts`: dataset kind別axis label。
 - `src/store/projectModelSelection.ts`: dataset merge、demo判定、auto selection、UPS IP selection/range/applied voltage helper。
 - `src/store/projectDb.ts`: Catalog registry DB、Catalog別Project DB生成、legacy Project DB migration、Project/Catalog gzip import/export。
 - `src/store/lastOpenedWorkspace.ts`: 前回最後に開いたCatalog/Project IDを`localStorage`へ保存するユーザー環境state。Project/Catalog archiveには含めない。
