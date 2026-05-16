@@ -366,9 +366,15 @@ describe("project store analysis, model and UI state", () => {
 
   test("toggles utility windows", () => {
     useProjectStore.getState().toggleHelpWindow();
-    expect(useProjectStore.getState().project.windows.some((window) => window.id === "help")).toBe(
-      true,
-    );
+    const helpWindow = useProjectStore
+      .getState()
+      .project.windows.find((window) => window.id === "help");
+    expect(helpWindow).toMatchObject({
+      height: 560,
+      width: 520,
+      x: 1448,
+      y: 646,
+    });
     useProjectStore.getState().toggleHelpWindow();
     expect(useProjectStore.getState().project.windows.some((window) => window.id === "help")).toBe(
       false,
